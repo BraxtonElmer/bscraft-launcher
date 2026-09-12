@@ -718,18 +718,30 @@ fn substitute(s: &str, vars: &HashMap<String, String>) -> String {
 
 /// Generates a Minecraft-compatible offline UUID for the given username.
 /// Uses the same algorithm as the vanilla launcher: MD5 of "OfflinePlayer:{username}".
+/// (A name-based version 3 UUID: the version nibble replaces the top of byte 6.)
 fn offline_uuid(username: &str) -> String {
     let input = format!("OfflinePlayer:{}", username);
     let hash = md5::compute(input.as_bytes());
     let b = hash.0;
     format!(
-        "{:02x}{:02x}{:02x}{:02x}-{:02x}{:02x}-3{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}",
+        "{:02x}{:02x}{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}-{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}",
         b[0], b[1], b[2], b[3],
         b[4], b[5],
-        b[6] & 0x0f, b[7],
+        (b[6] & 0x0f) | 0x30, b[7],
         (b[8] & 0x3f) | 0x80, b[9],
         b[10], b[11], b[12], b[13], b[14], b[15]
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::offline_uuid;
+
+    #[test]
+    fn offline_uuid_matches_minecraft() {
+        // Java: UUID.nameUUIDFromBytes("OfflinePlayer:<name>".getBytes(UTF_8))
+        assert_eq!(offline_uuid("Elmer"), "74bcea26-1e4c-3c82-97df-7e8021d6a9c8");
+    }
 }
 
 fn path_str(p: &Path) -> String {

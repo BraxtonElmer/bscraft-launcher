@@ -263,7 +263,7 @@ function ServerStatus({ username, registered, valid, checking, error, onRetry }:
 }) {
   let tone = 'info'
   let icon: ReactNode = <InfoIcon size={14} />
-  let text: ReactNode = 'Not registered yet. Join the server once and this password claims your name.'
+  let text: ReactNode = 'Not registered yet. Join the server once and this password claims your name. Just joined? The server saves new names every few minutes.'
   if (checking) {
     icon = <Spinner size={12} />
     text = 'Checking with the server…'

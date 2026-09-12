@@ -78,7 +78,7 @@ export function ProfilePage({ username, account, gameRunning, onRename }: Props)
     !passwordSet ? 'Set your server password first.'
     : serverError ? "Couldn't reach the BSCraft server."
     : !server ? null
-    : !server.registered ? 'Join the server once to claim your name, then you can save your look.'
+    : !server.registered ? 'Join the server once to claim your name, then you can save your look. New names show up here within about 5 minutes.'
     : !server.valid ? "Your saved password doesn't match the server's."
     : null
   const canSave = !blocker && !!server?.valid && !wardrobe.saving

@@ -1,0 +1,6 @@
+{
+  "pack": {
+    "pack_format": 15,
+    "description": "BSCraft fixes (always on): Twilight Forest aurora shader that doesn't crash Intel GPUs"
+  }
+}

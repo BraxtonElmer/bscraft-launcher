@@ -115,16 +115,24 @@ export function createMocks() {
       await sleep(600)
     },
     install_minecraft: async () => {
-      emit('install-progress', { stage: 'minecraft', detail: 'Downloading Minecraft client…', percent: 10, files_done: 0, files_total: 1 })
+      // Same milestones as commands/install.rs, with each phase reporting its own 0-100%
+      const mark = (percent, detail) => emit('install-progress', { stage: 'minecraft', detail, percent, files_done: 0, files_total: 1 })
+      mark(2, 'Fetching version manifest…'); await sleep(200)
+      mark(5, 'Downloading version metadata…'); await sleep(200)
+      mark(10, 'Downloading Minecraft client…')
       await download('minecraft', '1.20.1.jar', 'Downloading Minecraft client', 23_000_000, 1600)
+      mark(40, 'Downloading libraries…')
       for (let i = 1; i <= 20; i++) { await sleep(90); emit('install-progress', { stage: 'libraries', detail: 'Downloading libraries', percent: i * 5, files_done: i * 4, files_total: 80 }) }
+      mark(70, 'Downloading game assets…')
       for (let i = 1; i <= 20; i++) { await sleep(90); emit('install-progress', { stage: 'assets', detail: 'Downloading game assets', percent: i * 5, files_done: i * 180, files_total: 3600 }) }
+      mark(100, 'Minecraft installed')
     },
     install_forge: async () => {
       emit('install-progress', { stage: 'forge', detail: 'Downloading Forge installer…', percent: 5, files_done: 0, files_total: 1 })
       await download('forge', 'forge-1.20.1-47.4.10-installer.jar', 'Downloading Forge installer', 7_000_000, 900)
-      emit('install-progress', { stage: 'forge', detail: 'Running Forge installer…', percent: 40, files_done: 0, files_total: 1 })
+      emit('install-progress', { stage: 'forge', detail: 'Running Forge installer (this may take a few minutes)…', percent: 60, files_done: 0, files_total: 1 })
       await sleep(1400)
+      emit('install-progress', { stage: 'forge', detail: 'Forge installed successfully', percent: 100, files_done: 1, files_total: 1 })
     },
     sync_modpack: async () => {
       const n = files.length
@@ -180,7 +188,7 @@ export function createMocks() {
       return { name, source: 'mojang', model: 'slim', skin: await mockPng('skin'), cape: await mockPng('cape'), elytra: null }
     },
     get_skin_prefs: () => ({ ...state.prefs }),
-    set_skin_prefs: async ({ prefs }) => { await sleep(80); state.prefs = { ...prefs }; return { ...state.prefs } },
+    set_skin_prefs: async ({ prefs }) => { await sleep(80); state.prefsWrites = (state.prefsWrites || 0) + 1; console.log('set_skin_prefs', new Error().stack); state.prefs = { ...prefs }; return { ...state.prefs } },
     'plugin:opener|open_url': ({ url }) => { console.log('open_url', url) },
     get_game_status: () => ({ running: state.running }),
     get_log_lines: () => [],

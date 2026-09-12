@@ -53,6 +53,16 @@ ssh zukashiserver 'journalctl -u bscraft-skins -n 50'
 The unit file is `skin-service/bscraft-skins.service`
 (installed to `/etc/systemd/system/`).
 
+## Server mods vs the client pack
+
+The server runs the server pack with these differences, each found by
+booting it or joining it:
+
+| Mod | Server | Why |
+|---|---|---|
+| Ok Zoomer, Lightspeed | removed | Client-only; they crash a dedicated server at startup |
+| `particular-1.20.1-Forge-1.2.7.jar` | must be added (from the client pack; tested on a copy, not yet on the live server) | Its network channel is required on both sides; without it every client is refused with "mismatched mod list" |
+
 ## Resetting a player
 
 If someone forgets their password, stop nothing: in the game server

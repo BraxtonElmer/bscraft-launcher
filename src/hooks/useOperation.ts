@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { listen } from '@tauri-apps/api/event'
 import { stageTitle } from '../lib/format'
 import type {
@@ -26,6 +26,13 @@ const BLANK: Omit<ActiveOperation, 'kind' | 'title'> = {
   indeterminate: true,
 }
 
+/** Overall % each install step reports at the start of its phases (see commands/install.rs) */
+const INSTALL_MILESTONES: Record<string, number[]> = {
+  jre: [5, 90, 100],
+  minecraft: [2, 5, 10, 40, 70, 100],
+  forge: [5, 60, 100],
+}
+
 export interface OperationApi {
   operation: ActiveOperation | null
   begin: (kind: OperationKind, title: string, extra?: Partial<ActiveOperation>) => void
@@ -51,14 +58,24 @@ export function useOperation(): OperationApi {
 
   const end = useCallback(() => setOperation(null), [])
 
+  // Install steps report milestones (e.g. "Downloading libraries…" at 40%) and, in between,
+  // the current phase's own 0–100% (a file download, libraries, assets). Phases are fitted
+  // into the gap before the next milestone, and the bar never moves backwards within a step.
+  const phase = useRef({ from: 0, to: 100 })
+  const withinPhase = (percent: number) =>
+    phase.current.from + ((phase.current.to - phase.current.from) * Math.min(100, Math.max(0, percent))) / 100
+  const patchInstall = useCallback((p: Partial<ActiveOperation> & { overallPercent: number }) => {
+    setOperation(prev => (prev ? { ...prev, ...p, overallPercent: Math.max(prev.overallPercent, p.overallPercent) } : prev))
+  }, [])
+
   useEffect(() => {
     const subs = [
-      listen<DownloadProgress>('download-progress', ({ payload: p }) => patch({
+      listen<DownloadProgress>('download-progress', ({ payload: p }) => patchInstall({
         title: stageTitle(p.stage),
         detail: p.detail,
         file: p.file,
         filePercent: p.percent,
-        overallPercent: p.percent,
+        overallPercent: withinPhase(p.percent),
         speedBps: p.speed_bps,
         bytesDone: p.downloaded,
         bytesTotal: p.total,
@@ -66,18 +83,22 @@ export function useOperation(): OperationApi {
         filesTotal: 0,
         indeterminate: false,
       })),
-      listen<InstallProgress>('install-progress', ({ payload: p }) => patch({
-        title: stageTitle(p.stage),
-        detail: p.detail,
-        file: '',
-        overallPercent: p.percent,
-        speedBps: 0,
-        bytesDone: 0,
-        bytesTotal: 0,
-        filesDone: p.files_done,
-        filesTotal: p.files_total,
-        indeterminate: false,
-      })),
+      listen<InstallProgress>('install-progress', ({ payload: p }) => {
+        const marks = INSTALL_MILESTONES[p.stage]
+        if (marks) phase.current = { from: p.percent, to: marks.find(m => m > p.percent) ?? 100 }
+        patchInstall({
+          title: stageTitle(p.stage),
+          detail: p.detail,
+          file: '',
+          overallPercent: marks ? p.percent : withinPhase(p.percent),
+          speedBps: 0,
+          bytesDone: 0,
+          bytesTotal: 0,
+          filesDone: p.files_done,
+          filesTotal: p.files_total,
+          indeterminate: false,
+        })
+      }),
       listen<SyncProgress>('sync-progress', ({ payload: p }) => patch({
         title: stageTitle(p.stage),
         detail: p.stage === 'downloading' ? 'Downloading' : p.stage === 'repairing' ? 'Repairing' : 'Checking files',
@@ -110,7 +131,7 @@ export function useOperation(): OperationApi {
       })),
     ]
     return () => { subs.forEach(s => s.then(fn => fn())) }
-  }, [patch])
+  }, [patch, patchInstall])
 
   return { operation, begin, patch, end }
 }
