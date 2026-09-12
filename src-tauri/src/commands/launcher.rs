@@ -4,13 +4,13 @@
 
 use crate::commands::install::{find_java_exe, get_mc_dir};
 use crate::commands::settings::load_config_internal;
-use crate::constants::{LAUNCHER_NAME, LAUNCHER_VERSION};
+use crate::constants::{GAME_SERVER_ADDRESS, GAME_SERVER_NAME, LAUNCHER_NAME, LAUNCHER_VERSION};
 use crate::state::AppState;
 use serde::Serialize;
 use std::collections::HashMap;
 use std::path::Path;
 use tauri::{Emitter, Manager, State};
-use tokio::io::{AsyncBufReadExt, BufReader};
+use tokio::io::{AsyncBufReadExt, AsyncRead, BufReader};
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -88,6 +88,14 @@ pub async fn launch_game(
         ram_mb,
     )?;
 
+    // BSCraft is always in the multiplayer list; with auto-join the game goes straight there
+    if let Err(err) = crate::servers_dat::ensure_server_listed(&mc_dir, GAME_SERVER_NAME, GAME_SERVER_ADDRESS) {
+        eprintln!("Server list not updated: {}", err);
+    }
+    if config.auto_join {
+        cmd.arg("--quickPlayMultiplayer").arg(GAME_SERVER_ADDRESS);
+    }
+
     cmd.stdout(std::process::Stdio::piped());
     cmd.stderr(std::process::Stdio::piped());
     cmd.current_dir(&mc_dir);
@@ -118,58 +126,60 @@ pub async fn launch_game(
         logs.clear();
     }
 
-    // Spawn background task: read stdout+stderr, emit events, detect exit
-    // Clone app before the spawn so we have a 'static handle inside the task
-    let app_clone = app.clone();
-    let app_for_state = app.clone();
-
-    tokio::spawn(async move {
-        let mut stdout_lines = BufReader::new(stdout).lines();
-        let mut stderr_lines = BufReader::new(stderr).lines();
-
-        loop {
-            tokio::select! {
-                line = stdout_lines.next_line() => {
-                    match line {
-                        Ok(Some(l)) => {
-                            push_log(&app_clone, &l);
-                        }
-                        _ => break,
-                    }
-                }
-                line = stderr_lines.next_line() => {
-                    match line {
-                        Ok(Some(l)) => {
-                            push_log(&app_clone, &l);
-                        }
-                        _ => break,
-                    }
-                }
-            }
-        }
-
-        // Process has exited — collect exit code then clear state
-        let exit_code = {
-            // Use the cloned app handle to access state (avoids lifetime issue)
-            let state_ref = app_for_state.state::<AppState>();
-            let mut proc_guard = state_ref.game_process.lock().unwrap();
-            if let Some(mut child) = proc_guard.take() {
-                child.try_wait()
-                    .ok()
-                    .flatten()
-                    .and_then(|s| s.code())
-                    .unwrap_or(-1)
-            } else {
-                -1
-            }
-        };
-
-        app_clone
-            .emit("game-exited", GameExited { exit_code })
-            .ok();
-    });
+    // Stream the game's output to the console, and separately watch the process itself:
+    // the output ending (or containing odd bytes) doesn't mean the game has stopped.
+    tokio::spawn(pump_output(app.clone(), stdout));
+    tokio::spawn(pump_output(app.clone(), stderr));
+    tokio::spawn(watch_exit(app.clone()));
 
     Ok(())
+}
+
+/// Forwards one output stream line by line. Mods print in the system code page
+/// (e.g. Ok Zoomer's "úwù"), so lines that aren't UTF-8 are read as Windows-1252/Latin-1
+/// instead of ending the stream.
+async fn pump_output<R: AsyncRead + Unpin>(app: tauri::AppHandle, stream: R) {
+    let mut reader = BufReader::new(stream);
+    let mut buf = Vec::new();
+    loop {
+        buf.clear();
+        match reader.read_until(b'\n', &mut buf).await {
+            Ok(0) | Err(_) => break,
+            Ok(_) => {
+                let line = decode_line(&buf);
+                push_log(&app, line.trim_end_matches(['\r', '\n']));
+            }
+        }
+    }
+}
+
+fn decode_line(bytes: &[u8]) -> String {
+    match std::str::from_utf8(bytes) {
+        Ok(s) => s.to_string(),
+        Err(_) => bytes.iter().map(|&b| b as char).collect(),
+    }
+}
+
+/// Emits `game-exited` once the game process ends, or once Stop took it away (kill_game).
+async fn watch_exit(app: tauri::AppHandle) {
+    let exit_code = loop {
+        tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+        let state = app.state::<AppState>();
+        let mut proc = state.game_process.lock().unwrap();
+        let Some(child) = proc.as_mut() else { break -1 };
+        match child.try_wait() {
+            Ok(None) => continue,
+            Ok(Some(status)) => {
+                *proc = None;
+                break status.code().unwrap_or(-1);
+            }
+            Err(_) => {
+                *proc = None;
+                break -1;
+            }
+        }
+    };
+    app.emit("game-exited", GameExited { exit_code }).ok();
 }
 
 /// Sends SIGKILL to the Minecraft process if it is running.

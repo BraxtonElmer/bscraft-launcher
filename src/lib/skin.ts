@@ -78,6 +78,43 @@ export interface TextureDraft<T extends Texture = Texture> {
 }
 
 /**
+ * Minecraft draws the elytra from the cape texture: its wings are the 24×22 block at (22, 0)
+ * of the 64×32 layout (scaled up in HD capes). Profile "elytra" textures are ignored in game.
+ */
+const WING = { x: 22, y: 0, w: 24, h: 22 }
+
+function wingAreaEmpty(img: HTMLImageElement): boolean {
+  const s = img.naturalWidth / 64
+  const d = pixels(img)
+  for (let y = WING.y * s; y < (WING.y + WING.h) * s; y++) {
+    for (let x = WING.x * s; x < (WING.x + WING.w) * s; x++) {
+      if (d.data[(y * img.naturalWidth + x) * 4 + 3] !== 0) return false
+    }
+  }
+  return true
+}
+
+/**
+ * A copy of the cape with its wing area replaced by `design`'s (an elytra texture in the
+ * standard layout), or by plain wings when `design` is null.
+ */
+export async function capeWithWings(cape: HTMLImageElement, design: HTMLImageElement | HTMLCanvasElement | null): Promise<TextureDraft> {
+  const { plainElytra } = await import('./defaultSkin')
+  const src = design ?? plainElytra()
+  const s = cape.naturalWidth / 64
+  const ds = (src instanceof HTMLImageElement ? src.naturalWidth : src.width) / 64
+  const c = document.createElement('canvas')
+  c.width = cape.naturalWidth
+  c.height = cape.naturalHeight
+  const g = c.getContext('2d')!
+  g.imageSmoothingEnabled = false
+  g.drawImage(cape, 0, 0)
+  g.clearRect(WING.x * s, WING.y * s, WING.w * s, WING.h * s)
+  g.drawImage(src, WING.x * ds, WING.y * ds, WING.w * ds, WING.h * ds, WING.x * s, WING.y * s, WING.w * s, WING.h * s)
+  return textureFromBytes(await canvasToPng(c), 'cape')
+}
+
+/**
  * Checks PNG bytes and loads them as a texture of the given kind, so problems
  * show before uploading. Old OptiFine-style 22×17 capes are padded to 64×32.
  */
@@ -119,6 +156,11 @@ export async function textureFromBytes(bytes: Uint8Array, kind: TextureKind): Pr
   if (kind === 'skin') {
     const skin: Skin = { image, src, model: detectSlim(image) ? 'slim' : 'default' }
     return { bytes, texture: skin }
+  }
+  // Capes without wing art (like old 22×17 ones) would give invisible elytra in game
+  if (kind === 'cape' && wingAreaEmpty(image)) {
+    URL.revokeObjectURL(src)
+    return capeWithWings(image, null)
   }
   return { bytes, texture: { image, src } }
 }

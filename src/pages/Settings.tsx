@@ -144,6 +144,17 @@ export function SettingsPage({ launcher, config, persist, operation, launcherVer
           <section className="card">
             <CardHead icon={<SlidersIcon size={18} />} tone="pink" title="Launcher" desc="How the launcher looks and behaves" />
             <SettingRow
+              title="Join BSCraft on launch"
+              desc="Play goes straight into the server. Turn off to start at the title screen."
+            >
+              <Toggle
+                id="toggle-autojoin"
+                label="Join BSCraft on launch"
+                checked={config.auto_join}
+                onChange={v => persist({ auto_join: v })}
+              />
+            </SettingRow>
+            <SettingRow
               title="Open console on launch"
               desc="Jump to the live game log when Minecraft starts."
             >

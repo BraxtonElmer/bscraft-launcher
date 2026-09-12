@@ -1,5 +1,5 @@
 {
-  "modpack_version": "1.0.4",
+  "modpack_version": "1.0.5",
   "minecraft_version": "1.20.1",
   "forge_version": "47.4.10",
   "java_version": 17,
@@ -1665,6 +1665,18 @@
       "url": "https://bscraft.zukashix.com/modpack/files/config/openloader/advanced_options.json",
       "sha256": "2ee7700b88371d21265000c50ef149c42863fd22e0ecbb5dc6af78fd7493fee8",
       "size": 177
+    },
+    {
+      "path": "config/openloader/resources/bscraft-fixes/assets/twilightforest/shaders/core/aurora/aurora.fsh",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/openloader/resources/bscraft-fixes/assets/twilightforest/shaders/core/aurora/aurora.fsh",
+      "sha256": "e21a7e22124c7bed18d36750bd778046fb9b0a20c4e41729e2bcbe0fb4e652d5",
+      "size": 6188
+    },
+    {
+      "path": "config/openloader/resources/bscraft-fixes/pack.mcmeta",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/openloader/resources/bscraft-fixes/pack.mcmeta",
+      "sha256": "8f1de5ef869fc2995c494e6c8d9340a5156815adf5a362c53a5a45aeb91a8c2d",
+      "size": 151
     },
     {
       "path": "config/particular-common.toml",

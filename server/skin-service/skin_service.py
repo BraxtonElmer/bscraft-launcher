@@ -5,8 +5,8 @@ BSCraft skin service.
 Lets players set their in-game skin, cape and elytra from the launcher.
 Accounts are the SimpleLogin registrations on the game server: a request is
 authorised with the same credential the game client sends when joining
-(lowercase hex SHA-256 of the SimpleLogin password), checked with bcrypt
-against world/sl_entries.dat. That file is only ever read here; the game
+(lowercase hex SHA-256 of the SimpleLogin password), checked against
+world/sl_entries.dat, where SimpleLogin keeps bcrypt(SHA-256 of that). That file is only ever read here; the game
 server owns it.
 
 Textures are published as static files in CustomSkinLoader's CustomSkinAPI
@@ -110,7 +110,10 @@ def authenticate(ip: str, username: str, password_hash: str) -> None:
     stored = load_accounts().get(username.lower())
     if stored is None:
         raise ApiError(403, "not_registered", "This name isn't registered yet. Join the server once to claim it.")
-    if not bcrypt.checkpw(password_hash.encode(), stored.encode()):
+    # SimpleLogin hashes twice: the client sends SHA-256(password), and the server's
+    # MessageLogin decoder runs it through the hashing constructor again, so entries
+    # hold bcrypt(SHA-256(SHA-256(password))). Requests carry what the client sends.
+    if not bcrypt.checkpw(sha256(password_hash.encode()).hexdigest().encode(), stored.encode()):
         record_failure(ip, username.lower())
         raise ApiError(401, "bad_password", "Password doesn't match the one registered on the server.")
 

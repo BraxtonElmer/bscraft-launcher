@@ -8,6 +8,7 @@ const DEFAULT_CONFIG: AppConfig = {
   console_enabled: false,
   prefer_dgpu: true,
   performance_mode: false,
+  auto_join: true,
   installed_modpack_version: null,
   installed_mc_version: null,
   installed_forge_version: null,

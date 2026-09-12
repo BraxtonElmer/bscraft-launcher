@@ -5,6 +5,7 @@
 
 mod commands;
 mod constants;
+mod servers_dat;
 mod state;
 
 use tauri::{Emitter, Manager};

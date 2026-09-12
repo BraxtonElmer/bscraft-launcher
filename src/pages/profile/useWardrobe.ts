@@ -10,15 +10,17 @@ import type { ImportedLook, TextureUploadResult } from '../../types'
 /** An unsaved change to one texture */
 export type Change<T extends Texture> = { op: 'set'; bytes: Uint8Array; texture: T } | { op: 'remove' }
 
+/** Skin and cape; the elytra's design is part of the cape texture (see capeWithWings) */
+export type WardrobeKind = Exclude<TextureKind, 'elytra'>
+
 export interface Drafts {
   skin?: Change<Skin>
   cape?: Change<Texture>
-  elytra?: Change<Texture>
   /** New arm style for the already published skin */
   model?: SkinModel
 }
 
-export const KINDS: TextureKind[] = ['skin', 'cape', 'elytra']
+export const KINDS: WardrobeKind[] = ['skin', 'cape']
 
 function applied<T extends Texture>(change: Change<T> | undefined, published: T | null): T | null {
   if (!change) return published
@@ -42,10 +44,11 @@ export function useWardrobe(username: string) {
   // Drafts belong to the name they were made for
   useEffect(() => { setDrafts({}) }, [username])
 
+  // Minecraft ignores separate elytra textures, so the preview never shows one either
   const current: Look = {
     skin: applied(drafts.skin, published.skin),
     cape: applied(drafts.cape, published.cape),
-    elytra: applied(drafts.elytra, published.elytra),
+    elytra: null,
   }
   const model: SkinModel = drafts.model ?? current.skin?.model ?? 'default'
 
@@ -53,9 +56,8 @@ export function useWardrobe(username: string) {
   if (drafts.skin) changes.push(drafts.skin.op === 'set' ? 'new skin' : 'skin removed')
   else if (drafts.model) changes.push('arm style')
   if (drafts.cape) changes.push(drafts.cape.op === 'set' ? 'new cape' : 'cape removed')
-  if (drafts.elytra) changes.push(drafts.elytra.op === 'set' ? 'new elytra' : 'elytra removed')
 
-  const setTexture = (kind: TextureKind, draft: TextureDraft) => {
+  const setTexture = (kind: WardrobeKind, draft: TextureDraft) => {
     track(draft)
     setDrafts(d => {
       const next: Drafts = { ...d, [kind]: { op: 'set', bytes: draft.bytes, texture: draft.texture } }
@@ -65,7 +67,7 @@ export function useWardrobe(username: string) {
   }
 
   /** Marks a published texture for removal, or drops an unsaved one */
-  const removeTexture = (kind: TextureKind) => {
+  const removeTexture = (kind: WardrobeKind) => {
     setDrafts(d => {
       const next: Drafts = { ...d }
       if (published[kind]) next[kind] = { op: 'remove' }
@@ -75,7 +77,7 @@ export function useWardrobe(username: string) {
     })
   }
 
-  const revert = (kind: TextureKind) => {
+  const revert = (kind: WardrobeKind) => {
     setDrafts(d => {
       const next: Drafts = { ...d }
       delete next[kind]
@@ -105,18 +107,15 @@ export function useWardrobe(username: string) {
     const look = await invoke<ImportedLook>('import_look', { name })
     const load = async (kind: TextureKind, png: number[] | null) =>
       png ? track(await textureFromBytes(new Uint8Array(png), kind)) : null
-    const [skin, cape, elytra] = await Promise.all([
-      load('skin', look.skin), load('cape', look.cape), load('elytra', look.elytra),
-    ])
+    const [skin, cape] = await Promise.all([load('skin', look.skin), load('cape', look.cape)])
     if (skin) (skin.texture as Skin).model = look.model
     setDrafts(d => {
       const next: Drafts = { ...d }
       if (skin) { next.skin = { op: 'set', bytes: skin.bytes, texture: skin.texture as Skin }; delete next.model }
       if (cape) next.cape = { op: 'set', bytes: cape.bytes, texture: cape.texture }
-      if (elytra) next.elytra = { op: 'set', bytes: elytra.bytes, texture: elytra.texture }
       return next
     })
-    const got = (['skin', 'cape', 'elytra'] as const).filter(k => ({ skin, cape, elytra })[k])
+    const got = (['skin', 'cape'] as const).filter(k => ({ skin, cape })[k])
     return { name: look.name, source: look.source, got }
   }
 

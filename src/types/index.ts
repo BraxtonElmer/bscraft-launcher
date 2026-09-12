@@ -8,6 +8,8 @@ export interface AppConfig {
   console_enabled: boolean;
   prefer_dgpu: boolean;
   performance_mode: boolean;
+  /** Start the game straight into the BSCraft server */
+  auto_join: boolean;
   installed_modpack_version: string | null;
   installed_mc_version: string | null;
   installed_forge_version: string | null;

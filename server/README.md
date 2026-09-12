@@ -34,6 +34,12 @@ which the modpack's CustomSkinLoader loads from
 
 Texture routes take the headers `X-Username` and `X-Password-Hash`
 (lowercase hex SHA-256 of the SimpleLogin password, as the game sends it).
+SimpleLogin's server hashes that value once more before bcrypt, so entries
+hold `bcrypt(sha256(sha256(password)))`; the service does the same.
+
+Minecraft only applies skin and cape textures from a profile. The elytra
+is always drawn from the cape's wing area, so the launcher puts elytra
+designs into the cape; the `elytra` route and field are kept but unused.
 
 It listens on `127.0.0.1:18765`; nginx proxies `/api/` to it and serves
 `/skins/` directly.
@@ -61,10 +67,14 @@ booting it or joining it:
 | Mod | Server | Why |
 |---|---|---|
 | Ok Zoomer, Lightspeed | removed | Client-only; they crash a dedicated server at startup |
-| `particular-1.20.1-Forge-1.2.7.jar` | must be added (from the client pack; tested on a copy, not yet on the live server) | Its network channel is required on both sides; without it every client is refused with "mismatched mod list" |
+| `particular-1.20.1-Forge-1.2.7.jar` | added (from the client pack, 2026-09-12) | Its network channel is required on both sides; without it every client is refused with "mismatched mod list" |
 
 ## Resetting a player
 
 If someone forgets their password, stop nothing: in the game server
-console run `/simplelogin unregister <name>`. Their next join registers
-the name again with whatever password their launcher has.
+console run `/simplelogin unregister <name>` with the name in **lowercase**
+(SimpleLogin stores names lowercased and the command is case-sensitive:
+`unregister Elmer` says "Registry for player %s does not exist", `unregister
+elmer` works). Their next join registers the name again with whatever
+password their launcher has. New registrations reach `sl_entries.dat`, and
+so the skin service, within about 5 minutes (SimpleLogin's auto-save).

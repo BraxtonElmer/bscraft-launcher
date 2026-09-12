@@ -17,6 +17,7 @@ export function createMocks() {
       console_enabled: false,
       prefer_dgpu: true,
       performance_mode: false,
+      auto_join: true,
       installed_modpack_version: installed ? (scenario === 'update' ? '1.0.0' : '1.0.1') : null,
       installed_mc_version: installed ? '1.20.1' : null,
       installed_forge_version: installed ? '47.4.10' : null,
@@ -85,7 +86,7 @@ export function createMocks() {
     '[14:02:21] [Render thread/DEBUG] [ne.mi.cl.lo.ClientModLoader/]: Generating PackInfo named mod_resources for mod file /mods',
     '[14:02:22] [Render thread/INFO] [minecraft/AtlasSet]: Created: 4096x2048x4 minecraft:textures/atlas/blocks.png-atlas',
     '[14:02:23] [Render thread/WARN] [minecraft/ModelBakery]: Unable to load model: \'examplemod:item/unused\' referenced from: examplemod:unused#inventory',
-    '[14:02:25] [Render thread/INFO] [minecraft/Minecraft]: Connecting to play.example.net, 25565',
+    '[14:02:25] [Render thread/INFO] [minecraft/ConnectScreen]: Connecting to bscraft.zukashix.com, 25565',
   ]
 
   const handlers = {

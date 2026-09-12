@@ -5,8 +5,8 @@ import {
   CheckIcon, ExternalIcon, SearchIcon, ShirtIcon, TrashIcon, UploadIcon, XCircleIcon,
 } from '../../components/Icons'
 import { sanitizeUsername } from '../../lib/format'
-import { readTextureFile, type SkinModel, type Texture, type TextureKind } from '../../lib/skin'
-import type { WardrobeApi } from './useWardrobe'
+import { capeWithWings, readTextureFile, type SkinModel, type Texture, type TextureKind } from '../../lib/skin'
+import type { WardrobeApi, WardrobeKind } from './useWardrobe'
 
 interface Props {
   wardrobe: WardrobeApi
@@ -26,7 +26,7 @@ type Notice = { tone: 'ok' | 'danger'; text: string } | null
 export function WardrobeCard({ wardrobe, tab, onTab }: Props) {
   const [notice, setNotice] = useState<Notice>(null)
   const { drafts, saving } = wardrobe
-  const dot = (k: TextureKind) => (drafts[k] || (k === 'skin' && drafts.model) ? <span className="tab-dot" aria-label="changed" /> : null)
+  const dot = (k: WardrobeKind) => (drafts[k] || (k === 'skin' && drafts.model) ? <span className="tab-dot" aria-label="changed" /> : null)
 
   useEffect(() => { setNotice(null) }, [tab])
 
@@ -47,11 +47,13 @@ export function WardrobeCard({ wardrobe, tab, onTab }: Props) {
         options={[
           { value: 'skin', label: <>Skin{dot('skin')}</> },
           { value: 'cape', label: <>Cape{dot('cape')}</> },
-          { value: 'elytra', label: <>Elytra{dot('elytra')}</> },
+          { value: 'elytra', label: 'Elytra' },
         ]}
       />
 
-      <TexturePane key={tab} kind={tab} wardrobe={wardrobe} disabled={saving} onNotice={setNotice} />
+      {tab === 'elytra'
+        ? <ElytraPane wardrobe={wardrobe} disabled={saving} onNotice={setNotice} />
+        : <TexturePane key={tab} kind={tab} wardrobe={wardrobe} disabled={saving} onNotice={setNotice} />}
 
       {notice && (
         <div className={`status-line ${notice.tone}`}>
@@ -76,7 +78,7 @@ export function WardrobeCard({ wardrobe, tab, onTab }: Props) {
 
 // ── One texture ──────────────────────────────────────────────
 
-function describe(kind: TextureKind, wardrobe: WardrobeApi): { title: string; desc: string } {
+function describe(kind: WardrobeKind, wardrobe: WardrobeApi): { title: string; desc: string } {
   const change = wardrobe.drafts[kind]
   const published = wardrobe.published[kind]
   if (change?.op === 'set') return { title: `New ${kind}`, desc: 'Preview. Not saved yet.' }
@@ -85,19 +87,13 @@ function describe(kind: TextureKind, wardrobe: WardrobeApi): { title: string; de
     if (published) return { title: 'Your skin', desc: wardrobe.drafts.model ? 'New arm style. Not saved yet.' : 'This is what everyone sees in game.' }
     return { title: 'Default skin', desc: 'Upload a 64×64 PNG to wear your own.' }
   }
-  if (kind === 'cape') {
-    if (change) return { title: 'No cape', desc: 'Your cape will be removed when you save.' }
-    if (published) return { title: 'Your cape', desc: 'Shows on your back, and on your elytra unless it has its own.' }
-    return { title: 'No cape', desc: '64×32 PNG, or HD up to 512×256.' }
-  }
-  const capeDesign = wardrobe.current.cape ? "Uses your cape's design." : 'Plain grey wings.'
-  if (change) return { title: 'Default elytra', desc: `Custom elytra will be removed when you save. ${capeDesign}` }
-  if (published) return { title: 'Custom elytra', desc: 'Your elytra has its own design.' }
-  return { title: 'Default elytra', desc: `${capeDesign} Upload a 64×32 elytra texture to give it its own.` }
+  if (change) return { title: 'No cape', desc: 'Your cape will be removed when you save.' }
+  if (published) return { title: 'Your cape', desc: 'Shows on your back. Its wing area is also your elytra design.' }
+  return { title: 'No cape', desc: '64×32 PNG, or HD up to 512×256.' }
 }
 
 function TexturePane({ kind, wardrobe, disabled, onNotice }: {
-  kind: TextureKind
+  kind: WardrobeKind
   wardrobe: WardrobeApi
   disabled: boolean
   onNotice: (n: Notice) => void
@@ -172,6 +168,69 @@ function TexturePane({ kind, wardrobe, disabled, onNotice }: {
   )
 }
 
+// ── Elytra ───────────────────────────────────────────────────
+
+/** Minecraft paints the elytra from the cape texture, so an elytra design is merged into the cape */
+function ElytraPane({ wardrobe, disabled, onNotice }: {
+  wardrobe: WardrobeApi
+  disabled: boolean
+  onNotice: (n: Notice) => void
+}) {
+  const fileRef = useRef<HTMLInputElement>(null)
+  const cape = wardrobe.current.cape
+
+  const pick = async (file: File | undefined) => {
+    if (!file || !cape) return
+    onNotice(null)
+    try {
+      const design = await readTextureFile(file, 'elytra')
+      const merged = await capeWithWings(cape.image, design.texture.image)
+      URL.revokeObjectURL(design.texture.src)
+      wardrobe.setTexture('cape', merged)
+      onNotice({ tone: 'ok', text: 'Elytra design added to your cape. Save to wear it.' })
+    } catch (e) {
+      onNotice({ tone: 'danger', text: e instanceof Error ? e.message : String(e) })
+    }
+  }
+
+  const plain = async () => {
+    if (!cape) return
+    onNotice(null)
+    wardrobe.setTexture('cape', await capeWithWings(cape.image, null))
+  }
+
+  return (
+    <div className="texture-pane">
+      <div className="texture-info">
+        <TextureThumb texture={cape} kind="elytra" />
+        <div className="texture-text">
+          <div className="texture-title">{cape ? 'Elytra design' : 'Default elytra'}</div>
+          <div className="card-desc">
+            {cape
+              ? 'Minecraft paints your elytra from the wing area of your cape. Upload an elytra texture to replace it.'
+              : 'Minecraft paints the elytra from your cape. Add a cape first to give your elytra a design.'}
+          </div>
+        </div>
+      </div>
+      <div className="texture-actions">
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/png"
+          hidden
+          onChange={e => { pick(e.target.files?.[0]); e.target.value = '' }}
+        />
+        <button className="btn sm" onClick={() => fileRef.current?.click()} disabled={disabled || !cape}>
+          <UploadIcon size={14} /> Upload elytra design…
+        </button>
+        {cape && (
+          <button className="btn ghost sm" onClick={plain} disabled={disabled}>Plain wings</button>
+        )}
+      </div>
+    </div>
+  )
+}
+
 /** The raw texture file, drawn crisp, so its pixels can be checked */
 function TextureThumb({ texture, kind }: { texture: Texture | null; kind: TextureKind }) {
   return (
@@ -197,7 +256,7 @@ function ImportRow({ wardrobe, disabled, onNotice }: {
     onNotice(null)
     try {
       const r = await wardrobe.importFrom(name)
-      const what = r.got.length === 3 ? 'skin, cape and elytra' : r.got.join(' and ')
+      const what = r.got.join(' and ')
       const from = r.source === 'bscraft' ? 'on BSCraft' : 'from their Minecraft account'
       onNotice({ tone: 'ok', text: `Copied ${r.name}'s ${what} ${from}. Save to wear ${r.got.length > 1 ? 'them' : 'it'}.` })
       setName('')

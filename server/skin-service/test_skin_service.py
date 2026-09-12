@@ -50,11 +50,15 @@ def auth(user: str, password: str) -> dict:
 def main() -> int:
     tmp = tempfile.mkdtemp(prefix="bsc-skin-test-")
     skins, index, entries = os.path.join(tmp, "skins"), os.path.join(tmp, "index.json"), os.path.join(tmp, "sl_entries.dat")
-    # Same shape SimpleLogin writes: bcrypt(sha256hex(password)), lowercase names
-    stored = bcrypt.hashpw(sha256(b"hunter22").hexdigest().encode(), bcrypt.gensalt(prefix=b"2a")).decode()
+    # Same shape SimpleLogin 1.20.1-1.0.2 writes: bcrypt(sha256hex(sha256hex(password))),
+    # lowercase names (checked against a real registration on the live server)
+    wire = sha256(b"hunter22").hexdigest()
+    stored = bcrypt.hashpw(sha256(wire.encode()).hexdigest().encode(), bcrypt.gensalt(prefix=b"2a")).decode()
+    # A real entry SimpleLogin wrote when a throwaway test account joined the live server
+    real = {"username": "bscteste2e", "password": "$2a$10$yqdvC5ruVAMIK96B.sIGhOSxm/CwRBljD9M0axgG6dKKNHZufNjF6", "gameType": 0}
     with open(entries, "w") as f:
         json.dump([{"username": "testuser", "password": stored, "gameType": 0},
-                   {"username": "olduser", "password": stored, "gameType": 0}], f)
+                   {"username": "olduser", "password": stored, "gameType": 0}, real], f)
     # An index entry in the format written before capes existed
     os.makedirs(os.path.join(skins, "textures"))
     with open(index, "w") as f:
@@ -83,6 +87,9 @@ def main() -> int:
         check("verify: unregistered name", s == 200 and b == {"registered": False, "valid": False}, b)
         s, b = call("POST", "/api/account/verify", json.dumps({"username": "TestUser", "passwordHash": sha256(b"hunter22").hexdigest()}).encode())
         check("verify: right password (case-insensitive name)", s == 200 and b == {"registered": True, "valid": True}, b)
+        real_wire = sha256(b"e2e-Test-Pass-7731").hexdigest()  # what the launcher and the game send
+        s, b = call("POST", "/api/account/verify", json.dumps({"username": "BscTestE2E", "passwordHash": real_wire}).encode())
+        check("verify: entry written by SimpleLogin itself", s == 200 and b == {"registered": True, "valid": True}, b)
         s, b = call("POST", "/api/account/verify", json.dumps({"username": "testuser", "passwordHash": sha256(b"wrong").hexdigest()}).encode())
         check("verify: wrong password", s == 200 and b == {"registered": True, "valid": False}, b)
 

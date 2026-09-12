@@ -12,6 +12,10 @@ pub const LAUNCHER_VERSION: &str = env!("CARGO_PKG_VERSION");
 /// Human-readable launcher brand name used in Minecraft launch args.
 pub const LAUNCHER_NAME: &str = "BSCraftLauncher";
 
+/// The BSCraft game server, as it appears in the in-game server list.
+pub const GAME_SERVER_NAME: &str = "BSCraft";
+pub const GAME_SERVER_ADDRESS: &str = "bscraft.zukashix.com";
+
 // ── External service URLs ──────────────────────────────────────────────────
 
 /// Adoptium (Eclipse Temurin) API — returns JRE download metadata.

@@ -30,6 +30,11 @@ pub struct AppConfig {
     /// Enable Performance Mode: moves flagged mods to a backup folder before launch.
     #[serde(default)]
     pub performance_mode: bool,
+
+    /// Start the game straight into the BSCraft server (Minecraft's quick play).
+    #[serde(default = "default_true")]
+    pub auto_join: bool,
+
     /// Modpack version string last successfully installed (e.g. "1.0.5").
     #[serde(default)]
     pub installed_modpack_version: Option<String>,
@@ -51,6 +56,10 @@ fn default_prefer_dgpu() -> bool {
     true
 }
 
+fn default_true() -> bool {
+    true
+}
+
 impl Default for AppConfig {
     fn default() -> Self {
         let ram_mb = detect_default_ram();
@@ -60,6 +69,7 @@ impl Default for AppConfig {
             console_enabled: false,
             prefer_dgpu: default_prefer_dgpu(),
             performance_mode: false,
+            auto_join: true,
             installed_modpack_version: None,
             installed_mc_version: None,
             installed_forge_version: None,
