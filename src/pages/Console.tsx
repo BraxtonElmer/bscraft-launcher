@@ -1,182 +1,193 @@
-import { useState, useEffect, useRef } from 'react'
-import { invoke } from '@tauri-apps/api/core'
-import { listen } from '@tauri-apps/api/event'
-import type { LogLine, GameExited } from '../types'
+import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { Segmented } from '../components/ui'
+import { ArrowDownIcon, CheckIcon, CopyIcon, EraserIcon, SearchIcon, StopIcon, TerminalIcon } from '../components/Icons'
+import { copyText } from '../lib/clipboard'
+import type { GameSessionApi } from '../hooks/useGameSession'
+import type { LogEntry } from '../types'
 
 interface Props {
-  onGameStopped: () => void
+  game: GameSessionApi
 }
 
-function classifyLine(line: string): string {
-  const lower = line.toLowerCase()
-  if (lower.includes('error') || lower.includes('exception') || lower.includes('crash')) return 'error'
-  if (lower.includes('warn')) return 'warn'
-  if (lower.includes('[main/info]') || lower.includes('[server/info]')) return 'info'
-  return 'default'
-}
+type LevelFilter = 'all' | 'warn' | 'error'
 
-export function ConsolePage({ onGameStopped }: Props) {
-  const [lines, setLines] = useState<string[]>([])
-  const [killing, setKilling] = useState(false)
-  const [gameAlive, setGameAlive] = useState(true)
-  const [exitCode, setExitCode] = useState<number | null>(null)
-  const bodyRef = useRef<HTMLDivElement>(null)
+export function ConsolePage({ game }: Props) {
+  const [query, setQuery] = useState('')
+  const [filter, setFilter] = useState<LevelFilter>('all')
   const [autoScroll, setAutoScroll] = useState(true)
+  const [confirmStop, setConfirmStop] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const bodyRef = useRef<HTMLDivElement>(null)
 
-  // Load existing buffered lines on mount
-  useEffect(() => {
-    invoke<string[]>('get_log_lines').then(setLines).catch(() => {})
-  }, [])
-
-  // Listen for new log lines
-  useEffect(() => {
-    const unlisten = listen<LogLine>('log-line', (e) => {
-      setLines(prev => {
-        const next = [...prev, e.payload.line]
-        return next.length > 5000 ? next.slice(-5000) : next
-      })
-    })
-    return () => { unlisten.then(fn => fn()) }
-  }, [])
-
-  // Listen for game exit — stay open, show exit status
-  useEffect(() => {
-    const unlisten = listen<GameExited>('game-exited', (e) => {
-      setGameAlive(false)
-      setExitCode(e.payload.exit_code)
-      // Add a visible exit line to the console output
-      const code = e.payload.exit_code
-      const msg = code === 0
-        ? '--- Minecraft exited normally (code 0) ---'
-        : `--- Minecraft exited with code ${code} ---`
-      setLines(prev => [...prev, msg])
-    })
-    return () => { unlisten.then(fn => fn()) }
-  }, [])
-
-  // Auto-scroll to bottom when new lines arrive
-  useEffect(() => {
-    if (autoScroll && bodyRef.current) {
-      bodyRef.current.scrollTop = bodyRef.current.scrollHeight
+  const counts = useMemo(() => {
+    let warn = 0, error = 0
+    for (const l of game.lines) {
+      if (l.level === 'warn') warn++
+      else if (l.level === 'error') error++
     }
-  }, [lines, autoScroll])
+    return { warn, error }
+  }, [game.lines])
 
-  // Detect manual scroll up (pause auto-scroll)
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    return game.lines.filter(l =>
+      (filter === 'all' || l.level === 'error' || (filter === 'warn' && l.level === 'warn')) &&
+      (!q || l.raw.toLowerCase().includes(q)))
+  }, [game.lines, query, filter])
+
+  useLayoutEffect(() => {
+    const el = bodyRef.current
+    if (autoScroll && el) el.scrollTop = el.scrollHeight
+  }, [visible, autoScroll])
+
+  useEffect(() => {
+    if (!confirmStop) return
+    const t = window.setTimeout(() => setConfirmStop(false), 3000)
+    return () => window.clearTimeout(t)
+  }, [confirmStop])
+
   const handleScroll = () => {
-    if (!bodyRef.current) return
-    const { scrollTop, scrollHeight, clientHeight } = bodyRef.current
-    setAutoScroll(scrollHeight - scrollTop - clientHeight < 60)
+    const el = bodyRef.current
+    if (el) setAutoScroll(el.scrollHeight - el.scrollTop - el.clientHeight < 40)
   }
 
-  const handleKill = async () => {
-    setKilling(true)
-    try {
-      await invoke('kill_game')
-    } catch {
-      // ignore
-    } finally {
-      setKilling(false)
+  const handleCopy = async () => {
+    if (await copyText(visible.map(l => l.raw).join('\n'))) {
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 1600)
     }
   }
 
-  // Close console and return to home page
-  const handleClose = () => {
-    onGameStopped()
+  const handleStop = () => {
+    if (!confirmStop) { setConfirmStop(true); return }
+    setConfirmStop(false)
+    game.kill()
   }
+
+  const status = game.running
+    ? { tone: 'live', text: 'Running' }
+    : game.exitCode === null
+    ? { tone: 'idle', text: 'Not running' }
+    : game.stoppedByUser
+    ? { tone: 'idle', text: 'Stopped' }
+    : game.exitCode === 0
+    ? { tone: 'ok', text: 'Exited normally' }
+    : { tone: 'err', text: `Exited with code ${game.exitCode}` }
 
   return (
-    <div className="console-page fade-in">
-      {/* Header */}
-      <div className="console-header">
-        <div className="console-title">
-          {/* Status dot: green when running, grey when exited */}
-          <span className={`console-dot${gameAlive ? '' : ' exited'}`} />
-          Minecraft Console
-          {!gameAlive && exitCode !== null && (
-            <span style={{ fontSize: 11, color: exitCode === 0 ? 'var(--success)' : 'var(--danger)', marginLeft: 8 }}>
-              exited {exitCode === 0 ? 'normally' : `(code ${exitCode})`}
-            </span>
-          )}
+    <div className="page console page-enter">
+      <header className="page-header row">
+        <div>
+          <h1>Console</h1>
+          <p>Live output from Minecraft. Useful when something crashes or a mod misbehaves.</p>
         </div>
-
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          {/* Kill button — only when game is alive */}
-          {gameAlive && (
-            <button
-              id="btn-kill-minecraft"
-              className="kill-btn"
-              onClick={handleKill}
-              disabled={killing}
-            >
-              {killing ? 'Killing…' : 'Kill Process'}
-            </button>
-          )}
-
-          {/* Close console — only available after game exits */}
-          {gameAlive ? (
-            <span style={{
-              fontSize: 11,
-              color: 'var(--text-muted)',
-              fontStyle: 'italic',
-              padding: '0 4px',
-            }}>
-              Close available after exit
-            </span>
-          ) : (
-            <button
-              id="btn-close-console"
-              className="close-console-btn"
-              onClick={handleClose}
-              title="Close console and return to launcher"
-            >
-              ✕ Close
-            </button>
-          )}
+        <div className={`status-pill ${status.tone}`}>
+          <span className="status-dot" />
+          {status.text}
+          {game.lines.length > 0 && <span className="pill-count">{game.lines.length.toLocaleString()} lines</span>}
         </div>
-      </div>
+      </header>
 
-      {/* Log body */}
-      <div
-        className="console-body"
-        ref={bodyRef}
-        onScroll={handleScroll}
-        id="console-log-output"
-      >
-        {lines.length === 0 && (
-          <div style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>
-            Waiting for Minecraft output…
-          </div>
+      <div className="console-toolbar">
+        <label className="search">
+          <SearchIcon size={15} />
+          <input
+            id="console-filter"
+            type="text"
+            placeholder="Filter log…"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            spellCheck={false}
+          />
+        </label>
+        <Segmented<LevelFilter>
+          size="sm"
+          label="Log level"
+          value={filter}
+          onChange={setFilter}
+          options={[
+            { value: 'all', label: 'All' },
+            { value: 'warn', label: <>Warnings <span className="seg-count warn">{counts.warn}</span></> },
+            { value: 'error', label: <>Errors <span className="seg-count err">{counts.error}</span></> },
+          ]}
+        />
+        <div className="toolbar-spacer" />
+        <button className="icon-btn" onClick={handleCopy} title="Copy visible lines" aria-label="Copy visible lines" disabled={!visible.length}>
+          {copied ? <CheckIcon size={16} /> : <CopyIcon size={16} />}
+        </button>
+        <button className="icon-btn" onClick={game.clearLog} title="Clear view" aria-label="Clear view" disabled={!game.lines.length}>
+          <EraserIcon size={16} />
+        </button>
+        {game.running && (
+          <button
+            id="btn-kill-minecraft"
+            className={`btn sm ${confirmStop ? 'danger' : 'ghost danger-text'}`}
+            onClick={handleStop}
+            title="Force-stop Minecraft (unsaved progress is lost)"
+          >
+            <StopIcon size={14} /> {confirmStop ? 'Click to confirm' : 'Stop game'}
+          </button>
         )}
-        {lines.map((line, i) => (
-          <div key={i} className={`log-line ${classifyLine(line)}`}>
-            {line}
-          </div>
-        ))}
       </div>
 
-      {/* Jump to bottom pill */}
-      {!autoScroll && (
-        <div
-          style={{
-            position: 'absolute',
-            bottom: 12,
-            right: 16,
-            fontSize: 11,
-            color: 'var(--text-muted)',
-            cursor: 'pointer',
-            background: 'var(--bg-2)',
-            border: '1px solid var(--border-2)',
-            borderRadius: 'var(--radius-sm)',
-            padding: '4px 10px',
-          }}
-          onClick={() => {
-            setAutoScroll(true)
-            if (bodyRef.current) bodyRef.current.scrollTop = bodyRef.current.scrollHeight
-          }}
-        >
-          ↓ Jump to bottom
+      <div className="console-panel">
+        <div className="console-body" ref={bodyRef} onScroll={handleScroll} id="console-log-output">
+          {visible.length === 0 ? (
+            <div className="console-empty">
+              <TerminalIcon size={28} />
+              {game.lines.length === 0 ? (
+                <>
+                  <strong>{game.running ? 'Waiting for output…' : 'Nothing here yet'}</strong>
+                  <span>{game.running ? 'Minecraft is starting up.' : 'Launch Minecraft and its log will stream here live.'}</span>
+                </>
+              ) : (
+                <>
+                  <strong>No matching lines</strong>
+                  <span>Try a different filter.</span>
+                </>
+              )}
+            </div>
+          ) : (
+            visible.map(entry => <LogRow key={entry.id} entry={entry} />)
+          )}
         </div>
-      )}
+
+        {!autoScroll && visible.length > 0 && (
+          <button
+            className="jump-btn"
+            onClick={() => {
+              setAutoScroll(true)
+              const el = bodyRef.current
+              if (el) el.scrollTop = el.scrollHeight
+            }}
+          >
+            <ArrowDownIcon size={14} /> Jump to latest
+          </button>
+        )}
+      </div>
     </div>
   )
 }
+
+function shortSource(source: string): string {
+  const last = source.split('/').filter(Boolean).pop() ?? ''
+  return last.split('.').pop() ?? last
+}
+
+const LEVEL_LABEL: Record<string, string> = { info: 'INFO', warn: 'WARN', error: 'ERROR', debug: 'DEBUG' }
+
+const LogRow = memo(function LogRow({ entry }: { entry: LogEntry }) {
+  const src = entry.source ? shortSource(entry.source) : ''
+  return (
+    <div className={`log-row ${entry.level}`}>
+      {entry.time && <span className="log-time">{entry.time}</span>}
+      {entry.level !== 'plain' && entry.time && (
+        <span className={`log-tag ${entry.level}`} title={entry.thread}>{LEVEL_LABEL[entry.level]}</span>
+      )}
+      <span className="log-msg">
+        {src && <span className="log-src">{src}</span>}
+        {entry.message}
+      </span>
+    </div>
+  )
+})

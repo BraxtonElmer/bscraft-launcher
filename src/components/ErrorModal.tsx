@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { invoke } from '@tauri-apps/api/core'
+import { copyText } from '../lib/clipboard'
+import { AlertIcon, CheckIcon, CopyIcon } from './Icons'
 
 interface Props {
   error: string
@@ -9,6 +11,7 @@ interface Props {
 
 export function ErrorModal({ error, context, onClose }: Props) {
   const [reportPath, setReportPath] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     invoke<string>('write_error_report', { context, message: error })
@@ -16,44 +19,55 @@ export function ErrorModal({ error, context, onClose }: Props) {
       .catch(() => {})
   }, [error, context])
 
-  return (
-    <div className="error-modal-overlay" onClick={onClose}>
-      <div className="error-modal-card" onClick={e => e.stopPropagation()}>
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
 
-        {/* Header */}
-        <div className="error-modal-header">
-          <svg className="error-modal-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
-              stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          <span className="error-modal-title">Something went wrong</span>
+  const handleCopy = async () => {
+    const text = `${context}\n\n${error}${reportPath ? `\n\nReport: ${reportPath}` : ''}`
+    if (await copyText(text)) {
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 1600)
+    }
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div
+        className="modal"
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="error-title"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="modal-head">
+          <div className="modal-icon danger"><AlertIcon size={20} /></div>
+          <div>
+            <h2 id="error-title" className="modal-title">Something went wrong</h2>
+            <p className="modal-sub">{context}</p>
+          </div>
         </div>
 
-        {/* Context label */}
-        <div className="error-modal-context">{context}</div>
+        <pre className="modal-code">{error}</pre>
 
-        {/* Full error text — selectable & scrollable */}
-        <textarea
-          className="error-modal-text"
-          readOnly
-          value={error}
-        />
-
-        {/* Error report path */}
         {reportPath && (
-          <div className="error-modal-report">
-            <span className="error-modal-report-label">Report saved:</span>
-            <code className="error-modal-report-path">{reportPath}</code>
+          <div className="modal-report">
+            <span>Report saved to</span>
+            <code>{reportPath}</code>
           </div>
         )}
 
-        {/* Footer */}
-        <div className="error-modal-footer">
-          <button id="btn-error-close" className="error-modal-close" onClick={onClose}>
+        <div className="modal-foot">
+          <button className="btn ghost" onClick={handleCopy}>
+            {copied ? <CheckIcon size={15} /> : <CopyIcon size={15} />}
+            {copied ? 'Copied' : 'Copy details'}
+          </button>
+          <button id="btn-error-close" className="btn" onClick={onClose} autoFocus>
             Close
           </button>
         </div>
-
       </div>
     </div>
   )

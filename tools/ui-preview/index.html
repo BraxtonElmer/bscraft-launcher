@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>BSCraft Launcher (preview harness)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.26.4/babel.min.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <pre id="boot-error" style="color:#f88;font:12px monospace;position:fixed;top:0;left:0;z-index:9999;white-space:pre-wrap"></pre>
+  <script type="module">
+    import * as React from 'https://esm.sh/react@19.1.0'
+    import * as ReactDOMClient from 'https://esm.sh/react-dom@19.1.0/client?deps=react@19.1.0'
+    import * as JsxRuntime from 'https://esm.sh/react@19.1.0/jsx-runtime'
+    import { createMocks } from './mocks.js'
+
+    const mocks = createMocks()
+    const external = {
+      react: React,
+      'react-dom/client': ReactDOMClient,
+      'react/jsx-runtime': JsxRuntime,
+      ...mocks.modules,
+    }
+
+    const code = new Map()     // url -> transformed js, or null for css
+    const alias = new Map()    // requested path -> url
+    const registry = new Map()
+
+    const resolve = (from, spec) => new URL(spec, location.origin + from).pathname
+
+    async function fetchWithExt(path) {
+      for (const cand of [path, path + '.tsx', path + '.ts', path + '/index.ts']) {
+        if (!/\.(tsx?|css)$/.test(cand)) continue
+        const res = await fetch(cand)
+        if (res.ok) return { url: cand, text: await res.text() }
+      }
+      throw new Error('Cannot resolve ' + path)
+    }
+
+    async function load(path) {
+      if (alias.has(path)) return
+      if (path.endsWith('.css')) {
+        const css = await (await fetch(path)).text()
+        const s = document.createElement('style')
+        s.textContent = css
+        document.head.appendChild(s)
+        alias.set(path, path)
+        code.set(path, null)
+        return
+      }
+      const { url, text } = await fetchWithExt(path)
+      alias.set(path, url)
+      if (code.has(url)) return
+      const out = Babel.transform(text, {
+        filename: url,
+        presets: [['typescript', { isTSX: url.endsWith('.tsx'), allExtensions: true }], ['react', { runtime: 'automatic' }]],
+        plugins: ['transform-modules-commonjs'],
+      }).code
+      code.set(url, out)
+      for (const m of out.matchAll(/require\("([^"]+)"\)/g)) {
+        if (m[1].startsWith('.')) await load(resolve(url, m[1]))
+      }
+    }
+
+    function execute(url) {
+      if (registry.has(url)) return registry.get(url).exports
+      const js = code.get(url)
+      const module = { exports: {} }
+      registry.set(url, module)
+      if (js === null) return module.exports
+      const req = spec => {
+        if (external[spec]) return external[spec]
+        if (!spec.startsWith('.')) throw new Error('Unknown module ' + spec)
+        return execute(alias.get(resolve(url, spec)))
+      }
+      new Function('require', 'module', 'exports', js + '\n//# sourceURL=' + url)(req, module, module.exports)
+      return module.exports
+    }
+
+    try {
+      await load('/src/main.tsx')
+      execute(alias.get('/src/main.tsx'))
+    } catch (e) {
+      document.getElementById('boot-error').textContent = String(e.stack || e)
+      console.error(e)
+    }
+  </script>
+</body>
+</html>

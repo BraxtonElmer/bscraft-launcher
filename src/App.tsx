@@ -1,103 +1,141 @@
-import { useState, useEffect } from 'react'
-import { invoke } from '@tauri-apps/api/core'
+import { useEffect, useState } from 'react'
 import { listen } from '@tauri-apps/api/event'
 import { getVersion } from '@tauri-apps/api/app'
-import type { AppConfig, ActiveOperation } from './types'
+import { useConfig } from './hooks/useConfig'
+import { useOperation } from './hooks/useOperation'
+import { useGameSession } from './hooks/useGameSession'
+import { useLauncher } from './hooks/useLauncher'
+import { NavRail } from './components/NavRail'
 import { TitleBar } from './components/TitleBar'
-import { ProgressOverlay } from './components/ProgressOverlay'
+import { PixelScene, useSceneTime, type Scenery } from './components/PixelScene'
+import { ActivityCard } from './components/ActivityCard'
+import { Toasts, useToasts } from './components/Toasts'
+import { ErrorModal } from './components/ErrorModal'
 import { CloseWarningModal } from './components/CloseWarningModal'
-import { MainPage } from './pages/Main'
+import { HomePage } from './pages/Home'
 import { SettingsPage } from './pages/Settings'
 import { ConsolePage } from './pages/Console'
+import type { Page } from './types'
+
+// Purely cosmetic, so it lives in the webview rather than the Rust config
+const SCENERY_KEY = 'bscraft.scenery'
+const SCENERIES: Scenery[] = ['auto', 'dawn', 'day', 'dusk', 'night']
+
+function loadScenery(): Scenery {
+  try {
+    const v = localStorage.getItem(SCENERY_KEY) as Scenery | null
+    if (v && SCENERIES.includes(v)) return v
+  } catch { /* storage unavailable */ }
+  return 'auto'
+}
 
 export default function App() {
-  const [config, setConfig] = useState<AppConfig>({
-    username: '',
-    ram_mb: 2048,
-    console_enabled: false,
-    prefer_dgpu: true,
-    performance_mode: false,
-    installed_modpack_version: null,
-    installed_mc_version: null,
-    installed_forge_version: null,
-  })
-  const [configLoaded, setConfigLoaded] = useState(false)
-  const [settingsOpen, setSettingsOpen] = useState(false)
-  const [gameRunning, setGameRunning] = useState(false)
-  const [showConsole, setShowConsole] = useState(false)
-  const [launcherVersion, setLauncherVersion] = useState('0.1.0')
-  const [operation, setOperation] = useState<ActiveOperation | null>(null)
+  const cfg = useConfig()
+  const op = useOperation()
+  const game = useGameSession()
+  const { toasts, notify, dismiss } = useToasts()
+
+  const [page, setPage] = useState<Page>('home')
+  const [launcherVersion, setLauncherVersion] = useState('')
   const [showCloseWarning, setShowCloseWarning] = useState(false)
+  const [scenery, setScenery] = useState<Scenery>(loadScenery)
+  const sceneTime = useSceneTime(scenery)
+
+  const launcher = useLauncher({
+    cfg,
+    op,
+    game,
+    notify,
+    onLaunched: () => { if (cfg.config.console_enabled) setPage('console') },
+  })
 
   useEffect(() => {
-    invoke<AppConfig>('get_config')
-      .then(cfg => { setConfig(cfg); setConfigLoaded(true) })
-      .catch(() => setConfigLoaded(true))
     getVersion().then(setLauncherVersion).catch(() => {})
   }, [])
 
-  // Listen for the Rust window-close guard event
+  // The Rust close guard asks us to confirm when Minecraft is running
   useEffect(() => {
-    const unlisten = listen('close-game-warning', () => {
-      setShowCloseWarning(true)
-    })
+    const unlisten = listen('close-game-warning', () => setShowCloseWarning(true))
     return () => { unlisten.then(fn => fn()) }
   }, [])
 
-  const handleGameStart = () => {
-    setGameRunning(true)
-    if (config.console_enabled) setShowConsole(true)
+  // Surface crashes even when the console isn't open
+  useEffect(() => {
+    if (!game.exitSeq || game.exitCode === 0 || game.stoppedByUser || page === 'console') return
+    notify({
+      tone: 'error',
+      title: 'Minecraft closed unexpectedly',
+      body: `Exit code ${game.exitCode}. The log may show what went wrong.`,
+      action: { label: 'View log', onClick: () => setPage('console') },
+    })
+  }, [game.exitSeq])
+
+  const changeScenery = (s: Scenery) => {
+    setScenery(s)
+    try { localStorage.setItem(SCENERY_KEY, s) } catch { /* storage unavailable */ }
   }
 
-  const handleGameStopped = () => {
-    setGameRunning(false)
-    setShowConsole(false)
-  }
-
-  const handleConfigChange = (newConfig: AppConfig) => setConfig(newConfig)
-
-  if (!configLoaded) return (
-    <div className="app-shell">
-      <TitleBar settingsOpen={false} consoleOpen={false} onSettingsClose={() => {}} />
-    </div>
-  )
+  const operation = op.operation
+  const showActivity =
+    !!operation && (page === 'console' || (page === 'settings' && operation.kind === 'install'))
 
   return (
-    <div className="app-shell">
-      <TitleBar
-        settingsOpen={settingsOpen}
-        consoleOpen={showConsole}
-        onSettingsClose={() => setSettingsOpen(false)}
+    <div className="app" data-time={sceneTime}>
+      <NavRail
+        page={page}
+        onNavigate={setPage}
+        gameRunning={game.running}
+        working={!!operation}
+        launcherVersion={launcherVersion}
       />
-      <div className="app-content">
-        {showConsole ? (
-          <ConsolePage onGameStopped={handleGameStopped} />
-        ) : settingsOpen ? (
-          <SettingsPage
-            config={config}
-            onConfigChange={handleConfigChange}
-            launcherVersion={launcherVersion}
-            operation={operation}
-            onOperation={setOperation}
-          />
-        ) : (
-          <MainPage
-            config={config}
-            onConfigChange={handleConfigChange}
-            onGameStart={handleGameStart}
-            onSettingsOpen={() => setSettingsOpen(true)}
-            launcherVersion={launcherVersion}
-            gameRunning={gameRunning}
-            operation={operation}
-            onOperation={setOperation}
-          />
+
+      <main className={`stage on-${page}`}>
+        <PixelScene
+          time={sceneTime}
+          paused={page !== 'home' || game.running}
+          title={page === 'home'}
+          className={page !== 'home' ? 'dimmed' : ''}
+        />
+        <TitleBar />
+
+        {cfg.loaded && (
+          page === 'home' ? (
+            <HomePage
+              launcher={launcher}
+              config={cfg.config}
+              operation={operation}
+              startedAt={game.startedAt}
+              onNavigate={setPage}
+              onStopGame={game.kill}
+            />
+          ) : page === 'settings' ? (
+            <SettingsPage
+              launcher={launcher}
+              config={cfg.config}
+              persist={cfg.persist}
+              operation={operation}
+              launcherVersion={launcherVersion}
+              scenery={scenery}
+              onSceneryChange={changeScenery}
+            />
+          ) : (
+            <ConsolePage game={game} />
+          )
         )}
 
-        {/* Progress overlay floats above all page content */}
-        {operation && !showConsole && <ProgressOverlay operation={operation} />}
-      </div>
+        {showActivity && operation && (
+          <ActivityCard operation={operation} onClick={() => setPage('home')} />
+        )}
+        <Toasts toasts={toasts} onDismiss={dismiss} />
+      </main>
 
-      {/* Close warning — shown when user closes window while Minecraft is running */}
+      {launcher.error && (
+        <ErrorModal
+          error={launcher.error.message}
+          context={launcher.error.context}
+          onClose={launcher.dismissError}
+        />
+      )}
       {showCloseWarning && (
         <CloseWarningModal onCancel={() => setShowCloseWarning(false)} />
       )}

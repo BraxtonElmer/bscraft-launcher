@@ -119,22 +119,37 @@ export interface GameExited {
   exit_code: number;
 }
 
+export interface VerifyProgress {
+  step: string;
+  detail: string;
+  percent: number;
+  files_done?: number;
+  files_total?: number;
+}
+
 // ── UI state ────────────────────────────────────────────────
 
-/** Drives the play button label and enabled state */
-export type LauncherPhase =
-  | 'init'            // First load, nothing checked yet
-  | 'launcher-update' // Launcher update available (hard block)
-  | 'updating-launcher' // Downloading launcher update
-  | 'install'         // Runtime/MC/Forge not installed
-  | 'installing'      // Currently installing
-  | 'syncing'         // Modpack files downloading
-  | 'ready'           // All good, can play
-  | 'launching'       // Game process starting
-  | 'running'         // Game is running
-  | 'error';          // Something went wrong
+export type Page = 'home' | 'console' | 'settings';
+
+/** Drives the play button label and enabled state (game running is tracked separately) */
+export type LaunchStatus =
+  | 'init'       // First load, nothing checked yet
+  | 'offline'    // Not installed and the server is unreachable
+  | 'ready'      // Can install / play
+  | 'busy'       // Installing, updating or syncing
+  | 'launching'  // Game process starting
+  | 'error';     // Last action failed — next click re-runs startup checks
+
+export type OperationKind =
+  | 'install'
+  | 'modpack-update'
+  | 'launcher-update'
+  | 'check'
+  | 'verify'
+  | 'repair';
 
 export interface ActiveOperation {
+  kind: OperationKind;
   title: string;
   detail: string;
   file: string;
@@ -143,4 +158,41 @@ export interface ActiveOperation {
   speedBps: number;
   filesDone: number;
   filesTotal: number;
+  bytesDone: number;
+  bytesTotal: number;
+  /** 1-based step within a multi-step flow; 0 = no step indicator */
+  step: number;
+  stepCount: number;
+  /** No meaningful percentage yet */
+  indeterminate: boolean;
+}
+
+export interface TaskResult {
+  state: 'busy' | 'done' | 'error';
+  message: string;
+}
+
+export interface ErrorInfo {
+  message: string;
+  context: string;
+}
+
+export type LogLevel = 'info' | 'warn' | 'error' | 'debug' | 'plain';
+
+export interface LogEntry {
+  id: number;
+  raw: string;
+  time: string;
+  thread: string;
+  level: LogLevel;
+  source: string;
+  message: string;
+}
+
+export interface Toast {
+  id: number;
+  tone: 'success' | 'error' | 'info';
+  title: string;
+  body?: string;
+  action?: { label: string; onClick: () => void };
 }

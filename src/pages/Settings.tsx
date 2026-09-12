@@ -1,446 +1,342 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
 import { invoke } from '@tauri-apps/api/core'
-import { listen } from '@tauri-apps/api/event'
-import type {
-  AppConfig,
-  VerifyAllResult,
-  UpdateCheckResult,
-  ModpackManifest,
-  SyncProgress,
-  DownloadProgress,
-  InstallProgress,
-  ActiveOperation,
-  GpuInfo,
-} from '../types'
+import { ProgressBar, Segmented, Spinner, Toggle, describeOperation } from '../components/ui'
+import {
+  AlertIcon, CheckIcon, ChevronRightIcon, ChipIcon, ImageIcon, InfoIcon,
+  MemoryIcon, RefreshIcon, ShieldCheckIcon, SlidersIcon, WrenchIcon, XCircleIcon,
+} from '../components/Icons'
+import { formatRam } from '../lib/format'
+import type { Scenery } from '../components/PixelScene'
+import type { LauncherApi } from '../hooks/useLauncher'
+import type { ActiveOperation, AppConfig, GpuInfo, OperationKind, TaskResult } from '../types'
 
 interface Props {
+  launcher: LauncherApi
   config: AppConfig
-  onConfigChange: (c: AppConfig) => void
-  launcherVersion: string
+  persist: (partial: Partial<AppConfig>) => Promise<void>
   operation: ActiveOperation | null
-  onOperation: (op: ActiveOperation | null) => void
+  launcherVersion: string
+  scenery: Scenery
+  onSceneryChange: (s: Scenery) => void
 }
 
-type BtnState = 'idle' | 'busy' | 'done' | 'error'
+const RAM_MIN = 512
+const RAM_STEP = 256
 
-interface BtnResult { state: BtnState; message: string }
-
-export function SettingsPage({ config, onConfigChange, launcherVersion, onOperation }: Props) {
+export function SettingsPage({ launcher, config, persist, operation, launcherVersion, scenery, onSceneryChange }: Props) {
   const [systemRam, setSystemRam] = useState(8192)
   const [ram, setRam] = useState(config.ram_mb)
-  const [consoleEnabled, setConsoleEnabled] = useState(config.console_enabled)
-  const [preferDgpu, setPreferDgpu] = useState(config.prefer_dgpu)
-  const [gpus, setGpus] = useState<GpuInfo[]>([])
-  const [checkResult, setCheckResult] = useState<BtnResult | null>(null)
-  const [verifyResult, setVerifyResult] = useState<BtnResult | null>(null)
-  const [verifyDetail, setVerifyDetail] = useState<VerifyAllResult | null>(null)
-  const [repairing, setRepairing] = useState(false)
+  const [gpus, setGpus] = useState<GpuInfo[] | null>(null)
 
-  useEffect(() => {
-    invoke<number>('get_system_ram').then(setSystemRam).catch(() => {})
-  }, [])
+  useEffect(() => { invoke<number>('get_system_ram').then(setSystemRam).catch(() => {}) }, [])
+  useEffect(() => { invoke<GpuInfo[]>('get_gpus').then(setGpus).catch(() => setGpus([])) }, [])
+  useEffect(() => { setRam(config.ram_mb) }, [config.ram_mb])
 
-  useEffect(() => {
-    invoke<GpuInfo[]>('get_gpus').then(setGpus).catch(() => setGpus([]))
-  }, [])
+  const commitRam = (mb: number) => { if (mb !== config.ram_mb) persist({ ram_mb: mb }) }
 
-  useEffect(() => {
-    setPreferDgpu(config.prefer_dgpu)
-  }, [config.prefer_dgpu])
+  const ramMax = Math.max(systemRam, RAM_MIN + RAM_STEP)
+  const fill = ((ram - RAM_MIN) / (ramMax - RAM_MIN)) * 100
+  const presets = [4, 6, 8, 12, 16].filter(gb => gb * 1024 <= systemRam * 0.8)
+  const ramHint =
+    ram > systemRam * 0.75
+      ? { tone: 'warn', text: 'That leaves little memory for Windows — expect stutter or crashes.' }
+      : ram < 4096
+      ? { tone: 'warn', text: 'Large modpacks usually need at least 4 GB.' }
+      : ram < 6144
+      ? { tone: 'info', text: 'Works for most setups. 6 GB or more helps with shaders and big bases.' }
+      : { tone: 'ok', text: 'Plenty of room for a large modpack.' }
 
-  // Progress listeners for this page's operations
-  useEffect(() => {
-    const unlisteners = [
-      listen<DownloadProgress>('download-progress', e => {
-        const p = e.payload
-        onOperation({
-          title: 'Downloading…',
-          detail: p.detail,
-          file: p.file,
-          filePercent: p.percent,
-          overallPercent: p.percent,
-          speedBps: p.speed_bps,
-          filesDone: 0,
-          filesTotal: 0,
-        })
-      }),
-      listen<InstallProgress>('install-progress', e => {
-        const p = e.payload
-        onOperation({
-          title: p.stage,
-          detail: p.detail,
-          file: '',
-          filePercent: 0,
-          overallPercent: p.percent,
-          speedBps: 0,
-          filesDone: p.files_done,
-          filesTotal: p.files_total,
-        })
-      }),
-      listen<SyncProgress>('sync-progress', e => {
-        const p = e.payload
-        onOperation({
-          title: 'Syncing Modpack',
-          detail: '',
-          file: p.file,
-          filePercent: 0,
-          overallPercent: p.overall_percent,
-          speedBps: 0,
-          filesDone: p.files_done,
-          filesTotal: p.files_total,
-        })
-      }),
-    ]
-    return () => { unlisteners.forEach(p => p.then(fn => fn())) }
-  }, [])
-
-  // ── Persist config helper ──────────────────────────────────
-  const persistConfig = (partial: Partial<AppConfig>) => {
-    const updated = { ...config, ...partial }
-    onConfigChange(updated)
-    invoke('save_config', { config: updated }).catch(() => {})
-  }
-
-  // ── Check for Updates ──────────────────────────────────────
-  const handleCheckUpdates = async () => {
-    setCheckResult({ state: 'busy', message: '' })
-    onOperation({ title: 'Checking for Updates', detail: 'Contacting servers…', file: '', filePercent: 0, overallPercent: 0, speedBps: 0, filesDone: 0, filesTotal: 0 })
-    try {
-      // Always load fresh config from Rust to get the real installed version
-      const [freshConfigRes, launcherRes, manifestRes] = await Promise.allSettled([
-        invoke<AppConfig>('get_config'),
-        invoke<UpdateCheckResult>('check_launcher_update'),
-        invoke<ModpackManifest>('fetch_manifest'),
-      ])
-
-      const freshConfig = freshConfigRes.status === 'fulfilled' ? freshConfigRes.value : config
-      if (freshConfigRes.status === 'fulfilled') onConfigChange(freshConfig)
-
-      const parts: string[] = []
-      let needsLauncherUpdate = false
-      let needsModpackUpdate = false
-      let latestModpackVersion = ''
-
-      if (launcherRes.status === 'fulfilled') {
-        needsLauncherUpdate = launcherRes.value.has_update
-        parts.push(needsLauncherUpdate
-          ? `Launcher update: v${launcherRes.value.latest_version} available`
-          : 'Launcher is up to date')
-      } else {
-        parts.push('Launcher: could not check (server unreachable)')
-      }
-
-      if (manifestRes.status === 'fulfilled') {
-        latestModpackVersion = manifestRes.value.modpack_version
-        const installedVersion = freshConfig.installed_modpack_version
-        needsModpackUpdate = !installedVersion || installedVersion !== latestModpackVersion
-        parts.push(needsModpackUpdate
-          ? `Modpack update: v${latestModpackVersion} available`
-          : `Modpack v${installedVersion}: up to date`)
-      } else {
-        parts.push('Modpack: could not check (server unreachable)')
-      }
-
-      setCheckResult({ state: 'done', message: parts.join(' · ') })
-      onOperation(null)
-
-      // ── Auto-start updates if anything is available ──────────────────
-      if (needsLauncherUpdate) {
-        // Launcher update takes priority — it restarts the app
-        setCheckResult({ state: 'busy', message: 'Applying launcher update…' })
-        onOperation({ title: 'Updating Launcher', detail: 'Downloading…', file: '', filePercent: 0, overallPercent: 0, speedBps: 0, filesDone: 0, filesTotal: 1 })
-        await invoke('apply_launcher_update').catch((e: any) => {
-          setCheckResult({ state: 'error', message: `Launcher update failed: ${e}` })
-        })
-        onOperation(null)
-      } else if (needsModpackUpdate && manifestRes.status === 'fulfilled') {
-        // Modpack-only update — may also need new MC / Forge versions
-        const newManifest = manifestRes.value
-        setCheckResult({ state: 'busy', message: `Updating modpack to v${latestModpackVersion}…` })
-        try {
-          // Check if Minecraft version changed
-          const mcChanged = freshConfig.installed_mc_version !== newManifest.minecraft_version
-          const forgeChanged = freshConfig.installed_forge_version !== newManifest.forge_version
-
-          if (mcChanged) {
-            setCheckResult({ state: 'busy', message: `Installing Minecraft ${newManifest.minecraft_version}…` })
-            await invoke('install_minecraft', { mcVersion: newManifest.minecraft_version })
-          }
-
-          // Reinstall Forge if MC or Forge version changed (Forge is tied to MC version)
-          if (mcChanged || forgeChanged) {
-            setCheckResult({ state: 'busy', message: `Installing Forge ${newManifest.forge_version}…` })
-            await invoke('install_forge', {
-              mcVersion: newManifest.minecraft_version,
-              forgeVersion: newManifest.forge_version,
-            })
-          }
-
-          // Sync modpack files (remove_deleted: true cleans up dropped mods)
-          setCheckResult({ state: 'busy', message: `Syncing modpack files…` })
-          await invoke('sync_modpack', { removeDeleted: true })
-
-          // Re-apply performance mode if it was enabled (sync restores all files)
-          if (freshConfig.performance_mode) {
-            await invoke('apply_performance_mode', { enabled: true }).catch(() => {})
-          }
-          const updatedConfig = await invoke<AppConfig>('get_config').catch(() => freshConfig)
-          onConfigChange(updatedConfig)
-          setCheckResult({ state: 'done', message: `Modpack updated to v${latestModpackVersion}` })
-        } catch (e: any) {
-          setCheckResult({ state: 'error', message: `Modpack update failed: ${e}` })
-        } finally {
-          onOperation(null)
-        }
-      }
-    } catch (e: any) {
-      setCheckResult({ state: 'error', message: String(e) })
-      onOperation(null)
-    }
-  }
-
-  // ── Verify Files ───────────────────────────────────────────
-  const handleVerify = async () => {
-    setVerifyResult({ state: 'busy', message: '' })
-    setVerifyDetail(null)
-    onOperation({ title: 'Verifying Files', detail: 'Starting…', file: '', filePercent: 0, overallPercent: 0, speedBps: 0, filesDone: 0, filesTotal: 0 })
-
-    // Listen for verify-progress events while running
-    const unlisten = await listen<{ step: string; detail: string; percent: number }>(
-      'verify-progress', e => {
-        const { detail, percent } = e.payload
-        onOperation({ title: 'Verifying Files', detail, file: '', filePercent: 0, overallPercent: percent, speedBps: 0, filesDone: 0, filesTotal: 0 })
-      }
-    )
-
-    try {
-      const result = await invoke<VerifyAllResult>('verify_all')
-      unlisten()
-      setVerifyDetail(result)
-
-      const issues: string[] = []
-      if (!result.jre_ok) issues.push('Java runtime missing')
-      if (!result.minecraft_ok) issues.push('Minecraft client missing')
-      if (!result.forge_ok) issues.push('Forge not installed')
-      if (result.modpack_failed.length > 0) issues.push(`${result.modpack_failed.length} modpack files failed`)
-      if (!result.server_reachable) issues.push('(server unreachable — modpack not checked)')
-
-      if (issues.length === 0) {
-        setVerifyResult({ state: 'done', message: `All OK · ${result.modpack_total} modpack files verified` })
-      } else {
-        setVerifyResult({ state: 'error', message: issues.join(' · ') })
-      }
-    } catch (e: any) {
-      unlisten()
-      setVerifyResult({ state: 'error', message: String(e) })
-    } finally {
-      onOperation(null)
-    }
-  }
-
-  // ── Repair failed modpack files ────────────────────────────
-  const handleRepair = async () => {
-    if (!verifyDetail?.modpack_failed.length) return
-    setRepairing(true)
-    onOperation({ title: 'Repairing Files', detail: 'Downloading failed files…', file: '', filePercent: 0, overallPercent: 0, speedBps: 0, filesDone: 0, filesTotal: verifyDetail.modpack_failed.length })
-    try {
-      await invoke('repair_files', { paths: verifyDetail.modpack_failed })
-      setVerifyResult({ state: 'done', message: `Repaired ${verifyDetail.modpack_failed.length} files` })
-      setVerifyDetail(null)
-    } catch (e: any) {
-      setVerifyResult({ state: 'error', message: `Repair failed: ${e}` })
-    } finally {
-      setRepairing(false)
-      onOperation(null)
-    }
-  }
-
-  const busy = checkResult?.state === 'busy' || verifyResult?.state === 'busy' || repairing
-
-  const ramPercent = Math.round(ram / systemRam * 100)
+  const { checkResult, verifyResult, verifyDetail, maintenanceBlocked, manifest, launcherUpdate } = launcher
+  const opFor = (...kinds: OperationKind[]) => (operation && kinds.includes(operation.kind) ? operation : null)
+  const checkOp = opFor('check', 'modpack-update', 'launcher-update')
+  const verifyOp = opFor('verify', 'repair')
+  const ownTaskRunning = !!(checkOp || verifyOp)
+  const failed = verifyDetail?.modpack_failed ?? []
 
   return (
-    <div className="settings-page fade-in">
+    <div className="page settings page-enter">
+      <header className="page-header">
+        <h1>Settings</h1>
+        <p>Changes are saved automatically and apply the next time you launch.</p>
+      </header>
 
-      {/* ── Performance ─────────────────────────────────────── */}
-      <div className="settings-section">
-        <div className="settings-section-label">Performance</div>
-        <div className="settings-card">
-          <div className="setting-row">
-            <div className="setting-info">
-              <div className="setting-label">RAM Allocation</div>
-              <div className="setting-sub">Memory allocated to Minecraft</div>
+      <div className="settings-grid">
+        <div className="settings-col">
+          {/* ── Memory ─────────────────────────────── */}
+          <section className="card">
+            <CardHead icon={<MemoryIcon size={18} />} tone="violet" title="Memory" desc="How much RAM Minecraft is allowed to use" />
+
+            <div className="ram-readout">
+              <span className="ram-value">{formatRam(ram)}</span>
+              <span className="ram-of">of {formatRam(Math.round(systemRam / 1024) * 1024)} installed</span>
             </div>
-            <div className="ram-value">{(ram / 1024).toFixed(1)} GB</div>
-          </div>
-          <div className="setting-row-full">
+
             <input
               id="ram-slider"
               type="range"
               className="slider"
-              min={512}
-              max={systemRam}
-              step={256}
+              min={RAM_MIN}
+              max={ramMax}
+              step={RAM_STEP}
               value={ram}
+              style={{ '--fill': `${fill}%` } as CSSProperties}
               onChange={e => setRam(Number(e.target.value))}
-              onMouseUp={e => persistConfig({ ram_mb: Number((e.target as HTMLInputElement).value) })}
-              onTouchEnd={e => persistConfig({ ram_mb: Number((e.target as HTMLInputElement).value) })}
+              onPointerUp={e => commitRam(Number((e.target as HTMLInputElement).value))}
+              onKeyUp={e => commitRam(Number((e.target as HTMLInputElement).value))}
+              onBlur={e => commitRam(Number(e.target.value))}
+              aria-label="Memory allocation"
             />
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-muted)' }}>
-              <span>512 MB</span>
-              <span>{ramPercent}% of {(systemRam / 1024).toFixed(0)} GB system RAM</span>
-            </div>
-          </div>
-        </div>
-      </div>
 
-      {/* ── Display ─────────────────────────────────────────── */}
-      <div className="settings-section">
-        <div className="settings-section-label">Display</div>
-        <div className="settings-card">
-          <div className="setting-row">
-            <div className="setting-info">
-              <div className="setting-label">Console View</div>
-              <div className="setting-sub">Show Minecraft logs in the launcher while playing</div>
+            {presets.length > 0 && (
+              <div className="ram-presets">
+                {presets.map(gb => (
+                  <button
+                    key={gb}
+                    className={`preset${ram === gb * 1024 ? ' active' : ''}`}
+                    onClick={() => { setRam(gb * 1024); commitRam(gb * 1024) }}
+                  >
+                    {gb} GB
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div className={`hint ${ramHint.tone}`}>
+              {ramHint.tone === 'warn' ? <AlertIcon size={14} /> : ramHint.tone === 'ok' ? <CheckIcon size={14} /> : <InfoIcon size={14} />}
+              {ramHint.text}
             </div>
-            <label className="toggle" htmlFor="toggle-console">
-              <input
-                id="toggle-console"
-                type="checkbox"
-                checked={consoleEnabled}
-                onChange={e => {
-                  setConsoleEnabled(e.target.checked)
-                  persistConfig({ console_enabled: e.target.checked })
-                }}
-              />
-              <span className="toggle-track" />
-            </label>
-          </div>
-          <div className="setting-row">
-            <div className="setting-info">
-              <div className="setting-label">Prefer Dedicated GPU</div>
-              <div className="setting-sub">Ask Windows to run Minecraft on the high-performance GPU</div>
-            </div>
-            <label className="toggle" htmlFor="toggle-dgpu">
-              <input
+          </section>
+
+          {/* ── Graphics ───────────────────────────── */}
+          <section className="card">
+            <CardHead icon={<ChipIcon size={18} />} tone="green" title="Graphics" desc="GPU used to run the game" />
+            <SettingRow
+              title="Prefer dedicated GPU"
+              desc="Ask Windows to run Minecraft on the high-performance graphics card."
+            >
+              <Toggle
                 id="toggle-dgpu"
-                type="checkbox"
-                checked={preferDgpu}
-                onChange={e => {
-                  setPreferDgpu(e.target.checked)
-                  persistConfig({ prefer_dgpu: e.target.checked })
-                }}
+                label="Prefer dedicated GPU"
+                checked={config.prefer_dgpu}
+                onChange={v => persist({ prefer_dgpu: v })}
               />
-              <span className="toggle-track" />
-            </label>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Maintenance ─────────────────────────────────────── */}
-      <div className="settings-section">
-        <div className="settings-section-label">Maintenance</div>
-        <div className="settings-card">
-
-          {/* Check for Updates */}
-          <button
-            id="btn-check-updates"
-            className="action-btn"
-            onClick={handleCheckUpdates}
-            disabled={busy}
-          >
-            {checkResult?.state === 'busy'
-              ? <span className="btn-spinner" style={{ width: 16, height: 16, borderWidth: 2, borderColor: 'rgba(255,255,255,0.15)', borderTopColor: 'var(--accent)' }} />
-              : <span style={{ fontSize: 16 }}>↻</span>
-            }
-            <div className="action-btn-body">
-              <span className="action-btn-label" style={{ fontSize: 13.5, fontWeight: 500 }}>Check for Updates</span>
-              <span className="action-btn-sub">Check both launcher and modpack for updates</span>
-            </div>
-            <span className="action-btn-right">›</span>
-          </button>
-          {checkResult && checkResult.state !== 'busy' && checkResult.message && (
-            <div className={`action-result ${checkResult.state === 'done' ? 'ok' : 'err'}`}>
-              {checkResult.state === 'done' ? '✓ ' : '✗ '}{checkResult.message}
-            </div>
-          )}
-
-          {/* Verify Files */}
-          <button
-            id="btn-verify-files"
-            className="action-btn"
-            onClick={handleVerify}
-            disabled={busy}
-          >
-            {verifyResult?.state === 'busy'
-              ? <span className="btn-spinner" style={{ width: 16, height: 16, borderWidth: 2, borderColor: 'rgba(255,255,255,0.15)', borderTopColor: 'var(--accent)' }} />
-              : <span style={{ fontSize: 16 }}>✓</span>
-            }
-            <div className="action-btn-body">
-              <span style={{ fontSize: 13.5, fontWeight: 500 }}>Verify Files</span>
-              <span className="action-btn-sub">Check Java, Minecraft, Forge and all modpack files</span>
-            </div>
-            <span className="action-btn-right">›</span>
-          </button>
-
-          {verifyResult && verifyResult.state !== 'busy' && (
-            <>
-              {verifyResult.message && (
-                <div className={`action-result ${verifyResult.state === 'done' ? 'ok' : 'err'}`}>
-                  {verifyResult.state === 'done' ? '✓ ' : '✗ '}{verifyResult.message}
-                </div>
+            </SettingRow>
+            <div className="gpu-list">
+              {gpus === null ? (
+                <div className="gpu muted"><Spinner size={12} /> Detecting graphics cards…</div>
+              ) : gpus.length === 0 ? (
+                <div className="gpu muted">No graphics cards detected</div>
+              ) : (
+                gpus.map((g, i) => {
+                  const v = vendorOf(g)
+                  return (
+                    <div key={`${g.name}-${i}`} className="gpu">
+                      <span className={`gpu-vendor ${v.key}`}>{v.label}</span>
+                      <span className="gpu-name" title={g.name}>{g.name}</span>
+                    </div>
+                  )
+                })
               )}
-              {verifyDetail && verifyDetail.modpack_failed.length > 0 && (
-                <div style={{ padding: '0 18px 14px' }}>
+            </div>
+          </section>
+
+          {/* ── Launcher ───────────────────────────── */}
+          <section className="card">
+            <CardHead icon={<SlidersIcon size={18} />} tone="pink" title="Launcher" desc="How the launcher looks and behaves" />
+            <SettingRow
+              title="Open console on launch"
+              desc="Jump to the live game log when Minecraft starts."
+            >
+              <Toggle
+                id="toggle-console"
+                label="Open console on launch"
+                checked={config.console_enabled}
+                onChange={v => persist({ console_enabled: v })}
+              />
+            </SettingRow>
+            <SettingRow title="Background" desc="Auto follows your local time of day." icon={<ImageIcon size={15} />}>
+              <Segmented<Scenery>
+                size="sm"
+                label="Background scenery"
+                value={scenery}
+                onChange={onSceneryChange}
+                options={[
+                  { value: 'auto', label: 'Auto' },
+                  { value: 'dawn', label: 'Dawn' },
+                  { value: 'day', label: 'Day' },
+                  { value: 'dusk', label: 'Dusk' },
+                  { value: 'night', label: 'Night' },
+                ]}
+              />
+            </SettingRow>
+          </section>
+        </div>
+
+        <div className="settings-col">
+          {/* ── Maintenance ────────────────────────── */}
+          <section className="card">
+            <CardHead icon={<WrenchIcon size={18} />} tone="amber" title="Maintenance" desc="Keep your installation healthy" />
+
+            <ActionRow
+              id="btn-check-updates"
+              icon={<RefreshIcon size={17} />}
+              title="Check for updates"
+              desc="Launcher and modpack — updates install automatically"
+              onClick={launcher.checkForUpdates}
+              disabled={!!maintenanceBlocked}
+              result={checkResult}
+              op={checkOp}
+            />
+
+            <ActionRow
+              id="btn-verify-files"
+              icon={<ShieldCheckIcon size={17} />}
+              title="Verify files"
+              desc="Check Java, Minecraft, Forge and every modpack file"
+              onClick={launcher.verifyFiles}
+              disabled={!!maintenanceBlocked}
+              result={verifyResult}
+              op={verifyOp}
+            >
+              {failed.length > 0 && !verifyOp && (
+                <div className="failed-files">
+                  <ul>
+                    {failed.slice(0, 4).map(f => <li key={f} title={f}>{f}</li>)}
+                    {failed.length > 4 && <li className="more">and {failed.length - 4} more</li>}
+                  </ul>
                   <button
                     id="btn-repair"
-                    onClick={handleRepair}
-                    disabled={repairing || busy}
-                    style={{
-                      padding: '7px 14px',
-                      background: 'var(--accent-dim)',
-                      border: '1px solid rgba(61,142,245,0.25)',
-                      borderRadius: 'var(--radius-sm)',
-                      color: 'var(--accent)',
-                      fontSize: 12,
-                      fontWeight: 600,
-                      fontFamily: 'Inter, sans-serif',
-                      cursor: 'pointer',
-                    }}
+                    className="btn brand sm"
+                    onClick={launcher.repairFiles}
+                    disabled={!!maintenanceBlocked}
                   >
-                    {repairing ? 'Repairing…' : `Repair ${verifyDetail.modpack_failed.length} failed files`}
+                    <WrenchIcon size={14} /> Repair {failed.length} file{failed.length === 1 ? '' : 's'}
                   </button>
                 </div>
               )}
-            </>
-          )}
+            </ActionRow>
 
+            {maintenanceBlocked && !ownTaskRunning && (
+              <div className="hint info card-note">
+                <InfoIcon size={14} /> {maintenanceBlocked}
+              </div>
+            )}
+          </section>
+
+          {/* ── About ──────────────────────────────── */}
+          <section className="card">
+            <CardHead icon={<InfoIcon size={18} />} tone="blue" title="About" desc="Installed versions" />
+            <dl className="about">
+              <AboutRow label="Launcher" value={`v${launcherVersion}`} badge={launcherUpdate ? `v${launcherUpdate.latest_version} available` : undefined} />
+              <AboutRow
+                label="Modpack"
+                value={config.installed_modpack_version ? `v${config.installed_modpack_version}` : 'Not installed'}
+                badge={manifest && config.installed_modpack_version && manifest.modpack_version !== config.installed_modpack_version
+                  ? `v${manifest.modpack_version} available` : undefined}
+              />
+              <AboutRow label="Minecraft" value={config.installed_mc_version ?? manifest?.minecraft_version ?? '—'} />
+              <AboutRow label="Forge" value={config.installed_forge_version ?? manifest?.forge_version ?? '—'} />
+              {manifest && <AboutRow label="Java" value={`${manifest.java_version}`} />}
+            </dl>
+          </section>
         </div>
       </div>
+    </div>
+  )
+}
 
-      {/* ── About ───────────────────────────────────────────── */}
-      <div className="settings-section">
-        <div className="settings-section-label">About</div>
-        <div className="settings-card">
-          <div className="about-grid">
-            <span className="about-key">Launcher</span>
-            <span className="about-val">v{launcherVersion}</span>
-            {config.installed_modpack_version && <>
-              <span className="about-key">Modpack</span>
-              <span className="about-val">v{config.installed_modpack_version}</span>
-            </>}
-            {config.installed_mc_version && <>
-              <span className="about-key">Minecraft</span>
-              <span className="about-val">{config.installed_mc_version}</span>
-            </>}
-            {config.installed_forge_version && <>
-              <span className="about-key">Forge</span>
-              <span className="about-val">{config.installed_forge_version}</span>
-            </>}
+// ── Pieces ───────────────────────────────────────────────────
+
+function vendorOf(g: GpuInfo): { key: string; label: string } {
+  const s = `${g.vendor} ${g.name}`
+  if (/nvidia|geforce|rtx|gtx/i.test(s)) return { key: 'nvidia', label: 'NVIDIA' }
+  if (/amd|advanced micro|radeon|\bati\b/i.test(s)) return { key: 'amd', label: 'AMD' }
+  if (/intel/i.test(s)) return { key: 'intel', label: 'Intel' }
+  return { key: 'other', label: g.vendor || 'GPU' }
+}
+
+function CardHead({ icon, title, desc, tone }: { icon: ReactNode; title: string; desc: string; tone: string }) {
+  return (
+    <div className="card-head">
+      <div className={`card-icon ${tone}`}>{icon}</div>
+      <div>
+        <h2 className="card-title">{title}</h2>
+        <p className="card-desc">{desc}</p>
+      </div>
+    </div>
+  )
+}
+
+function SettingRow({ title, desc, icon, children }: { title: string; desc: string; icon?: ReactNode; children: ReactNode }) {
+  return (
+    <div className="setting-row">
+      <div className="setting-text">
+        <div className="setting-title">{icon}{title}</div>
+        <div className="setting-desc">{desc}</div>
+      </div>
+      <div className="setting-control">{children}</div>
+    </div>
+  )
+}
+
+interface ActionRowProps {
+  id: string
+  icon: ReactNode
+  title: string
+  desc: string
+  onClick: () => void
+  disabled: boolean
+  result: TaskResult | null
+  op: ActiveOperation | null
+  children?: ReactNode
+}
+
+function ActionRow({ id, icon, title, desc, onClick, disabled, result, op, children }: ActionRowProps) {
+  const busy = !!op || result?.state === 'busy'
+  const d = op ? describeOperation(op) : null
+
+  return (
+    <div className="action">
+      <button id={id} className="action-btn" onClick={onClick} disabled={disabled}>
+        <span className="action-icon">{busy ? <Spinner size={16} /> : icon}</span>
+        <span className="action-text">
+          <span className="action-title">{title}</span>
+          <span className="action-desc">{desc}</span>
+        </span>
+        <ChevronRightIcon size={16} className="action-chevron" />
+      </button>
+
+      {op && d ? (
+        <div className="action-progress">
+          <div className="action-progress-top">
+            <span>{op.step > 0 && op.stepCount > 1 ? `Step ${op.step}/${op.stepCount} · ` : ''}{op.title}</span>
+            <span>{d.percentText}</span>
           </div>
+          <ProgressBar percent={op.overallPercent} indeterminate={op.indeterminate} />
+          {(d.item || d.meta.length > 0) && (
+            <div className="action-progress-item">{[d.item, ...d.meta].filter(Boolean).join('  ·  ')}</div>
+          )}
         </div>
-      </div>
+      ) : result && result.message ? (
+        <div className={`action-result ${result.state}`}>
+          {result.state === 'done' ? <CheckIcon size={14} /> : result.state === 'error' ? <XCircleIcon size={14} /> : <Spinner size={12} />}
+          <span>{result.message}</span>
+        </div>
+      ) : null}
 
+      {children}
+    </div>
+  )
+}
+
+function AboutRow({ label, value, badge }: { label: string; value: string; badge?: string }) {
+  return (
+    <div className="about-row">
+      <dt>{label}</dt>
+      <dd>
+        {value}
+        {badge && <span className="badge">{badge}</span>}
+      </dd>
     </div>
   )
 }
