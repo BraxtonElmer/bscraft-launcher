@@ -173,6 +173,13 @@ export function useLauncher({ cfg, op, game, onLaunched, notify }: Options) {
     await launch()
   }
 
+  /** Saves the typed name, if it's valid, so it's kept after a restart */
+  const saveUsername = async (name = usernameRef.current.trim()) => {
+    if (usernameProblem(name) || name === cfgRef.current.config.username) return
+    setUsername(name)
+    await cfgRef.current.persist({ username: name })
+  }
+
   const launch = async () => {
     const name = usernameRef.current.trim()
     if (usernameProblem(name)) {
@@ -180,9 +187,7 @@ export function useLauncher({ cfg, op, game, onLaunched, notify }: Options) {
       setUsernameNudge(n => n + 1)
       return
     }
-    if (name !== cfgRef.current.config.username) {
-      await cfgRef.current.persist({ username: name })
-    }
+    await saveUsername(name)
 
     setStatus('launching')
     game.prepare()
@@ -425,6 +430,7 @@ export function useLauncher({ cfg, op, game, onLaunched, notify }: Options) {
     dismissError,
     username,
     setUsername,
+    saveUsername,
     usernameNudge,
     checkResult,
     verifyResult,

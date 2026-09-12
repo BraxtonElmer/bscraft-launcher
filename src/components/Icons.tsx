@@ -213,3 +213,58 @@ export const ImageIcon = (p: IconProps) => (
     <path d="M20.5 16l-5-5-8.5 8.5" />
   </Icon>
 )
+
+export const RotateIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M20 12a8 8 0 1 1-2.35-5.65" />
+    <path d="M20 4.5v4.5h-4.5" />
+  </Icon>
+)
+
+export const TagIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M3.5 12.2V4.5a1 1 0 0 1 1-1h7.7l8.3 8.3-8.7 8.7-8.3-8.3z" />
+    <circle cx="8.2" cy="8.2" r="1.4" />
+  </Icon>
+)
+
+export const LayersIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M12 3.5l8.5 4.5-8.5 4.5L3.5 8 12 3.5z" />
+    <path d="M3.5 12l8.5 4.5 8.5-4.5M3.5 16l8.5 4.5 8.5-4.5" />
+  </Icon>
+)
+
+export const TargetIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <circle cx="12" cy="12" r="7.5" />
+    <circle cx="12" cy="12" r="2.2" />
+    <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+  </Icon>
+)
+
+export const ShirtIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M9 3.5L3.5 6.5l2 4.5 2-1V20.5h9V10l2 1 2-4.5L15 3.5a3 3 0 0 1-6 0z" />
+  </Icon>
+)
+
+export const ExternalIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M14 4h6v6M20 4l-9 9" />
+    <path d="M18 14v4.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 4 18.5v-11A1.5 1.5 0 0 1 5.5 6H10" />
+  </Icon>
+)
+
+export const PencilIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M15.5 4.5l4 4L8 20H4v-4L15.5 4.5z" />
+    <path d="M13 7l4 4" />
+  </Icon>
+)
+
+export const TrashIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13" />
+  </Icon>
+)

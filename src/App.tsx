@@ -113,7 +113,12 @@ export default function App() {
               account={account}
             />
           ) : page === 'profile' ? (
-            <ProfilePage username={launcher.username} account={account} />
+            <ProfilePage
+              username={launcher.username}
+              account={account}
+              gameRunning={game.running}
+              onRename={launcher.saveUsername}
+            />
           ) : page === 'settings' ? (
             <SettingsPage
               launcher={launcher}

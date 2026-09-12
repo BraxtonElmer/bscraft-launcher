@@ -195,6 +195,7 @@ function DockControls({ launcher, config, onNavigate, onPlay }: {
             value={username}
             onChange={e => setUsername(sanitizeUsername(e.target.value))}
             onKeyDown={e => { if (e.key === 'Enter') onPlay() }}
+            onBlur={() => { launcher.saveUsername().catch(() => {}) }}
             maxLength={16}
             disabled={busy}
             autoComplete="off"

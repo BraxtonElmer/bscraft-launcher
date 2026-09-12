@@ -59,8 +59,11 @@ pub fn run() {
             commands::account::set_game_password,
             commands::account::reveal_game_password,
             commands::account::check_server_account,
-            commands::account::upload_skin,
-            commands::account::reset_skin,
+            commands::account::upload_texture,
+            commands::account::remove_texture,
+            commands::account::import_look,
+            commands::account::get_skin_prefs,
+            commands::account::set_skin_prefs,
             // Game control
             commands::launcher::launch_game,
             commands::launcher::kill_game,

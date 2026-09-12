@@ -144,10 +144,33 @@ export interface ServerAccount {
   valid: boolean;
 }
 
-/** Mirrors commands::account::SkinUploadResult */
-export interface SkinUploadResult {
-  model: 'default' | 'slim';
+/** Mirrors commands::account::TextureUploadResult */
+export interface TextureUploadResult {
+  kind: 'skin' | 'cape' | 'elytra';
   texture: string;
+  model: 'default' | 'slim' | null;
+}
+
+/** Mirrors commands::account::ImportedLook — another player's textures as PNG bytes */
+export interface ImportedLook {
+  name: string;
+  source: 'bscraft' | 'mojang';
+  skin: number[] | null;
+  model: 'default' | 'slim';
+  cape: number[] | null;
+  elytra: number[] | null;
+}
+
+/** Mirrors commands::account::SkinPrefs — Minecraft's Skin Customization (options.txt) */
+export interface SkinPrefs {
+  cape: boolean;
+  jacket: boolean;
+  left_sleeve: boolean;
+  right_sleeve: boolean;
+  left_pants_leg: boolean;
+  right_pants_leg: boolean;
+  hat: boolean;
+  main_hand: 'left' | 'right';
 }
 
 /** Drives the play button label and enabled state (game running is tracked separately) */

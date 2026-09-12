@@ -27,8 +27,35 @@ export function createMocks() {
     // Server account (SimpleLogin): ?acct=new|registered|mismatch
     acct: params.get('acct') || (installed ? 'registered' : 'new'),
     password: installed && params.get('nopw') !== '1' ? 'hunter22' : null,
+    prefs: { cape: true, jacket: true, left_sleeve: true, right_sleeve: true, left_pants_leg: true, right_pants_leg: true, hat: true, main_hand: 'right' },
   }
   const serverPassword = () => (state.acct === 'registered' ? 'hunter22' : state.acct === 'mismatch' ? 'something-else' : null)
+  const checkAuth = () => {
+    const sp = serverPassword()
+    if (sp === null) throw new Error("This name isn't registered yet. Join the server once to claim it.")
+    if (sp !== state.password) throw new Error("Password doesn't match the one registered on the server.")
+  }
+
+  // A recognisable test texture as PNG bytes (number[] like the Rust side returns)
+  async function mockPng(kind) {
+    const c = document.createElement('canvas')
+    c.width = 64
+    c.height = kind === 'skin' ? 64 : 32
+    const g = c.getContext('2d')
+    const rect = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(x, y, w, h) }
+    if (kind === 'skin') {
+      rect(0, 0, 32, 16, '#f0c9a8'); rect(8, 0, 8, 8, '#e0a030'); rect(0, 8, 32, 3, '#e0a030')
+      rect(9, 12, 2, 1, '#fff'); rect(13, 12, 2, 1, '#fff'); rect(10, 12, 1, 1, '#2a6'); rect(14, 12, 1, 1, '#2a6')
+      rect(32, 0, 32, 16, 'rgba(0,0,0,0)'); rect(40, 0, 8, 8, '#d02070')
+      rect(16, 16, 24, 16, '#2a8fd8'); rect(40, 16, 16, 16, '#f0c9a8'); rect(40, 20, 16, 4, '#2a8fd8')
+      rect(0, 16, 16, 16, '#303050'); rect(16, 48, 16, 16, '#303050'); rect(32, 48, 16, 16, '#f0c9a8')
+      rect(20, 32, 20, 16, '#1a6fb0') // jacket overlay
+    } else {
+      rect(0, 0, 22, 17, '#b0203a'); rect(1, 1, 10, 16, '#d8354f'); rect(4, 5, 4, 4, '#ffd84a')
+    }
+    const blob = await new Promise(r => c.toBlob(r, 'image/png'))
+    return Array.from(new Uint8Array(await blob.arrayBuffer()))
+  }
 
   const files = []
   for (let i = 0; i < 209; i++) files.push({ path: `mods/mod-${i}.jar`, url: '', sha256: '', size: 3_400_000 + (i % 7) * 100_000 })
@@ -141,14 +168,20 @@ export function createMocks() {
       const sp = serverPassword()
       return { registered: sp !== null, valid: sp !== null && sp === state.password }
     },
-    upload_skin: async ({ model }) => {
+    upload_texture: async ({ kind, model }) => {
       await sleep(700)
-      const sp = serverPassword()
-      if (sp === null) throw new Error("This name isn't registered yet. Join the server once to claim it.")
-      if (sp !== state.password) throw new Error("Password doesn't match the one registered on the server.")
-      return { model, texture: 'mocktexturehash' }
+      checkAuth()
+      return { kind, texture: 'mocktexturehash', model: kind === 'skin' ? model : null }
     },
-    reset_skin: async () => { await sleep(400) },
+    remove_texture: async () => { await sleep(400); checkAuth() },
+    import_look: async ({ name }) => {
+      await sleep(600)
+      if (name.toLowerCase() === 'nobody') throw new Error(`No player called ${name} was found on BSCraft or Minecraft.`)
+      return { name, source: 'mojang', model: 'slim', skin: await mockPng('skin'), cape: await mockPng('cape'), elytra: null }
+    },
+    get_skin_prefs: () => ({ ...state.prefs }),
+    set_skin_prefs: async ({ prefs }) => { await sleep(80); state.prefs = { ...prefs }; return { ...state.prefs } },
+    'plugin:opener|open_url': ({ url }) => { console.log('open_url', url) },
     get_game_status: () => ({ running: state.running }),
     get_log_lines: () => [],
     exit_app: () => { console.log('exit_app') },

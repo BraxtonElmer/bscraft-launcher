@@ -6,7 +6,6 @@
 
 import { memo, useEffect, useRef } from 'react'
 import { hashString } from '../lib/format'
-import { drawFace } from './SkinView'
 
 const SKIN = ['#f3cfb3', '#e8b796', '#d49a74', '#b87a55', '#8d5a3b', '#63402a']
 const HAIR = ['#2b1d14', '#4a2f1d', '#6e4424', '#a0692f', '#d9b45c', '#ece0b4', '#1f1f28', '#8a2f2f', '#c7cddb', '#7a4fc2', '#2f76c4', '#d8578a']
@@ -41,6 +40,16 @@ export const PlayerHead = memo(function PlayerHead({ name, size = 48, dim, skin 
   return <GeneratedHead name={name} size={size} dim={dim} />
 })
 
+/** Draws a skin's face with its hat layer onto an 8×8 canvas */
+function drawFace(canvas: HTMLCanvasElement, image: HTMLImageElement) {
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
+  ctx.imageSmoothingEnabled = false
+  ctx.clearRect(0, 0, 8, 8)
+  ctx.drawImage(image, 8, 8, 8, 8, 0, 0, 8, 8)
+  ctx.drawImage(image, 40, 8, 8, 8, 0, 0, 8, 8)
+}
+
 function SkinFace({ image, size, dim }: { image: HTMLImageElement; size: number; dim?: boolean }) {
   const ref = useRef<HTMLCanvasElement>(null)
   useEffect(() => { if (ref.current) drawFace(ref.current, image) }, [image])
@@ -56,7 +65,8 @@ function SkinFace({ image, size, dim }: { image: HTMLImageElement; size: number;
   )
 }
 
-function GeneratedHead({ name, size, dim }: { name: string; size: number; dim?: boolean }) {
+/** The generated face for a name: its 8×8 pattern and the colours its letters stand for */
+export function generatedFace(name: string) {
   const h = hashString(name.toLowerCase() || 'steve')
   const skin = SKIN[h % SKIN.length]
   const hair = HAIR[(h >>> 4) % HAIR.length]
@@ -73,7 +83,11 @@ function GeneratedHead({ name, size, dim }: { name: string; size: number; dim?: 
     b: shade(hair, 0.08),
     '.': shade(skin, -0.06),
   }
+  return { hash: h, skin, hair, style, colors, shade }
+}
 
+function GeneratedHead({ name, size, dim }: { name: string; size: number; dim?: boolean }) {
+  const { skin, style, colors } = generatedFace(name)
   const cells: { x: number; y: number; c: string }[] = []
   style.forEach((row, y) => {
     for (let x = 0; x < 8; x++) cells.push({ x, y, c: colors[row[x] ?? 's'] ?? skin })

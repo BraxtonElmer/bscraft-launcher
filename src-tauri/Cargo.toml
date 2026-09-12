@@ -39,6 +39,9 @@ futures-util = "0.3"
 sha2 = "0.10"
 hex = "0.4"
 
+# Base64 — decoding Mojang profile textures
+base64 = "0.22"
+
 # System info — RAM detection
 sysinfo = "0.31"
 
