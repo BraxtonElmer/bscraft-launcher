@@ -54,6 +54,13 @@ pub fn run() {
             commands::modpack::repair_files,
             commands::modpack::verify_all,
             commands::modpack::apply_performance_mode,
+            // Server account (SimpleLogin) and skins
+            commands::account::get_account_status,
+            commands::account::set_game_password,
+            commands::account::reveal_game_password,
+            commands::account::check_server_account,
+            commands::account::upload_skin,
+            commands::account::reset_skin,
             // Game control
             commands::launcher::launch_game,
             commands::launcher::kill_game,

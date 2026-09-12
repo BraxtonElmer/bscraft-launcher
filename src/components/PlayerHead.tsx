@@ -4,8 +4,9 @@
 // own stable face instead.
 // ============================================================
 
-import { memo } from 'react'
+import { memo, useEffect, useRef } from 'react'
 import { hashString } from '../lib/format'
+import { drawFace } from './SkinView'
 
 const SKIN = ['#f3cfb3', '#e8b796', '#d49a74', '#b87a55', '#8d5a3b', '#63402a']
 const HAIR = ['#2b1d14', '#4a2f1d', '#6e4424', '#a0692f', '#d9b45c', '#ece0b4', '#1f1f28', '#8a2f2f', '#c7cddb', '#7a4fc2', '#2f76c4', '#d8578a']
@@ -31,9 +32,31 @@ interface Props {
   name: string
   size?: number
   dim?: boolean
+  /** The player's real skin; when given, its face is shown instead of a generated one */
+  skin?: HTMLImageElement | null
 }
 
-export const PlayerHead = memo(function PlayerHead({ name, size = 48, dim }: Props) {
+export const PlayerHead = memo(function PlayerHead({ name, size = 48, dim, skin }: Props) {
+  if (skin) return <SkinFace image={skin} size={size} dim={dim} />
+  return <GeneratedHead name={name} size={size} dim={dim} />
+})
+
+function SkinFace({ image, size, dim }: { image: HTMLImageElement; size: number; dim?: boolean }) {
+  const ref = useRef<HTMLCanvasElement>(null)
+  useEffect(() => { if (ref.current) drawFace(ref.current, image) }, [image])
+  return (
+    <canvas
+      ref={ref}
+      width={8}
+      height={8}
+      className={`player-head${dim ? ' dim' : ''}`}
+      style={{ width: size, height: size, imageRendering: 'pixelated' }}
+      aria-hidden
+    />
+  )
+}
+
+function GeneratedHead({ name, size, dim }: { name: string; size: number; dim?: boolean }) {
   const h = hashString(name.toLowerCase() || 'steve')
   const skin = SKIN[h % SKIN.length]
   const hair = HAIR[(h >>> 4) % HAIR.length]
@@ -71,4 +94,4 @@ export const PlayerHead = memo(function PlayerHead({ name, size = 48, dim }: Pro
       <rect x={0} y={7} width={8} height={1} fill="#000" opacity={0.14} />
     </svg>
   )
-})
+}

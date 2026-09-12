@@ -5,6 +5,7 @@ import { useConfig } from './hooks/useConfig'
 import { useOperation } from './hooks/useOperation'
 import { useGameSession } from './hooks/useGameSession'
 import { useLauncher } from './hooks/useLauncher'
+import { useAccount } from './hooks/useAccount'
 import { NavRail } from './components/NavRail'
 import { TitleBar } from './components/TitleBar'
 import { PixelScene, useSceneTime, type Scenery } from './components/PixelScene'
@@ -15,6 +16,7 @@ import { CloseWarningModal } from './components/CloseWarningModal'
 import { HomePage } from './pages/Home'
 import { SettingsPage } from './pages/Settings'
 import { ConsolePage } from './pages/Console'
+import { ProfilePage } from './pages/Profile'
 import type { Page } from './types'
 
 // Purely cosmetic, so it lives in the webview rather than the Rust config
@@ -48,6 +50,7 @@ export default function App() {
     notify,
     onLaunched: () => { if (cfg.config.console_enabled) setPage('console') },
   })
+  const account = useAccount(launcher.username)
 
   useEffect(() => {
     getVersion().then(setLauncherVersion).catch(() => {})
@@ -107,7 +110,10 @@ export default function App() {
               startedAt={game.startedAt}
               onNavigate={setPage}
               onStopGame={game.kill}
+              account={account}
             />
+          ) : page === 'profile' ? (
+            <ProfilePage username={launcher.username} account={account} />
           ) : page === 'settings' ? (
             <SettingsPage
               launcher={launcher}

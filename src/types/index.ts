@@ -129,7 +129,26 @@ export interface VerifyProgress {
 
 // ── UI state ────────────────────────────────────────────────
 
-export type Page = 'home' | 'console' | 'settings';
+export type Page = 'home' | 'console' | 'profile' | 'settings';
+
+/** Mirrors commands::account::AccountStatus */
+export interface AccountStatus {
+  password_set: boolean;
+}
+
+/** Mirrors commands::account::ServerAccount */
+export interface ServerAccount {
+  /** The name has joined the server once and claimed a password */
+  registered: boolean;
+  /** The password saved on this PC matches the server's */
+  valid: boolean;
+}
+
+/** Mirrors commands::account::SkinUploadResult */
+export interface SkinUploadResult {
+  model: 'default' | 'slim';
+  texture: string;
+}
 
 /** Drives the play button label and enabled state (game running is tracked separately) */
 export type LaunchStatus =

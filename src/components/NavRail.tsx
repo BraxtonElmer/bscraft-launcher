@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { PixelText } from './PixelText'
-import { GearIcon, PlayIcon, TerminalIcon } from './Icons'
+import { GearIcon, PlayIcon, TerminalIcon, UserIcon } from './Icons'
 import type { Page } from '../types'
 
 interface Props {
@@ -36,6 +36,13 @@ export function NavRail({ page, onNavigate, gameRunning, working, launcherVersio
           active={page === 'console'}
           onClick={() => onNavigate('console')}
           badge={gameRunning ? 'live' : undefined}
+        />
+        <RailItem
+          id="nav-profile"
+          label="Profile"
+          icon={<UserIcon size={20} />}
+          active={page === 'profile'}
+          onClick={() => onNavigate('profile')}
         />
       </div>
 

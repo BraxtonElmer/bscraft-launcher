@@ -1,12 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import { PixelText } from '../components/PixelText'
 import { PlayerHead } from '../components/PlayerHead'
+import { PasswordForm } from '../components/PasswordForm'
 import { ProgressBar, Segmented, Spinner, describeOperation } from '../components/ui'
 import {
-  AlertIcon, DownloadIcon, GaugeIcon, MemoryIcon,
+  AlertIcon, DownloadIcon, GaugeIcon, KeyIcon, MemoryIcon,
   RefreshIcon, SparklesIcon, StopIcon, TerminalIcon,
 } from '../components/Icons'
 import { formatBytes, formatRam, sanitizeUsername, usernameProblem } from '../lib/format'
+import { usePublishedSkin } from '../hooks/useSkin'
+import type { AccountApi } from '../hooks/useAccount'
 import type { LauncherApi } from '../hooks/useLauncher'
 import type { ActiveOperation, AppConfig, Page } from '../types'
 
@@ -17,12 +20,30 @@ interface Props {
   startedAt: number | null
   onNavigate: (page: Page) => void
   onStopGame: () => void
+  account: AccountApi
 }
 
-export function HomePage({ launcher, config, operation, startedAt, onNavigate, onStopGame }: Props) {
+// Asked once per session; skipping leaves it to SimpleLogin's in-game prompt
+let passwordPromptSkipped = false
+
+export function HomePage({ launcher, config, operation, startedAt, onNavigate, onStopGame, account }: Props) {
   const { status, manifest, launcherUpdate, modpackUpdate, running } = launcher
+  const [askPassword, setAskPassword] = useState(false)
 
   const mcVersion = config.installed_mc_version ?? manifest?.minecraft_version
+
+  const play = () => {
+    const readyToLaunch = !launcherUpdate && status !== 'offline' && status !== 'error' && !usernameProblem(launcher.username.trim())
+    if (readyToLaunch && account.passwordSet === false && !passwordPromptSkipped) {
+      setAskPassword(true)
+      return
+    }
+    launcher.play()
+  }
+  const continueToPlay = () => {
+    setAskPassword(false)
+    launcher.play()
+  }
 
   return (
     <div className="home page-enter">
@@ -80,20 +101,67 @@ export function HomePage({ launcher, config, operation, startedAt, onNavigate, o
             onStop={onStopGame}
           />
         ) : (
-          <DockControls launcher={launcher} config={config} onNavigate={onNavigate} />
+          <DockControls launcher={launcher} config={config} onNavigate={onNavigate} onPlay={play} />
         )}
-        <PlayButton launcher={launcher} operation={operation} mcVersion={mcVersion} />
+        <PlayButton launcher={launcher} operation={operation} mcVersion={mcVersion} onPlay={play} />
       </div>
 
       <div className="credit">Made by Akariyu and Zukashi</div>
+
+      {askPassword && (
+        <PasswordPrompt
+          username={launcher.username.trim()}
+          onSave={async p => { await account.savePassword(p); continueToPlay() }}
+          onSkip={() => { passwordPromptSkipped = true; continueToPlay() }}
+          onClose={() => setAskPassword(false)}
+        />
+      )}
+    </div>
+  )
+}
+
+function PasswordPrompt({ username, onSave, onSkip, onClose }: {
+  username: string; onSave: (p: string) => Promise<void>; onSkip: () => void; onClose: () => void
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal narrow" role="dialog" aria-modal="true" aria-labelledby="pw-prompt-title" onClick={e => e.stopPropagation()}>
+        <div className="modal-head">
+          <div className="modal-icon brand"><KeyIcon size={20} /></div>
+          <div>
+            <h2 id="pw-prompt-title" className="modal-title">Protect your name</h2>
+            <p className="modal-sub">
+              BSCraft locks <b>{username}</b> to a password the first time you join. Set it here and the launcher
+              enters it for you every time. If you already use a password for this name, enter that one.
+            </p>
+          </div>
+        </div>
+        <PasswordForm
+          confirm
+          autoFocus
+          submitLabel="Save and play"
+          onSubmit={onSave}
+          onCancel={onSkip}
+          cancelLabel="Skip, set it in game"
+        />
+      </div>
     </div>
   )
 }
 
 // ── Dock: idle controls ──────────────────────────────────────
 
-function DockControls({ launcher, config, onNavigate }: { launcher: LauncherApi; config: AppConfig; onNavigate: (p: Page) => void }) {
+function DockControls({ launcher, config, onNavigate, onPlay }: {
+  launcher: LauncherApi; config: AppConfig; onNavigate: (p: Page) => void; onPlay: () => void
+}) {
   const { username, setUsername, usernameNudge, busy, perfBusy } = launcher
+  const { skin } = usePublishedSkin(username)
   const inputRef = useRef<HTMLInputElement>(null)
   const [shake, setShake] = useState(false)
 
@@ -112,7 +180,7 @@ function DockControls({ launcher, config, onNavigate }: { launcher: LauncherApi;
     <>
       <div className={`dock-player${shake ? ' shake' : ''}`}>
         <div className="avatar">
-          <PlayerHead name={username} size={48} dim={!username} />
+          <PlayerHead name={username} size={48} dim={!username} skin={skin?.image} />
         </div>
         <div className="dock-field">
           <label htmlFor="username-input" className={`overline${showProblem ? ' warn' : ''}`}>
@@ -126,7 +194,7 @@ function DockControls({ launcher, config, onNavigate }: { launcher: LauncherApi;
             placeholder="Username"
             value={username}
             onChange={e => setUsername(sanitizeUsername(e.target.value))}
-            onKeyDown={e => { if (e.key === 'Enter') launcher.play() }}
+            onKeyDown={e => { if (e.key === 'Enter') onPlay() }}
             maxLength={16}
             disabled={busy}
             autoComplete="off"
@@ -220,6 +288,7 @@ function useElapsed(startedAt: number | null) {
 function DockRunning({ username, startedAt, onConsole, onStop }: {
   username: string; startedAt: number | null; onConsole: () => void; onStop: () => void
 }) {
+  const { skin } = usePublishedSkin(username)
   const elapsed = useElapsed(startedAt)
   const [confirm, setConfirm] = useState(false)
 
@@ -233,7 +302,7 @@ function DockRunning({ username, startedAt, onConsole, onStop }: {
     <>
       <div className="dock-player">
         <div className="avatar live">
-          <PlayerHead name={username} size={48} />
+          <PlayerHead name={username} size={48} skin={skin?.image} />
         </div>
         <div className="dock-field">
           <span className="overline live-text"><span className="live-dot" /> In game</span>
@@ -268,8 +337,8 @@ function DockRunning({ username, startedAt, onConsole, onStop }: {
 
 // ── Play button ──────────────────────────────────────────────
 
-function PlayButton({ launcher, operation, mcVersion }: {
-  launcher: LauncherApi; operation: ActiveOperation | null; mcVersion?: string
+function PlayButton({ launcher, operation, mcVersion, onPlay }: {
+  launcher: LauncherApi; operation: ActiveOperation | null; mcVersion?: string; onPlay: () => void
 }) {
   const { status, installed, launcherUpdate, running, manifest, perfBusy, busy } = launcher
 
@@ -303,7 +372,7 @@ function PlayButton({ launcher, operation, mcVersion }: {
   const disabled = running || busy || perfBusy
 
   return (
-    <button id="btn-play" className={`play-btn ${tone}`} onClick={launcher.play} disabled={disabled}>
+    <button id="btn-play" className={`play-btn ${tone}`} onClick={onPlay} disabled={disabled}>
       <span className="play-label">
         {spinner && <Spinner size={16} />}
         <PixelText text={label} scale={3} color="#ffffff" shadow="rgba(0, 0, 0, 0.28)" />

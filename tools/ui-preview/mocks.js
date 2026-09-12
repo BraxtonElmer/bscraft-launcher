@@ -24,7 +24,11 @@ export function createMocks() {
     running: false,
     logTimer: null,
     hold: params.get('hold') === '1',
+    // Server account (SimpleLogin): ?acct=new|registered|mismatch
+    acct: params.get('acct') || (installed ? 'registered' : 'new'),
+    password: installed && params.get('nopw') !== '1' ? 'hunter22' : null,
   }
+  const serverPassword = () => (state.acct === 'registered' ? 'hunter22' : state.acct === 'mismatch' ? 'something-else' : null)
 
   const files = []
   for (let i = 0; i < 209; i++) files.push({ path: `mods/mod-${i}.jar`, url: '', sha256: '', size: 3_400_000 + (i % 7) * 100_000 })
@@ -126,6 +130,25 @@ export function createMocks() {
       }, 140)
     },
     kill_game: async () => { mock.exitGame(1) },
+    get_account_status: () => ({ password_set: !!state.password }),
+    set_game_password: ({ password }) => {
+      if ([...password].length < 4 || [...password].length > 64) throw new Error('Use between 4 and 64 characters.')
+      state.password = password
+    },
+    reveal_game_password: () => state.password,
+    check_server_account: async () => {
+      await sleep(400)
+      const sp = serverPassword()
+      return { registered: sp !== null, valid: sp !== null && sp === state.password }
+    },
+    upload_skin: async ({ model }) => {
+      await sleep(700)
+      const sp = serverPassword()
+      if (sp === null) throw new Error("This name isn't registered yet. Join the server once to claim it.")
+      if (sp !== state.password) throw new Error("Password doesn't match the one registered on the server.")
+      return { model, texture: 'mocktexturehash' }
+    },
+    reset_skin: async () => { await sleep(400) },
     get_game_status: () => ({ running: state.running }),
     get_log_lines: () => [],
     exit_app: () => { console.log('exit_app') },
