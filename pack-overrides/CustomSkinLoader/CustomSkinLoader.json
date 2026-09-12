@@ -1,0 +1,19 @@
+{
+  "loadlist": [
+    {
+      "name": "BSCraft",
+      "type": "CustomSkinAPI",
+      "root": "https://bscraft.zukashix.com/skins/"
+    },
+    {
+      "name": "Mojang",
+      "type": "MojangAPI",
+      "apiRoot": "https://api.mojang.com/",
+      "sessionRoot": "https://sessionserver.mojang.com/"
+    }
+  ],
+  "enableTransparentSkin": true,
+  "forceLoadAllTextures": true,
+  "enableCape": true,
+  "cacheExpiry": 30
+}
