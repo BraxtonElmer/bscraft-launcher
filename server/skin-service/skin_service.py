@@ -2,26 +2,31 @@
 """
 BSCraft skin service.
 
-Lets players set their in-game skin from the launcher. Accounts are the
-SimpleLogin registrations on the game server: a request is authorised with
-the same credential the game client sends when joining (lowercase hex
-SHA-256 of the SimpleLogin password), checked with bcrypt against
-world/sl_entries.dat. That file is only ever read here; the game server
-owns it.
+Lets players set their in-game skin, cape and elytra from the launcher.
+Accounts are the SimpleLogin registrations on the game server: a request is
+authorised with the same credential the game client sends when joining
+(lowercase hex SHA-256 of the SimpleLogin password), checked with bcrypt
+against world/sl_entries.dat. That file is only ever read here; the game
+server owns it.
 
-Skins are published as static files in CustomSkinLoader's CustomSkinAPI
+Textures are published as static files in CustomSkinLoader's CustomSkinAPI
 format, which nginx serves from SKINS_DIR:
 
-    <SKINS_DIR>/<Username>.json      {"username": ..., "skins": {"default"|"slim": <sha256>}}
+    <SKINS_DIR>/<Username>.json      {"username": ...,
+                                      "skins": {"default"|"slim": <sha256>},   (optional)
+                                      "cape": <sha256>, "elytra": <sha256>}    (optional)
     <SKINS_DIR>/textures/<sha256>    the PNG
 
 API (behind nginx at /api/, this process listens on localhost only):
 
     GET    /api/health
-    POST   /api/account/verify   JSON {"username", "passwordHash"} -> {"registered", "valid"}
+    GET    /api/profile?name=<name>   public, case-insensitive -> {"name", "skin", "cape", "elytra"}
+    POST   /api/account/verify        JSON {"username", "passwordHash"} -> {"registered", "valid"}
     POST   /api/skin?model=default|slim   body = PNG bytes
-    DELETE /api/skin
-           Both skin routes take the headers X-Username and X-Password-Hash.
+    POST   /api/cape                      body = PNG bytes
+    POST   /api/elytra                    body = PNG bytes
+    DELETE /api/skin | /api/cape | /api/elytra
+           Texture routes take the headers X-Username and X-Password-Hash.
 
 Standard library only, plus python3-bcrypt.
 """
@@ -47,10 +52,13 @@ INDEX_FILE = os.environ.get("BSC_INDEX_FILE", "/home/ubuntu/bscraft-skins/data/i
 HOST = os.environ.get("BSC_HOST", "127.0.0.1")
 PORT = int(os.environ.get("BSC_PORT", "18765"))
 
-MAX_PNG_BYTES = 32 * 1024
 USERNAME_RE = re.compile(r"^[A-Za-z0-9_]{3,16}$")
 HASH_RE = re.compile(r"^[0-9a-f]{64}$")
 MODELS = ("default", "slim")
+KINDS = ("skin", "cape", "elytra")
+# Capes and elytra may be HD (the vanilla 64x32 layout at 2x, 4x or 8x); nginx caps bodies at 64k
+MAX_BYTES = {"skin": 32 * 1024, "cape": 60 * 1024, "elytra": 60 * 1024}
+BACK_SIZES = tuple((64 * k, 32 * k) for k in (1, 2, 4, 8))
 
 # Wrong-password throttling, per (client ip, username)
 FAIL_LIMIT = 8
@@ -107,12 +115,13 @@ def authenticate(ip: str, username: str, password_hash: str) -> None:
         raise ApiError(401, "bad_password", "Password doesn't match the one registered on the server.")
 
 
-# ── Skins ────────────────────────────────────────────────────────────────
+# ── Textures ─────────────────────────────────────────────────────────────
 
-def validate_png(data: bytes) -> tuple[int, int]:
-    """Checks this is a well-formed PNG sized like a Minecraft skin. Returns (width, height)."""
-    if len(data) > MAX_PNG_BYTES:
-        raise ApiError(413, "too_large", "Skin file is too large (max 32 KB).")
+def validate_png(data: bytes, kind: str = "skin") -> tuple[int, int]:
+    """Checks this is a well-formed PNG sized like a Minecraft skin/cape/elytra. Returns (width, height)."""
+    label = kind.capitalize()
+    if len(data) > MAX_BYTES[kind]:
+        raise ApiError(413, "too_large", f"{label} file is too large (max {MAX_BYTES[kind] // 1024} KB).")
     if not data.startswith(b"\x89PNG\r\n\x1a\n"):
         raise ApiError(400, "bad_png", "That file isn't a PNG image.")
     pos, width, height, seen_end = 8, None, None, False
@@ -130,8 +139,10 @@ def validate_png(data: bytes) -> tuple[int, int]:
         pos += 12 + length
     if width is None or not seen_end:
         raise ApiError(400, "bad_png", "The PNG file is incomplete.")
-    if (width, height) not in ((64, 64), (64, 32)):
+    if kind == "skin" and (width, height) not in ((64, 64), (64, 32)):
         raise ApiError(400, "bad_size", f"Skins must be 64×64 or 64×32 pixels (this one is {width}×{height}).")
+    if kind != "skin" and (width, height) not in BACK_SIZES:
+        raise ApiError(400, "bad_size", f"{label}s must be 64×32 pixels, or an HD version like 128×64 (this one is {width}×{height}).")
     return width, height
 
 
@@ -153,56 +164,100 @@ def atomic_write(path: str, data: bytes, mode: int = 0o644) -> None:
 
 
 def load_index() -> dict:
+    """username (lowercase) -> {"name", "skin": {"model", "texture"}?, "cape"?, "elytra"?, "updated"}"""
     try:
         with open(INDEX_FILE, encoding="utf-8") as f:
-            return json.load(f)
+            index = json.load(f)
     except FileNotFoundError:
         return {}
+    for entry in index.values():
+        # Entries written before capes existed kept the skin at the top level
+        if "texture" in entry:
+            entry["skin"] = {"model": entry.pop("model", "default"), "texture": entry.pop("texture")}
+    return index
 
 
 def save_index(index: dict) -> None:
     atomic_write(INDEX_FILE, json.dumps(index, indent=2, sort_keys=True).encode(), 0o600)
 
 
-def set_skin(username: str, model: str, png: bytes) -> dict:
-    width, height = validate_png(png)
-    if model == "slim" and height != 64:
+def unlink_quiet(path: str) -> None:
+    try:
+        os.unlink(path)
+    except FileNotFoundError:
+        pass
+
+
+def publish(entry: dict) -> None:
+    """Writes the CustomSkinAPI profile for an index entry, or removes it once nothing is left."""
+    path = os.path.join(SKINS_DIR, entry["name"] + ".json")
+    profile: dict = {"username": entry["name"]}
+    if entry.get("skin"):
+        profile["skins"] = {entry["skin"]["model"]: entry["skin"]["texture"]}
+    for kind in ("cape", "elytra"):
+        if entry.get(kind):
+            profile[kind] = entry[kind]
+    if len(profile) == 1:
+        unlink_quiet(path)
+    else:
+        atomic_write(path, json.dumps(profile).encode())
+
+
+def update_entry(username: str, change) -> dict:
+    """Applies change(entry) to a player's entry and republishes their profile."""
+    with _lock:
+        index = load_index()
+        entry = index.get(username.lower()) or {"name": username}
+        # A name's case can change between uploads; keep a single profile file
+        if entry["name"] != username:
+            unlink_quiet(os.path.join(SKINS_DIR, entry["name"] + ".json"))
+            entry["name"] = username
+        change(entry)
+        entry["updated"] = int(time.time())
+        publish(entry)
+        if any(entry.get(k) for k in KINDS):
+            index[username.lower()] = entry
+        else:
+            index.pop(username.lower(), None)
+        save_index(index)
+        return entry
+
+
+def set_texture(username: str, kind: str, png: bytes, model: str = "default") -> dict:
+    width, height = validate_png(png, kind)
+    if kind == "skin" and model == "slim" and height != 64:
         raise ApiError(400, "bad_model", "Slim arms need a 64×64 skin.")
     digest = sha256(png).hexdigest()
-    with _lock:
-        atomic_write(os.path.join(SKINS_DIR, "textures", digest), png)
-        profile = {"username": username, "skins": {model: digest}}
-        index = load_index()
-        old = index.get(username.lower())
-        # A name's case can change between uploads; keep a single profile file
-        if old and old.get("name") != username:
-            try:
-                os.unlink(os.path.join(SKINS_DIR, old["name"] + ".json"))
-            except FileNotFoundError:
-                pass
-        atomic_write(os.path.join(SKINS_DIR, username + ".json"), json.dumps(profile).encode())
-        index[username.lower()] = {"name": username, "model": model, "texture": digest, "updated": int(time.time())}
-        save_index(index)
-    return {"ok": True, "model": model, "texture": digest}
+    atomic_write(os.path.join(SKINS_DIR, "textures", digest), png)
+
+    def change(entry: dict) -> None:
+        entry[kind] = {"model": model, "texture": digest} if kind == "skin" else digest
+
+    update_entry(username, change)
+    result = {"ok": True, "kind": kind, "texture": digest}
+    if kind == "skin":
+        result["model"] = model
+    return result
 
 
-def reset_skin(username: str) -> dict:
-    with _lock:
-        index = load_index()
-        entry = index.pop(username.lower(), None)
-        for name in {username, (entry or {}).get("name")} - {None}:
-            try:
-                os.unlink(os.path.join(SKINS_DIR, name + ".json"))
-            except FileNotFoundError:
-                pass
-        save_index(index)
-    return {"ok": True}
+def remove_texture(username: str, kind: str) -> dict:
+    update_entry(username, lambda entry: entry.pop(kind, None))
+    return {"ok": True, "kind": kind}
+
+
+def public_profile(name: str) -> dict:
+    if not USERNAME_RE.match(name or ""):
+        raise ApiError(400, "bad_username", "Invalid username.")
+    entry = load_index().get(name.lower())
+    if not entry:
+        raise ApiError(404, "not_found", "No BSCraft skin for that name.")
+    return {"name": entry["name"], "skin": entry.get("skin"), "cape": entry.get("cape"), "elytra": entry.get("elytra")}
 
 
 # ── HTTP ─────────────────────────────────────────────────────────────────
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "bscraft-skins/1"
+    server_version = "bscraft-skins/2"
 
     def client_ip(self) -> str:
         # nginx is the only client; it passes the real address along
@@ -228,6 +283,8 @@ class Handler(BaseHTTPRequestHandler):
         ip = self.client_ip()
         if method == "GET" and url.path == "/api/health":
             return self.send_json(200, {"ok": True})
+        if method == "GET" and url.path == "/api/profile":
+            return self.send_json(200, public_profile(parse_qs(url.query).get("name", [""])[0]))
         if method == "POST" and url.path == "/api/account/verify":
             try:
                 body = json.loads(self.read_body(4096) or b"{}")
@@ -246,16 +303,17 @@ class Handler(BaseHTTPRequestHandler):
                 if e.code == "bad_password":
                     return self.send_json(200, {"registered": True, "valid": False})
                 raise
-        if url.path == "/api/skin" and method in ("POST", "DELETE"):
+        kind = url.path.removeprefix("/api/")
+        if kind in KINDS and method in ("POST", "DELETE"):
             username = self.headers.get("X-Username", "")
             authenticate(ip, username, self.headers.get("X-Password-Hash", ""))
             if method == "DELETE":
-                return self.send_json(200, reset_skin(username))
+                return self.send_json(200, remove_texture(username, kind))
             model = parse_qs(url.query).get("model", ["default"])[0]
             if model not in MODELS:
                 raise ApiError(400, "bad_model", "Model must be 'default' or 'slim'.")
-            png = self.read_body(MAX_PNG_BYTES + 1)
-            return self.send_json(200, set_skin(username, model, png))
+            png = self.read_body(MAX_BYTES[kind] + 1)
+            return self.send_json(200, set_texture(username, kind, png, model))
         raise ApiError(404, "not_found", "Not found.")
 
     def handle_any(self, method: str) -> None:

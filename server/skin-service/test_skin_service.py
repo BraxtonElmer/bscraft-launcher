@@ -53,7 +53,12 @@ def main() -> int:
     # Same shape SimpleLogin writes: bcrypt(sha256hex(password)), lowercase names
     stored = bcrypt.hashpw(sha256(b"hunter22").hexdigest().encode(), bcrypt.gensalt(prefix=b"2a")).decode()
     with open(entries, "w") as f:
-        json.dump([{"username": "testuser", "password": stored, "gameType": 0}], f)
+        json.dump([{"username": "testuser", "password": stored, "gameType": 0},
+                   {"username": "olduser", "password": stored, "gameType": 0}], f)
+    # An index entry in the format written before capes existed
+    os.makedirs(os.path.join(skins, "textures"))
+    with open(index, "w") as f:
+        json.dump({"olduser": {"name": "OldUser", "model": "slim", "texture": "ab" * 32, "updated": 1}}, f)
 
     env = dict(os.environ, BSC_SL_ENTRIES=entries, BSC_SKINS_DIR=skins, BSC_INDEX_FILE=index, BSC_PORT=str(PORT))
     proc = subprocess.Popen([sys.executable, os.path.join(HERE, "skin_service.py")], env=env)
@@ -102,25 +107,73 @@ def main() -> int:
         skin = png(64, 64)
         s, b = call("POST", "/api/skin?model=slim", skin, auth("TestUser", "hunter22"))
         digest = sha256(skin).hexdigest()
-        check("upload: valid slim skin", s == 200 and b == {"ok": True, "model": "slim", "texture": digest}, b)
+        check("upload: valid slim skin", s == 200 and b == {"ok": True, "kind": "skin", "model": "slim", "texture": digest}, b)
         prof_path = os.path.join(skins, "TestUser.json")
-        prof = json.load(open(prof_path)) if os.path.exists(prof_path) else None
-        check("profile JSON in CustomSkinAPI format", prof == {"username": "TestUser", "skins": {"slim": digest}}, prof)
+
+        def profile(name: str):
+            p = os.path.join(skins, name + ".json")
+            return json.load(open(p)) if os.path.exists(p) else None
+
+        check("profile JSON in CustomSkinAPI format", profile("TestUser") == {"username": "TestUser", "skins": {"slim": digest}}, profile("TestUser"))
         tex = os.path.join(skins, "textures", digest)
         check("texture stored under its sha256", os.path.exists(tex) and open(tex, "rb").read() == skin)
         check("published files are world-readable", oct(os.stat(prof_path).st_mode & 0o777) == "0o644")
 
+        # Capes and elytra
+        cape = png(64, 32, (30, 90, 200, 255))
+        cape_digest = sha256(cape).hexdigest()
+        s, b = call("POST", "/api/cape", cape, auth("TestUser", "hunter22"))
+        check("upload: cape", s == 200 and b == {"ok": True, "kind": "cape", "texture": cape_digest}, b)
+        check("profile keeps the skin and adds the cape",
+              profile("TestUser") == {"username": "TestUser", "skins": {"slim": digest}, "cape": cape_digest}, profile("TestUser"))
+        s, b = call("POST", "/api/cape", png(64, 64), auth("TestUser", "hunter22"))
+        check("upload: square cape -> 400 bad_size", s == 400 and b["error"] == "bad_size", b)
+        s, b = call("POST", "/api/cape", png(22, 17), auth("TestUser", "hunter22"))
+        check("upload: 22x17 cape -> 400 bad_size", s == 400 and b["error"] == "bad_size", b)
+        hd = png(128, 64, (10, 200, 90, 255))
+        s, b = call("POST", "/api/elytra", hd, auth("TestUser", "hunter22"))
+        check("upload: HD elytra 128x64", s == 200 and b["texture"] == sha256(hd).hexdigest(), b)
+        check("profile has skin, cape and elytra",
+              set(profile("TestUser") or {}) == {"username", "skins", "cape", "elytra"}, profile("TestUser"))
+        s, b = call("POST", "/api/elytra", b"\x89PNG\r\n\x1a\n" + os.urandom(70000), auth("TestUser", "hunter22"))
+        check("upload: oversized elytra -> 413", s == 413, b)
+
+        s, b = call("GET", "/api/profile?name=testUSER")
+        check("public profile lookup is case-insensitive",
+              s == 200 and b == {"name": "TestUser", "skin": {"model": "slim", "texture": digest}, "cape": cape_digest, "elytra": sha256(hd).hexdigest()}, b)
+        s, b = call("GET", "/api/profile?name=nobody")
+        check("public profile: unknown name -> 404", s == 404 and b["error"] == "not_found", b)
+        s, b = call("GET", "/api/profile?name=bad%20name!")
+        check("public profile: bad name -> 400", s == 400, b)
+        s, b = call("GET", "/api/profile?name=OldUser")
+        check("legacy index entry reads as a skin", s == 200 and b["skin"] == {"model": "slim", "texture": "ab" * 32} and b["cape"] is None, b)
+
         s, b = call("POST", "/api/skin?model=default", png(64, 32), auth("testuser", "hunter22"))
         check("re-upload with different name case", s == 200, b)
-        check("old-case profile removed, one profile left",
-              not os.path.exists(prof_path) and os.path.exists(os.path.join(skins, "testuser.json")),
+        check("old-case profile removed, one profile left with everything",
+              not os.path.exists(prof_path) and set(profile("testuser") or {}) == {"username", "skins", "cape", "elytra"},
               sorted(os.listdir(skins)))
 
         s, b = call("DELETE", "/api/skin", b"", auth("testuser", "hunter22"))
-        check("reset skin", s == 200 and b == {"ok": True} and not os.path.exists(os.path.join(skins, "testuser.json")), b)
+        check("remove skin keeps cape and elytra",
+              s == 200 and b == {"ok": True, "kind": "skin"} and set(profile("testuser") or {}) == {"username", "cape", "elytra"}, profile("testuser"))
+        s, b = call("DELETE", "/api/elytra", b"", auth("testuser", "hunter22"))
+        check("remove elytra", s == 200 and profile("testuser") == {"username": "testuser", "cape": cape_digest}, profile("testuser"))
+        s, b = call("DELETE", "/api/cape", b"", auth("testuser", "hunter22"))
+        check("removing the last texture deletes the profile",
+              s == 200 and profile("testuser") is None and call("GET", "/api/profile?name=testuser")[0] == 404)
+        s, b = call("DELETE", "/api/cape", b"", auth("testuser", "hunter22"))
+        check("removing again is harmless", s == 200, b)
+
+        s, b = call("POST", "/api/cape", cape, auth("olduser", "hunter22"))
+        check("legacy entry upgraded on change",
+              s == 200 and profile("OldUser") is None and profile("olduser") == {"username": "olduser", "skins": {"slim": "ab" * 32}, "cape": cape_digest},
+              profile("olduser"))
 
         s, b = call("GET", "/api/nothing")
         check("unknown route -> 404", s == 404)
+        s, b = call("POST", "/api/profile", b"", auth("testuser", "hunter22"))
+        check("POST to profile -> 404", s == 404)
 
         # Two wrong passwords were already used above (verify + upload), so 6 more reach the limit of 8
         codes = [call("POST", "/api/skin?model=default", png(64, 64), auth("testuser", f"bad{i}"))[0] for i in range(7)]

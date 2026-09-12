@@ -15,11 +15,25 @@ Everything BSCraft runs on the server at `bscraft.zukashix.com`
 ## Skin service (`skin-service/`)
 
 A small Python service (standard library + `python3-bcrypt`) that lets
-players set their skin from the launcher. Accounts are the SimpleLogin
-registrations in `BSCraft4/world/sl_entries.dat` (read-only), so a skin
-upload needs the same password the player joins with. Skins are published
-in CustomSkinLoader's CustomSkinAPI format, which the modpack's
-CustomSkinLoader loads from `https://bscraft.zukashix.com/skins/`.
+players set their skin, cape and elytra from the launcher. Accounts are the
+SimpleLogin registrations in `BSCraft4/world/sl_entries.dat` (read-only), so
+an upload needs the same password the player joins with. Textures are
+published in CustomSkinLoader's CustomSkinAPI format
+(`<Name>.json` with `skins`, `cape` and `elytra` pointing into `textures/`),
+which the modpack's CustomSkinLoader loads from
+`https://bscraft.zukashix.com/skins/`.
+
+| Route | |
+|---|---|
+| `GET /api/health` | |
+| `GET /api/profile?name=<name>` | Public, case-insensitive: what a player has published (the launcher's "copy a look") |
+| `POST /api/account/verify` | `{username, passwordHash}` → `{registered, valid}` |
+| `POST /api/skin?model=default\|slim` | PNG body, 64×64 or 64×32, max 32 KB |
+| `POST /api/cape`, `POST /api/elytra` | PNG body, 64×32 or HD up to 512×256, max 60 KB |
+| `DELETE /api/skin\|cape\|elytra` | Removes one texture; the profile file goes once nothing is left |
+
+Texture routes take the headers `X-Username` and `X-Password-Hash`
+(lowercase hex SHA-256 of the SimpleLogin password, as the game sends it).
 
 It listens on `127.0.0.1:18765`; nginx proxies `/api/` to it and serves
 `/skins/` directly.
