@@ -1,0 +1,49 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "BSCraft Launcher",
+  "version": "1.0.0",
+  "identifier": "com.zukashix.bsclauncher",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "BSCraft Launcher",
+        "width": 960,
+        "height": 580,
+        "resizable": false,
+        "decorations": false,
+        "center": true,
+        "visible": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://bscraft.zukashix.com/launcher/version.json"
+      ],
+      "dialog": false,
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDYxQkE2RUMzRTgzODg0REMKUldUY2hEam93MjY2WVV5Y3lFcmNuMnpOZVcyb2hUVGNWeXdiMHYwSVAxRXR6UllaY2lqUlVUOVQK"
+    }
+  }
+}

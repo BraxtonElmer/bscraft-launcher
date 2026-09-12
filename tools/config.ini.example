@@ -1,0 +1,30 @@
+# ============================================================
+# BSCraft Launcher — Admin Tool Config
+# Copy this file to config.ini and fill in your values.
+# ============================================================
+
+[server]
+# SSH host for rsync upload
+host = your-server.com
+
+# SSH username
+user = deploy
+
+# Remote path where modpack files live (absolute path on server)
+remote_path = /var/www/bscraft/modpack
+
+# Public base URL where files are served to the launcher
+base_url = https://your-server.com/bscraft/modpack/files
+
+[modpack]
+# Path to your local modpack folder (relative to this script or absolute)
+local_path = ./my-modpack
+
+# Minecraft version your modpack targets
+mc_version = 1.20.1
+
+# Forge build version
+forge_version = 47.3.0
+
+# Minimum Java version required (17 for MC 1.17+)
+java_version = 17

@@ -1,0 +1,3495 @@
+{
+  "modpack_version": "1.0.1",
+  "minecraft_version": "1.20.1",
+  "forge_version": "47.4.10",
+  "java_version": 17,
+  "files": [
+    {
+      "path": "config/ad_astra-client.jsonc",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/ad_astra-client.jsonc",
+      "sha256": "eff1be886673bc30e4dde7030f6970915c5c1c648d671f81bae5c941025705b3",
+      "size": 493
+    },
+    {
+      "path": "config/ad_astra.jsonc",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/ad_astra.jsonc",
+      "sha256": "52e9c20de34fd2fd4c0410697538922c8a63591da58117c40c88c681e08f7264",
+      "size": 3039
+    },
+    {
+      "path": "config/alexsmobs/alligator_snapping_turtle_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/alligator_snapping_turtle_spawns.json",
+      "sha256": "df14afd6e1e96ace0dc8e4c71bc325e3baec8dbeaebf61f682561a70fc145f9d",
+      "size": 754
+    },
+    {
+      "path": "config/alexsmobs/anaconda_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/anaconda_spawns.json",
+      "sha256": "ca961946a7b3c6e9abcb1bb82bbf36e1f9ce01d11769a06a7fbff6351293ff5d",
+      "size": 1036
+    },
+    {
+      "path": "config/alexsmobs/anteater_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/anteater_spawns.json",
+      "sha256": "f65e31155b2f2e033bed66dc5ec2ce7f6962be3389369ff800b69dfdecb5d990",
+      "size": 1166
+    },
+    {
+      "path": "config/alexsmobs/bald_eagle_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/bald_eagle_spawns.json",
+      "sha256": "f8b51a798bfa4b51e0ee8fb78c860ca5b2677583db10584792a0e1548f17d396",
+      "size": 2723
+    },
+    {
+      "path": "config/alexsmobs/banana_slug_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/banana_slug_spawns.json",
+      "sha256": "1d5d0ce4ef42e94f0361c41b4b2402b64e87f0b1b987e1f1b2f6b2ac377211a7",
+      "size": 1697
+    },
+    {
+      "path": "config/alexsmobs/bison_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/bison_spawns.json",
+      "sha256": "78e726ed002a31f5084a7b49fcce467c5623a046981d6c59d9ed7c4eb6cdbb1e",
+      "size": 1761
+    },
+    {
+      "path": "config/alexsmobs/blobfish_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/blobfish_spawns.json",
+      "sha256": "7e7b175c33aed22c3d2cd31e215c6243e3790b07a3664b42d130a8f3b897489f",
+      "size": 146
+    },
+    {
+      "path": "config/alexsmobs/blue_jay_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/blue_jay_spawns.json",
+      "sha256": "7d1f784ab378e1e851e73dbb6f81866420c1328d25f754546d82c417bf304644",
+      "size": 4020
+    },
+    {
+      "path": "config/alexsmobs/bone_serpent_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/bone_serpent_spawns.json",
+      "sha256": "47eef91378d3d6455a911d58cc3afdbfcdda7fd49968a7921b22620faa8ff672",
+      "size": 257
+    },
+    {
+      "path": "config/alexsmobs/bunfungus_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/bunfungus_spawns.json",
+      "sha256": "5d5a9d2039b6df546b788f62cb376cc29312a7115a5553541652aad7259436a6",
+      "size": 486
+    },
+    {
+      "path": "config/alexsmobs/cachalot_whale_beached_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/cachalot_whale_beached_spawns.json",
+      "sha256": "73b8f83ddfa936642b38af1003e3c47eab6f089ad61612ee5181137409038f57",
+      "size": 642
+    },
+    {
+      "path": "config/alexsmobs/cachalot_whale_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/cachalot_whale_spawns.json",
+      "sha256": "fb901f1ea0bce7b9fb51dfaeb565539a3c1a9ee86bafb49caddac7ca1002e296",
+      "size": 893
+    },
+    {
+      "path": "config/alexsmobs/caiman_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/caiman_spawns.json",
+      "sha256": "542cca079ae671a6d928737b622b205deebfe2aed5864a01b5048f501aec2753",
+      "size": 291
+    },
+    {
+      "path": "config/alexsmobs/capuchin_monkey_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/capuchin_monkey_spawns.json",
+      "sha256": "83b68d395236771ae9276f48b2988cfa9eb65e14dc41531b37a6b4e77c64859a",
+      "size": 1184
+    },
+    {
+      "path": "config/alexsmobs/catfish_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/catfish_spawns.json",
+      "sha256": "3c097d29c1f74807815d4c13e3586a76528ac3c104670ce95852bd3b62f9e16e",
+      "size": 1097
+    },
+    {
+      "path": "config/alexsmobs/cave_centipede_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/cave_centipede_spawns.json",
+      "sha256": "973b8ebc19fa04e02b050f28359ee6bffbae93367f49ecac10892f4a2c1dad7d",
+      "size": 2200
+    },
+    {
+      "path": "config/alexsmobs/cockroach_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/cockroach_spawns.json",
+      "sha256": "97a67afb52f1398f2c55e2a74001e5b893394e28d3f0eb00695f049bdd19f204",
+      "size": 2085
+    },
+    {
+      "path": "config/alexsmobs/comb_jelly_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/comb_jelly_spawns.json",
+      "sha256": "cf9ba87b0d2001543fe09d8f6a4c602c03644643a9bd49d1e9ca0b041ab4dc02",
+      "size": 414
+    },
+    {
+      "path": "config/alexsmobs/cosmaw_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/cosmaw_spawns.json",
+      "sha256": "8e1d05a9b4ab8b923ff4951ef391665f3bdd218d943152f6f1f57509786bc0f7",
+      "size": 371
+    },
+    {
+      "path": "config/alexsmobs/cosmic_cod_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/cosmic_cod_spawns.json",
+      "sha256": "aed14e990ed38ee78214b1ea4a15e06bca1b8d098e1e440596be9ab14e4403b8",
+      "size": 139
+    },
+    {
+      "path": "config/alexsmobs/crimson_mosquito_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/crimson_mosquito_spawns.json",
+      "sha256": "104fa9ce71421c5023abba88ce382957828b22341b44c2d03b3300b760482c9d",
+      "size": 785
+    },
+    {
+      "path": "config/alexsmobs/crocodile_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/crocodile_spawns.json",
+      "sha256": "a73d36d1b5dd75eb20f6143193b991e942f4ef4cef725835b66ec01197d7074f",
+      "size": 1007
+    },
+    {
+      "path": "config/alexsmobs/crow_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/crow_spawns.json",
+      "sha256": "cace87b5d504be10d1fff107ad14349066ae1c39d5200a7a29bdd5476167d9b8",
+      "size": 5146
+    },
+    {
+      "path": "config/alexsmobs/devils_hole_pupfish_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/devils_hole_pupfish_spawns.json",
+      "sha256": "e7855fa7d73f4d3af77f47ddd70b4fcbab7862302d004b4ddae9dddc75c4e402",
+      "size": 145
+    },
+    {
+      "path": "config/alexsmobs/dropbear_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/dropbear_spawns.json",
+      "sha256": "0fa8f72e4c73805727577a343758cfd39377cbdadebb88b6b2343183053e16cb",
+      "size": 403
+    },
+    {
+      "path": "config/alexsmobs/elephant_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/elephant_spawns.json",
+      "sha256": "cac271d780a6ed65db7b22e6944b6d456805d72b309865d6293ad6aa4f60c3e2",
+      "size": 1163
+    },
+    {
+      "path": "config/alexsmobs/emu_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/emu_spawns.json",
+      "sha256": "70e30e058709266e665eb6642df126eeee744d05e63d77344501e78cb4a37851",
+      "size": 1661
+    },
+    {
+      "path": "config/alexsmobs/endergrade_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/endergrade_spawns.json",
+      "sha256": "ca6e68bd3e74eb9cedcdbae4c82f594c4e85bdd54e1d0e35344a3febb9672980",
+      "size": 250
+    },
+    {
+      "path": "config/alexsmobs/enderiophage_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/enderiophage_spawns.json",
+      "sha256": "846748f4f352dead7fae39221d653713b7cbd775eaf10f80e0dea86f4e9ccb9a",
+      "size": 603
+    },
+    {
+      "path": "config/alexsmobs/farseer.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/farseer.json",
+      "sha256": "c245528d844458d8ac416572ee0df7575bb23d58beb07367d4cd55c66fec9000",
+      "size": 266
+    },
+    {
+      "path": "config/alexsmobs/flutter_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/flutter_spawns.json",
+      "sha256": "f729be2a0bc7bccc88cde40464f990d6074bfcf52a0d1d6719d8ebcd63c496ff",
+      "size": 147
+    },
+    {
+      "path": "config/alexsmobs/fly_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/fly_spawns.json",
+      "sha256": "e7855fa7d73f4d3af77f47ddd70b4fcbab7862302d004b4ddae9dddc75c4e402",
+      "size": 145
+    },
+    {
+      "path": "config/alexsmobs/flying_fish_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/flying_fish_spawns.json",
+      "sha256": "69904b309696b6081cdec1ea87bdb62f84886cf6dac600a8bca231860c3a3f2f",
+      "size": 716
+    },
+    {
+      "path": "config/alexsmobs/frilled_shark_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/frilled_shark_spawns.json",
+      "sha256": "7e7b175c33aed22c3d2cd31e215c6243e3790b07a3664b42d130a8f3b897489f",
+      "size": 146
+    },
+    {
+      "path": "config/alexsmobs/froststalker_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/froststalker_spawns.json",
+      "sha256": "2cc43cdc9df3b20cc2eeb75a3c11736558f544571640607d08dec5c0a939c02d",
+      "size": 934
+    },
+    {
+      "path": "config/alexsmobs/gazelle_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/gazelle_spawns.json",
+      "sha256": "17a5c3263942410596f91fb0aece138e5115bfabfa2a5913a63406fcb64b42d0",
+      "size": 1050
+    },
+    {
+      "path": "config/alexsmobs/gelada_monkey_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/gelada_monkey_spawns.json",
+      "sha256": "cdd0380bfa9b754856150966a042f807ac48d2f9409f4f2b543be19e87f4c41f",
+      "size": 1001
+    },
+    {
+      "path": "config/alexsmobs/giant_squid_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/giant_squid_spawns.json",
+      "sha256": "7e7b175c33aed22c3d2cd31e215c6243e3790b07a3664b42d130a8f3b897489f",
+      "size": 146
+    },
+    {
+      "path": "config/alexsmobs/gorilla_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/gorilla_spawns.json",
+      "sha256": "8c90151f66a632b01e7b8f6998f72618720aae5362c1df0bdd7fefdb13cc20c8",
+      "size": 1053
+    },
+    {
+      "path": "config/alexsmobs/grizzly_bear_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/grizzly_bear_spawns.json",
+      "sha256": "7d1f784ab378e1e851e73dbb6f81866420c1328d25f754546d82c417bf304644",
+      "size": 4020
+    },
+    {
+      "path": "config/alexsmobs/guster_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/guster_spawns.json",
+      "sha256": "263974f58a4b48df633648246820681745da9f9e16f30fefe6e07f576251dfb1",
+      "size": 1132
+    },
+    {
+      "path": "config/alexsmobs/hammerhead_shark_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/hammerhead_shark_spawns.json",
+      "sha256": "a5eeb1a3843a12ef4fde1d8a3a5f13161034457c0901d3f938aa71a20e6712f3",
+      "size": 254
+    },
+    {
+      "path": "config/alexsmobs/hummingbird_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/hummingbird_spawns.json",
+      "sha256": "6aa305d47ca32364d445c04c8a20da36a7ccef97955c27e834d4114604d2785d",
+      "size": 3029
+    },
+    {
+      "path": "config/alexsmobs/jerboa_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/jerboa_spawns.json",
+      "sha256": "c4b2ef89d9ad5c4dffcebb51209837da430b166c5767c1a38d90911c4445b124",
+      "size": 1252
+    },
+    {
+      "path": "config/alexsmobs/kangaroo_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/kangaroo_spawns.json",
+      "sha256": "70e30e058709266e665eb6642df126eeee744d05e63d77344501e78cb4a37851",
+      "size": 1661
+    },
+    {
+      "path": "config/alexsmobs/komodo_dragon_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/komodo_dragon_spawns.json",
+      "sha256": "695a3eb4d61a8208cc634871c237b0e6efc980ac668793f4686848e32cda0907",
+      "size": 775
+    },
+    {
+      "path": "config/alexsmobs/laviathan_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/laviathan_spawns.json",
+      "sha256": "07d0215377f12f1299ec46b6277426c3cf957aa1d310c97fa943cdf5ace8d260",
+      "size": 142
+    },
+    {
+      "path": "config/alexsmobs/leafcutter_anthill_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/leafcutter_anthill_spawns.json",
+      "sha256": "f65e31155b2f2e033bed66dc5ec2ce7f6962be3389369ff800b69dfdecb5d990",
+      "size": 1166
+    },
+    {
+      "path": "config/alexsmobs/lobster_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/lobster_spawns.json",
+      "sha256": "bb0c918e8dbd4d003417a1bcabb38b8433d1f9be95fe6f8feef95d30616b49a7",
+      "size": 398
+    },
+    {
+      "path": "config/alexsmobs/maned_wolf_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/maned_wolf_spawns.json",
+      "sha256": "8483d96341369b430ff2ebfebd7562b0c58c40b96be541cc88189fc696606a0d",
+      "size": 1037
+    },
+    {
+      "path": "config/alexsmobs/mantis_shrimp_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/mantis_shrimp_spawns.json",
+      "sha256": "4f6099fe4d9f99530f9f0f9bae7e55c0713506efdc47da69d227ae62137647e4",
+      "size": 385
+    },
+    {
+      "path": "config/alexsmobs/mimic_octopus_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/mimic_octopus_spawns.json",
+      "sha256": "9c68a433ab6f75ff9e8d46868480158e4c1f46949779cb0b0d973f7759dbfc2d",
+      "size": 373
+    },
+    {
+      "path": "config/alexsmobs/mimicube_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/mimicube_spawns.json",
+      "sha256": "fcace6e8c558df6eb13827f7a2b4a7f43c9fdfd3015331bd7e277329ca034c34",
+      "size": 365
+    },
+    {
+      "path": "config/alexsmobs/moose_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/moose_spawns.json",
+      "sha256": "abac051da2458ec848604b66a6d7889f7c715060bb9706c1d1822155127d096c",
+      "size": 2291
+    },
+    {
+      "path": "config/alexsmobs/mudskipper_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/mudskipper_spawns.json",
+      "sha256": "542cca079ae671a6d928737b622b205deebfe2aed5864a01b5048f501aec2753",
+      "size": 291
+    },
+    {
+      "path": "config/alexsmobs/mungus_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/mungus_spawns.json",
+      "sha256": "5d5a9d2039b6df546b788f62cb376cc29312a7115a5553541652aad7259436a6",
+      "size": 486
+    },
+    {
+      "path": "config/alexsmobs/murmur.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/murmur.json",
+      "sha256": "973b8ebc19fa04e02b050f28359ee6bffbae93367f49ecac10892f4a2c1dad7d",
+      "size": 2200
+    },
+    {
+      "path": "config/alexsmobs/orca_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/orca_spawns.json",
+      "sha256": "2e62ae273c3488a294068e5ed737dbf08791f4758cd3659308824d7bf4ece377",
+      "size": 255
+    },
+    {
+      "path": "config/alexsmobs/platypus_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/platypus_spawns.json",
+      "sha256": "b96f9e44f59f54b67460784fb1fdfa06d053f9ca9abb4fc3b04f222fd65ee958",
+      "size": 625
+    },
+    {
+      "path": "config/alexsmobs/potoo_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/potoo_spawns.json",
+      "sha256": "59c5832a40ef0e7212a4d499862f931a5dfcd3ff6d68598153f1274191b0939d",
+      "size": 148
+    },
+    {
+      "path": "config/alexsmobs/raccoon_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/raccoon_spawns.json",
+      "sha256": "2f353aa8720d03fbdef9d9e4932ecc4435b7923bbc72191fab6f46acb66d3a12",
+      "size": 3712
+    },
+    {
+      "path": "config/alexsmobs/rain_frog_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/rain_frog_spawns.json",
+      "sha256": "c4b2ef89d9ad5c4dffcebb51209837da430b166c5767c1a38d90911c4445b124",
+      "size": 1252
+    },
+    {
+      "path": "config/alexsmobs/rattlesnake_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/rattlesnake_spawns.json",
+      "sha256": "b8662bb3de9e2e5cc4af3773700fe6446c389980a80f6350f99d51f3fa2cef39",
+      "size": 1646
+    },
+    {
+      "path": "config/alexsmobs/rhinoceros_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/rhinoceros_spawns.json",
+      "sha256": "17a5c3263942410596f91fb0aece138e5115bfabfa2a5913a63406fcb64b42d0",
+      "size": 1050
+    },
+    {
+      "path": "config/alexsmobs/roadrunner_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/roadrunner_spawns.json",
+      "sha256": "b8662bb3de9e2e5cc4af3773700fe6446c389980a80f6350f99d51f3fa2cef39",
+      "size": 1646
+    },
+    {
+      "path": "config/alexsmobs/rocky_roller_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/rocky_roller_spawns.json",
+      "sha256": "98dc351abc061685560adc82bd3ffa6e4c87d4faab81e9bb6a9e2a6f07cdb177",
+      "size": 673
+    },
+    {
+      "path": "config/alexsmobs/seagull_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/seagull_spawns.json",
+      "sha256": "4dca182ebef46ea0076b8e8066add18f69527cf2f81da83e77e0409127c92dc4",
+      "size": 1296
+    },
+    {
+      "path": "config/alexsmobs/seal_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/seal_spawns.json",
+      "sha256": "ef706c1e2ba0b9356523f8aeb3679303ab98d85c9b761d0e55962e930be4d8e6",
+      "size": 877
+    },
+    {
+      "path": "config/alexsmobs/shoebill_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/shoebill_spawns.json",
+      "sha256": "0d8683c0a1b8176d4e89f88c4f3b1e6fbf6b269781497a190749904c7323eeec",
+      "size": 623
+    },
+    {
+      "path": "config/alexsmobs/skelewag_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/skelewag_spawns.json",
+      "sha256": "86aad88d05c283679e85900cab1bf3977d496849005ac068a14e40b93db35aa2",
+      "size": 374
+    },
+    {
+      "path": "config/alexsmobs/skreecher.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/skreecher.json",
+      "sha256": "f812e719afb24421c6853dacf4d1f66864305e335cfdf6193613d7c408ecab30",
+      "size": 276
+    },
+    {
+      "path": "config/alexsmobs/skunk_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/skunk_spawns.json",
+      "sha256": "01cc2eb4d92ba30b7301b9325a353cd96c5c7ff263c348795bfb34698cf8f11b",
+      "size": 2037
+    },
+    {
+      "path": "config/alexsmobs/snow_leopard_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/snow_leopard_spawns.json",
+      "sha256": "fdf546af7c7ff2307d0862c0802450eef1e99554af3a340e7a6af69fa5785ea5",
+      "size": 1808
+    },
+    {
+      "path": "config/alexsmobs/soul_vulture_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/soul_vulture_spawns.json",
+      "sha256": "45407796e49769550eef92fd3953daa191c85aaf032fb2be32fe591b0199a172",
+      "size": 523
+    },
+    {
+      "path": "config/alexsmobs/spectre_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/spectre_spawns.json",
+      "sha256": "ca6e68bd3e74eb9cedcdbae4c82f594c4e85bdd54e1d0e35344a3febb9672980",
+      "size": 250
+    },
+    {
+      "path": "config/alexsmobs/straddler_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/straddler_spawns.json",
+      "sha256": "5ee746cf50b358048a0243e4c45997285cf4a9b736758d388ad730d4ed493900",
+      "size": 664
+    },
+    {
+      "path": "config/alexsmobs/stradpole_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/stradpole_spawns.json",
+      "sha256": "5ee746cf50b358048a0243e4c45997285cf4a9b736758d388ad730d4ed493900",
+      "size": 664
+    },
+    {
+      "path": "config/alexsmobs/sugar_glider_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/sugar_glider_spawns.json",
+      "sha256": "cec5208e2e9f12aa8ce13d0f6d34a18500a77d143441c9b511df21c623fe368f",
+      "size": 418
+    },
+    {
+      "path": "config/alexsmobs/sunbird_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/sunbird_spawns.json",
+      "sha256": "7b82ff39e191bd213cd8ecf06ff9a78c4658e6f6b9d8b48a4fcc4017e7268cb5",
+      "size": 3925
+    },
+    {
+      "path": "config/alexsmobs/tarantula_hawk_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/tarantula_hawk_spawns.json",
+      "sha256": "c4b2ef89d9ad5c4dffcebb51209837da430b166c5767c1a38d90911c4445b124",
+      "size": 1252
+    },
+    {
+      "path": "config/alexsmobs/tasmanian_devil_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/tasmanian_devil_spawns.json",
+      "sha256": "40c769365424d492a4c17700bb8cfac4c8ce7fac2bc16728f0c4287e3a043130",
+      "size": 1908
+    },
+    {
+      "path": "config/alexsmobs/terrapin_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/terrapin_spawns.json",
+      "sha256": "b96f9e44f59f54b67460784fb1fdfa06d053f9ca9abb4fc3b04f222fd65ee958",
+      "size": 625
+    },
+    {
+      "path": "config/alexsmobs/tiger_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/tiger_spawns.json",
+      "sha256": "f88fc1b519759fe41347afca59030619365e173c577e8c1adfcb88777078d066",
+      "size": 1209
+    },
+    {
+      "path": "config/alexsmobs/toucan_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/toucan_spawns.json",
+      "sha256": "f65e31155b2f2e033bed66dc5ec2ce7f6962be3389369ff800b69dfdecb5d990",
+      "size": 1166
+    },
+    {
+      "path": "config/alexsmobs/triops_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/triops_spawns.json",
+      "sha256": "c4b2ef89d9ad5c4dffcebb51209837da430b166c5767c1a38d90911c4445b124",
+      "size": 1252
+    },
+    {
+      "path": "config/alexsmobs/tusklin_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/tusklin_spawns.json",
+      "sha256": "9ab4772704660c679ea30dff2db2c1272843e00675e2a7e610adcc6486120c3c",
+      "size": 882
+    },
+    {
+      "path": "config/alexsmobs/underminer.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/underminer.json",
+      "sha256": "97a67afb52f1398f2c55e2a74001e5b893394e28d3f0eb00695f049bdd19f204",
+      "size": 2085
+    },
+    {
+      "path": "config/alexsmobs/void_worm_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/void_worm_spawns.json",
+      "sha256": "6712a2d6165ed52b7d251a8fc4cbfb6c1f834210a8bda82b55440402fd2d3273",
+      "size": 18
+    },
+    {
+      "path": "config/alexsmobs/warped_mosco_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/warped_mosco_spawns.json",
+      "sha256": "6712a2d6165ed52b7d251a8fc4cbfb6c1f834210a8bda82b55440402fd2d3273",
+      "size": 18
+    },
+    {
+      "path": "config/alexsmobs/warped_toad_spawns.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs/warped_toad_spawns.json",
+      "sha256": "72126b26d7f3ae03b80df97dd103e0cec87d10829e86ac8b08da23abc7b318d8",
+      "size": 661
+    },
+    {
+      "path": "config/alexsmobs.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/alexsmobs.toml",
+      "sha256": "7c01df704a66653df7793e4c6a856815be283106df03765f196c89bd962d463c",
+      "size": 36192
+    },
+    {
+      "path": "config/ambientsounds-client.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/ambientsounds-client.json",
+      "sha256": "c98f572839ace55b0792042fa4b984311e7d876abdaccfc8a4694f5bebad766c",
+      "size": 4198
+    },
+    {
+      "path": "config/appleskin-client.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/appleskin-client.toml",
+      "sha256": "b477c8c493b28366a6b282f29f46c9415e3a4a2a23fff6e09331644c435dfd48",
+      "size": 1361
+    },
+    {
+      "path": "config/armoroftheages.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/armoroftheages.json",
+      "sha256": "99e63a1f0c630297a20ade88c7c5011bb69e5fbcc772a6e317e7661185a57ab0",
+      "size": 2719
+    },
+    {
+      "path": "config/artifacts/client.json5",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/artifacts/client.json5",
+      "sha256": "dfae4a12bf924a5e12380032ff257ec535c6b003fef539a3893adb05c0a69c56",
+      "size": 551
+    },
+    {
+      "path": "config/artifacts/common.json5",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/artifacts/common.json5",
+      "sha256": "736bec8c910558091bb749ac7adb013822a253a02f1f70637eb193952768d2b1",
+      "size": 1584
+    },
+    {
+      "path": "config/attributefix.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/attributefix.json",
+      "sha256": "215e947889d31aac818a473fdc4d0967c0427a8f5de2d6cd81a20f5b67b1e047",
+      "size": 6432
+    },
+    {
+      "path": "config/azurelib.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/azurelib.json",
+      "sha256": "9f136b36f13fb0f7d0de277ecf6d933914c7dcc3f646136cd09a68e904659109",
+      "size": 509
+    },
+    {
+      "path": "config/barteringstation-client.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/barteringstation-client.toml",
+      "sha256": "284ee1c6a5a7bdce7cccb40f818c89f66c51c95d45fc81201c537715c9e5becb",
+      "size": 139
+    },
+    {
+      "path": "config/barteringstation-server.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/barteringstation-server.toml",
+      "sha256": "05d6fec280c71adee13f88e336ee4ed9a572803337754c939946851fb93dbb9d",
+      "size": 532
+    },
+    {
+      "path": "config/bclib/biomes.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/bclib/biomes.json",
+      "sha256": "e31ef59faee81b0cff9506c0b4137f6473f68ca469d2319203bc3ca50eed6d13",
+      "size": 188
+    },
+    {
+      "path": "config/bclib/cache.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/bclib/cache.json",
+      "sha256": "66a151dbf2123ba09e0ec7c3aade37066dc98c153b692b20df7844c5a44c60b3",
+      "size": 89
+    },
+    {
+      "path": "config/bclib/client.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/bclib/client.json",
+      "sha256": "411b3a2b814e30adfff46ba7c0e688c554028fd9f5887514b29eda9807399fd1",
+      "size": 853
+    },
+    {
+      "path": "config/bclib/generator.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/bclib/generator.json",
+      "sha256": "218542dbc05094a216da6161849a631c4fd770cf5364395d521e15e00240e0bf",
+      "size": 149
+    },
+    {
+      "path": "config/bclib/main.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/bclib/main.json",
+      "sha256": "6c374c2361f59dbbace6322200613773ec01d5fb6e8fb70ac5d89463e3631f05",
+      "size": 167
+    },
+    {
+      "path": "config/bclib/server.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/bclib/server.json",
+      "sha256": "a747a0bb0548ef3b677671e5e60ac931bb2a45c212bfdb9a8b180cddb068ee87",
+      "size": 368
+    },
+    {
+      "path": "config/betteranimationscollection-client.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/betteranimationscollection-client.toml",
+      "sha256": "b697f9a6af47faf4e8b0af883d2f2cd6ddfac649e54047fa0c6bdaab6b7aaf7b",
+      "size": 9814
+    },
+    {
+      "path": "config/betterdeserttemples/forge-1_20/armorstands.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/betterdeserttemples/forge-1_20/armorstands.json",
+      "sha256": "69bcdf1b75920be28386d0389d699fd9205c785ded8840816439eb8910b2d575",
+      "size": 1104
+    },
+    {
+      "path": "config/betterdeserttemples/forge-1_20/itemframes.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/betterdeserttemples/forge-1_20/itemframes.json",
+      "sha256": "1c18db94521eb313655da09a5f57fa57646de24cea16837a290c48d169f93981",
+      "size": 614
+    },
+    {
+      "path": "config/betterdeserttemples/forge-1_20/README.txt",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/betterdeserttemples/forge-1_20/README.txt",
+      "sha256": "80ba474fdd1912739a1dc3326de6539ccfceb9d5c97f540131b567e295a7b112",
+      "size": 1683
+    },
+    {
+      "path": "config/betterdeserttemples/README.txt",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/betterdeserttemples/README.txt",
+      "sha256": "3646bc39be8c42a1432506e77721f3b963d33948d4bbd4cd5a10703834979116",
+      "size": 722
+    },
+    {
+      "path": "config/betterdeserttemples-forge-1_20.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/betterdeserttemples-forge-1_20.toml",
+      "sha256": "ee648242e301a55004cf2796dbf7d31ba1e46765ad07dd45c12053bbb4f4d387",
+      "size": 618
+    },
+    {
+      "path": "config/betterdungeons-forge-1_20.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/betterdungeons-forge-1_20.toml",
+      "sha256": "946ce267d09bcedf40defb277de8b64ee72b37118230d47b20eabf55aa32f91a",
+      "size": 3486
+    },
+    {
+      "path": "config/betterend/blocks.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/betterend/blocks.json",
+      "sha256": "826af0e8ee538fe4b6dc245ad8f76dc4c93b4d13476e97576bfe725222bf3449",
+      "size": 19183
+    },
+    {
+      "path": "config/betterend/client.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/betterend/client.json",
+      "sha256": "b0c5fe0ddb608e1511f9fb145768bbf5308ffd3a58f54c1fb3734635384b9e01",
+      "size": 126
+    },
+    {
+      "path": "config/betterend/enchantments.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/betterend/enchantments.json",
+      "sha256": "fe93e79aff2fc28279544d8578bc01206964d94cd404c9845ebe871128196803",
+      "size": 38
+    },
+    {
+      "path": "config/betterend/entities.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/betterend/entities.json",
+      "sha256": "c88c23c520341d800c6403788d500a2c8db1eebf1cb3920f9809b31f00e6558b",
+      "size": 225
+    },
+    {
+      "path": "config/betterend/generator.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/betterend/generator.json",
+      "sha256": "a4ecefba5c475dc5069638415108ba64d9a7052c74dd5bf08e8fa06c807a8a93",
+      "size": 1927
+    },
+    {
+      "path": "config/betterend/items.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/betterend/items.json",
+      "sha256": "cf9914020e5625ce893a02fbdb11e94314eeb50bac53817f09b0cac010f77061",
+      "size": 6461
+    },
+    {
+      "path": "config/betterend/portals.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/betterend/portals.json",
+      "sha256": "c0900ca41e9721a30bf49f00762f9fb80367908cd668d5c32ab2816e61ff51d7",
+      "size": 190
+    },
+    {
+      "path": "config/betterendisland-forge-1_20.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/betterendisland-forge-1_20.toml",
+      "sha256": "705bd38f35f830cdee96cda5e3b3e31bc2992b6b5962bb08820dc24fef5d0846",
+      "size": 329
+    },
+    {
+      "path": "config/betterfortresses/forge-1_20/itemframes.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/betterfortresses/forge-1_20/itemframes.json",
+      "sha256": "4982668efe986a871c7f56ab3c9e69e6aa720030ba64cef8e842fb4a3f9b6ebd",
+      "size": 901
+    },
+    {
+      "path": "config/betterfortresses/forge-1_20/README.txt",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/betterfortresses/forge-1_20/README.txt",
+      "sha256": "1175dbf9cd2e7c91b1c852a51e3c0203c68484917e877465b283e2370ad62864",
+      "size": 1339
+    },
+    {
+      "path": "config/betterfortresses/README.txt",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/betterfortresses/README.txt",
+      "sha256": "70c4264947f42dd780d476f3d36966c2d01c23d6f089d98c317f8a820e4040ee",
+      "size": 871
+    },
+    {
+      "path": "config/betterfortresses-forge-1_20.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/betterfortresses-forge-1_20.toml",
+      "sha256": "d7ad821ff76f0abe305017abe4f3e4aaf7acc6870bc66983eb140cf283ed0b95",
+      "size": 468
+    },
+    {
+      "path": "config/betterfpsdist.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/betterfpsdist.json",
+      "sha256": "7410aa05bb28180a3d5389fe955affffa7e7842e330385d042eb78e7a73db017",
+      "size": 697
+    },
+    {
+      "path": "config/betterjungletemples-forge-1_20.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/betterjungletemples-forge-1_20.toml",
+      "sha256": "1e558a006956669d6ab8dc9941eba2050365516c46f7008b3a9ee7b49764e273",
+      "size": 126
+    },
+    {
+      "path": "config/bettermineshafts-forge-1_20.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/bettermineshafts-forge-1_20.toml",
+      "sha256": "016afc8af06af822bdaa07681699b3c068ec26274116b30b359d5ff03ef9ce11",
+      "size": 3773
+    },
+    {
+      "path": "config/betternether/biomes.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/betternether/biomes.json",
+      "sha256": "31987bfe0d662bdd2d687960ba2c828355080eeab4e127ee603865a7d914fd2f",
+      "size": 7245
+    },
+    {
+      "path": "config/betternether/blocks.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/betternether/blocks.json",
+      "sha256": "630a2117c312082f809f8813745a91f3c186891be0334f83aa3f349ecc7b2bc6",
+      "size": 42
+    },
+    {
+      "path": "config/betternether/generator.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/betternether/generator.json",
+      "sha256": "57466d198aa34e46c8a47af30f591703bacd0db3e903578db229bab506e22e45",
+      "size": 1369
+    },
+    {
+      "path": "config/betternether/items.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/betternether/items.json",
+      "sha256": "b5bc2e265d9c12905b7d520e50dfcbd3b6dca335637b805f4181eed81a5ffd6f",
+      "size": 4168
+    },
+    {
+      "path": "config/betternether/main.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/betternether/main.json",
+      "sha256": "23e0bc59ba00a74deaacf6703870685f831251a95597223c0a48ca59e17be397",
+      "size": 474
+    },
+    {
+      "path": "config/betternether/mobs.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/betternether/mobs.json",
+      "sha256": "6ce59f333ede885d055ee3fb3164f38cb609843ce279d00b4bba0d2a73347a5a",
+      "size": 544
+    },
+    {
+      "path": "config/betteroceanmonuments-forge-1_20.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/betteroceanmonuments-forge-1_20.toml",
+      "sha256": "a3789bfdf19c068ae046d382d7fd627f31ecda4a91ecadef888ff91ea6b8ceb6",
+      "size": 460
+    },
+    {
+      "path": "config/betterstrongholds/forge-1_20/armorstands.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/betterstrongholds/forge-1_20/armorstands.json",
+      "sha256": "aa1f953cf9976c9a2ac5fac0fdff046871a1c6b7bafa5e3a8e7eb47b289d9723",
+      "size": 1131
+    },
+    {
+      "path": "config/betterstrongholds/forge-1_20/itemframes.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/betterstrongholds/forge-1_20/itemframes.json",
+      "sha256": "b67e80f3af6515f9e81f68bd64b5d106befa9fa0291379b62805b895a86cde38",
+      "size": 680
+    },
+    {
+      "path": "config/betterstrongholds/forge-1_20/ores.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/betterstrongholds/forge-1_20/ores.json",
+      "sha256": "b0c0ce921d1d310664bd492bf8715e07b9e051f5fed4b418009be6eb15fb2693",
+      "size": 346
+    },
+    {
+      "path": "config/betterstrongholds/forge-1_20/rareblocks.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/betterstrongholds/forge-1_20/rareblocks.json",
+      "sha256": "0a5208b0a1f52577721ea6e169ae40edd2d78269a673b89641b3a2b4ea956bc8",
+      "size": 238
+    },
+    {
+      "path": "config/betterstrongholds/forge-1_20/README.txt",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/betterstrongholds/forge-1_20/README.txt",
+      "sha256": "5aad271e60a03218eb5207dd78df8d1d36c676f212bf823701e33646010d2f19",
+      "size": 2830
+    },
+    {
+      "path": "config/betterstrongholds/README.txt",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/betterstrongholds/README.txt",
+      "sha256": "13c5f6bd52bf778533a100453d8b295802f923109e0a2951446a00674113700b",
+      "size": 707
+    },
+    {
+      "path": "config/betterstrongholds-forge-1_20.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/betterstrongholds-forge-1_20.toml",
+      "sha256": "2e9c9d71e1f2ebcc7065fa6bb09f9b3b97e4cf0bb78067182faf56d1fc14886d",
+      "size": 813
+    },
+    {
+      "path": "config/betterwitchhuts-forge-1_20.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/betterwitchhuts-forge-1_20.toml",
+      "sha256": "a053c7647937df86a050d1d2d5e2e42dae07b96af4a1e799c5c917e28456b15d",
+      "size": 440
+    },
+    {
+      "path": "config/biggerreactors-client.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/biggerreactors-client.toml",
+      "sha256": "633a71ac0c8eb72023c63df32255e20c83feca49fd8b3a8831ec25bbb7468111",
+      "size": 807
+    },
+    {
+      "path": "config/biggerreactors-server.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/biggerreactors-server.toml",
+      "sha256": "e5e3d6844900a09babdc9277b86b5872afd9621c360c3d9ae722de9b41c875a5",
+      "size": 1799
+    },
+    {
+      "path": "config/biomesoplenty/biome_toggles.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/biomesoplenty/biome_toggles.json",
+      "sha256": "6184168c00c4f45e874e0043304992c67beb5d5306e6150dec4f79dd4dd24b71",
+      "size": 1999
+    },
+    {
+      "path": "config/biomesoplenty/generation.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/biomesoplenty/generation.toml",
+      "sha256": "9de600b6c85029f74a7549a6f7074065ac55310666c54bebd4c3bf573b0379d7",
+      "size": 619
+    },
+    {
+      "path": "config/biomeswevegone/mob_spawn.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/biomeswevegone/mob_spawn.json",
+      "sha256": "b84dc298e495d19eb4b4c19482fac644aee55414b7e6e4bb1ea238de989e7970",
+      "size": 62
+    },
+    {
+      "path": "config/biomeswevegone/trades.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/biomeswevegone/trades.json",
+      "sha256": "0b05a8814f09fead55b1901b7efab7d3ab87227ea3fc6b5e65a6197261832710",
+      "size": 639
+    },
+    {
+      "path": "config/biomeswevegone/world_generation.json5",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/biomeswevegone/world_generation.json5",
+      "sha256": "3d57fde908bdb865531f8b9d5c82f3928a6986de92b87f95e5a28ba6d80a5840",
+      "size": 2907
+    },
+    {
+      "path": "config/block_factorys_bosses-client.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/block_factorys_bosses-client.toml",
+      "sha256": "2683821a189ca16e340c9e9cd22517be98362ad6f083e56d789d0f7e0a708b13",
+      "size": 2639
+    },
+    {
+      "path": "config/brewinandchewin-client.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/brewinandchewin-client.toml",
+      "sha256": "0aa704651b261b27ffa35c8b16adbf0edc74d34f51004bb157f2618c0f1154fb",
+      "size": 695
+    },
+    {
+      "path": "config/brewinandchewin-common.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/brewinandchewin-common.toml",
+      "sha256": "8ebeb27f31aa49b530e2689679ca8096887847d7e4d93a87d9d50143f5957f77",
+      "size": 1184
+    },
+    {
+      "path": "config/canary.properties",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/canary.properties",
+      "sha256": "a37eb7f218ab61f3277a103a85c5bd14ff0abe0dff94e17883bcbb5ea28a3855",
+      "size": 422
+    },
+    {
+      "path": "config/cc_vs-config.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/cc_vs-config.toml",
+      "sha256": "b90225e762beb14153aa90839571e35e036ff79914129f086b48c5f4ccc0a54d",
+      "size": 398
+    },
+    {
+      "path": "config/charmofundying-server.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/charmofundying-server.toml",
+      "sha256": "e4c5841a10d5024f4ee31cf46b201233a385aaf9badf314d9ebded3feb12d356",
+      "size": 277
+    },
+    {
+      "path": "config/citadel-common.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/citadel-common.toml",
+      "sha256": "3fcd8013137a86c00953d4be1e56945b84b87594be722bbf3b3be8d752e2577f",
+      "size": 648
+    },
+    {
+      "path": "config/cofh_core-client.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/cofh_core-client.toml",
+      "sha256": "c683eaf3dcb24312ce939ad6580490cde2dc5477349cd87e9b3ae45575f21a6b",
+      "size": 1091
+    },
+    {
+      "path": "config/cofh_core-common.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/cofh_core-common.toml",
+      "sha256": "e254fd10199336dd0e0c1c3f20a8daa1fdf9ca026b02dd9c0064ae1f058b9393",
+      "size": 656
+    },
+    {
+      "path": "config/comforts-server.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/comforts-server.toml",
+      "sha256": "24702276d0b1d6f7b5e94b4b34cbc5bd426c524a31bc005231324fc1b7976438",
+      "size": 1854
+    },
+    {
+      "path": "config/computercraft-client.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/computercraft-client.toml",
+      "sha256": "74a4490a9e22547861cccba0a9cf729be26b2a482ca3fd2c694ea0f4d08e77f2",
+      "size": 567
+    },
+    {
+      "path": "config/connector.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/connector.json",
+      "sha256": "060e296a5fddce603e50034e3cdb6059c3a0e122d0aae3d85a0523341c82ea22",
+      "size": 144
+    },
+    {
+      "path": "config/corgilib/announcement_config.json5",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/corgilib/announcement_config.json5",
+      "sha256": "37f3bbf0adb04001cfb813938d4ace3c4d8f62021dbffecc562f2c1ebcfae56c",
+      "size": 362
+    },
+    {
+      "path": "config/corpsecurioscompat-common.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/corpsecurioscompat-common.toml",
+      "sha256": "55245c61420b1403ebe9c37bf63a4c4ccb98b234cdb128a5bf14c1f46370889a",
+      "size": 292
+    },
+    {
+      "path": "config/create-client.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/create-client.toml",
+      "sha256": "7c40bc004ba478b13d0c99c2b644e50cf3a1d2d60d9b40df15822da8d8ad710c",
+      "size": 4397
+    },
+    {
+      "path": "config/create-common.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/create-common.toml",
+      "sha256": "36a4d9f5da68f6801b83ce0c4a1a8805fbeffb0dd997f2d405465d7774522296",
+      "size": 157
+    },
+    {
+      "path": "config/create_interactive-client.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/create_interactive-client.toml",
+      "sha256": "3a544cab8a5d25979b88bcf0b49ad2ad202b3eb7e19538d1857b1eb9a774a3e5",
+      "size": 41
+    },
+    {
+      "path": "config/create_interactive-common.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/create_interactive-common.toml",
+      "sha256": "d495b5531b12b1a50e97394e70abb2f681493b8c43697bfd17f9db3b63b28ccc",
+      "size": 87
+    },
+    {
+      "path": "config/create_new_age-client.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/create_new_age-client.toml",
+      "sha256": "6c43ef83a82c7bfb82f3f5fc39bcdd9fe1cf56c76ca035971cc067f99153fbad",
+      "size": 254
+    },
+    {
+      "path": "config/create_new_age-common.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/create_new_age-common.toml",
+      "sha256": "2b94526494fc5aee3fb801a0e5827585d39f028b1383bae85cfb7ca18dae00bb",
+      "size": 3443
+    },
+    {
+      "path": "config/create_wt-common.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/create_wt-common.toml",
+      "sha256": "ba0e48b3f9dc17cce9e3b6536111da71d79b52e45aca968106e66c8aa43c8aa5",
+      "size": 523
+    },
+    {
+      "path": "config/createaddition-common.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/createaddition-common.toml",
+      "sha256": "97d4858e0b7612ff5926755455d9e0c5b1b91b566e0b576027d16dd4b23d2891",
+      "size": 4446
+    },
+    {
+      "path": "config/createdieselgenerators-client.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/createdieselgenerators-client.toml",
+      "sha256": "517f456eab2ca28cfcd471b2fefb23641301a3bbf49fc5c4a9111914166aea93",
+      "size": 247
+    },
+    {
+      "path": "config/createdieselgenerators-common.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/createdieselgenerators-common.toml",
+      "sha256": "3c9ccf9ddb67bbb16a6e59ee8bee9531dca9c07dd58bf12f5dde6d482a577dc6",
+      "size": 411
+    },
+    {
+      "path": "config/createnuclear-common.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/createnuclear-common.toml",
+      "sha256": "5ee17e88f022c108537896c145cbf0ed7e205691cd1fdee78fe250dcf9a14e03",
+      "size": 967
+    },
+    {
+      "path": "config/createpropulsion-client.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/createpropulsion-client.toml",
+      "sha256": "f8fe98bb984b2e954b0b403b1789672e81325fa1ba6fc06b01e69d7f7452e067",
+      "size": 2339
+    },
+    {
+      "path": "config/cristellib/minecraftED.json5",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/cristellib/minecraftED.json5",
+      "sha256": "8e01cc9b7e46f74fd60ce36d3459628b8198cb988051ae52f14cda36ef0fd869",
+      "size": 1476
+    },
+    {
+      "path": "config/cristellib/minecraftP.json5",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/cristellib/minecraftP.json5",
+      "sha256": "8fe09b83f2fe6bf9d547e99b8d883aef42bf3d9e2e6f5bd43ec3fcd4c7f756da",
+      "size": 1752
+    },
+    {
+      "path": "config/croptopia/croptopia_v3.conf",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/croptopia/croptopia_v3.conf",
+      "sha256": "d0f5472f5b2f124a8d716dbb3c3e09c6ce14400cf528dd6ceb035e85cf5061c1",
+      "size": 13630
+    },
+    {
+      "path": "config/cull-less-leaves.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/cull-less-leaves.json",
+      "sha256": "6bc92f3695f35c601c2adfa1f51e9f616df379288f2a260fd1f4011c5bad50ee",
+      "size": 35
+    },
+    {
+      "path": "config/cupboard.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/cupboard.json",
+      "sha256": "937698438af081495eebab187013f66570218e1443f35db8a2ca0b4cb6d9638b",
+      "size": 1304
+    },
+    {
+      "path": "config/curios-client.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/curios-client.toml",
+      "sha256": "ebc96c813d601e9c61b6929a8490e71fa990dc64918c19e1f9937bb275510abc",
+      "size": 706
+    },
+    {
+      "path": "config/curios-common.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/curios-common.toml",
+      "sha256": "5fe808869d46a4b80e1191fbe40f40a4d63987beda0eaeb2d89b909a990ea2ea",
+      "size": 161
+    },
+    {
+      "path": "config/darkwaters.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/darkwaters.json",
+      "sha256": "a780ad76af442a54eb693f545d3ee75640c2fa19e93d37aa2d97be5ca4bc7665",
+      "size": 907
+    },
+    {
+      "path": "config/dawnoftimebuilder/patrons_cache.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/dawnoftimebuilder/patrons_cache.json",
+      "sha256": "d6ef65430c1437d9a52a42797fccd070f3a8d0d2670db544d52bf034c49d55f9",
+      "size": 1480
+    },
+    {
+      "path": "config/delightful-common.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/delightful-common.toml",
+      "sha256": "fbbfd0e432a04d5da02ff6bf28cad4ab768b2dd1779130feee6acb6bebda41f9",
+      "size": 5013
+    },
+    {
+      "path": "config/DistantHorizons.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/DistantHorizons.toml",
+      "sha256": "3109c9390bed16a5946dd8b39477d9e8d49bddd12830c154e722e805f4c3341e",
+      "size": 32928
+    },
+    {
+      "path": "config/dragonmounts-client.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/dragonmounts-client.toml",
+      "sha256": "5246cb51560b7715280b7835d5e76334aca8306daa4b31b11b0599bd67261197",
+      "size": 912
+    },
+    {
+      "path": "config/dragonmounts-common.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/dragonmounts-common.toml",
+      "sha256": "8cc60bc976bd9be2e1f120c7d5bf401c3b88bc3fdb819a56b0bb607843848992",
+      "size": 3929
+    },
+    {
+      "path": "config/ecologics-common.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/ecologics-common.toml",
+      "sha256": "ae240f92ae82e771f3390b37f404e632fb409270128f9ae1d1e9d283480e383d",
+      "size": 816
+    },
+    {
+      "path": "config/embeddium-fingerprint.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/embeddium-fingerprint.json",
+      "sha256": "97ff4aacb9888823695e032a3c5624cbcd3a5d717a03d0b9110d867a55c356cf",
+      "size": 427
+    },
+    {
+      "path": "config/embeddium-mixins.properties",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/embeddium-mixins.properties",
+      "sha256": "09ff183e061d93b79514bc171bf9118497578757e7a5c45946039487656e2619",
+      "size": 269
+    },
+    {
+      "path": "config/embeddium-options.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/embeddium-options.json",
+      "sha256": "b15d08c16fcfa2e96155147093384d06b31ef19656cdf1d0bca2af11395aae18",
+      "size": 851
+    },
+    {
+      "path": "config/enchdesc.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/enchdesc.json",
+      "sha256": "69e1df6089b71c3c2fe2c7cf6760937094fd22434111f527229a9fcea3f90bc5",
+      "size": 189
+    },
+    {
+      "path": "config/entityculling.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/entityculling.json",
+      "sha256": "da13c5bbd33e17050270f49fd151443f7aa8d16115c038c8d047c8844615b4d8",
+      "size": 1921
+    },
+    {
+      "path": "config/extremereactors/client.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/extremereactors/client.toml",
+      "sha256": "9e6b6e8cf10cc526b8144f57ba7cfb3c342321b7f0ef02730b08fc5179de361d",
+      "size": 591
+    },
+    {
+      "path": "config/extremereactors/common.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/extremereactors/common.toml",
+      "sha256": "ca2932466d007745067d0fd533bbbfc55bdbd9c46d0de3dc226cd5999b090888",
+      "size": 4884
+    },
+    {
+      "path": "config/fabric/indigo-renderer.properties",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/fabric/indigo-renderer.properties",
+      "sha256": "8503aa7fe3fa6fb9354e2e5ca65dfb15eed80bf65d90903d1847eb2f40ebfd60",
+      "size": 290
+    },
+    {
+      "path": "config/fallingleaves-client.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/fallingleaves-client.toml",
+      "sha256": "2cd017af6632239398b694fadf8191d6073cf39585549876cc682843f521ecb3",
+      "size": 796
+    },
+    {
+      "path": "config/farmersdelight-client.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/farmersdelight-client.toml",
+      "sha256": "940f68676859e852c600974c4776e986453ce7d3b2cf27ac156535e26c160e11",
+      "size": 478
+    },
+    {
+      "path": "config/farmersdelight-common.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/farmersdelight-common.toml",
+      "sha256": "459c4d9fcf137f0533da3280349f2abe51510497632130cbc23507dd121b1bd8",
+      "size": 3930
+    },
+    {
+      "path": "config/farsight.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/farsight.json",
+      "sha256": "98a9f53e1e21247108a90e80b9cf4141fd7b432e219a262672ffedd5730afbab",
+      "size": 120
+    },
+    {
+      "path": "config/ferritecore-mixin.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/ferritecore-mixin.toml",
+      "sha256": "53e846d82c80068ec5284c27aef9a67b6cdcebea31fcce2a33c1cfd6125c7ed1",
+      "size": 1516
+    },
+    {
+      "path": "config/fluxnetworks-client.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/fluxnetworks-client.toml",
+      "sha256": "a4d5d1dbd640f1cfe4daa2f78ad76f4fe2a939937bbcec2b157b54ecda4e7d6e",
+      "size": 135
+    },
+    {
+      "path": "config/fluxnetworks-common.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/fluxnetworks-common.toml",
+      "sha256": "a67d3281d40aefa23a85aec7b69bc9b0dee81496793d9c33cd7d25e879bf41a1",
+      "size": 838
+    },
+    {
+      "path": "config/flywheel-client.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/flywheel-client.toml",
+      "sha256": "91830a62c24898b197ea5a244924e8b9388bd72c50e4ba4e91efa21264168716",
+      "size": 623
+    },
+    {
+      "path": "config/fml.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/fml.toml",
+      "sha256": "eb6e8b8eda9682889a83d55262ef96cf37153d58fe7f0fa5d5cb1da5d9f7dd9b",
+      "size": 1147
+    },
+    {
+      "path": "config/forge-client.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/forge-client.toml",
+      "sha256": "0b1b3c45343435184c9dde3149b38afcdb97953e287686ecda54385f53ebcddc",
+      "size": 1628
+    },
+    {
+      "path": "config/fpsreducer/fpsreducer-client.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/fpsreducer/fpsreducer-client.toml",
+      "sha256": "f7637fe490fad786a7c62914711f068bc3d6909eff244f22788eb6f13d14fd0c",
+      "size": 3351
+    },
+    {
+      "path": "config/graveyard/the-graveyard-3.0-config.json5",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/graveyard/the-graveyard-3.0-config.json5",
+      "sha256": "d3c4b80ecc098946480ef5186657c671520a2d0592d30ad4b49a4ec2ae40aada",
+      "size": 5084
+    },
+    {
+      "path": "config/immersive_aircraft.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/immersive_aircraft.json",
+      "sha256": "157139d7f9f38bdf952b0001fe43c40bb5c01620d9fb0829932668b687c976dc",
+      "size": 1518
+    },
+    {
+      "path": "config/immersive_armors.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/immersive_armors.json",
+      "sha256": "3b1b222917697f4e339d7770136473fb277c46687d94b85f0b0835be8ebad695",
+      "size": 435
+    },
+    {
+      "path": "config/InventoryHUD/curios.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/InventoryHUD/curios.json",
+      "sha256": "fdb0cc3c45956522cb576643f6d930cc43a7f71fc165672cc72b3c99fbb67e96",
+      "size": 922
+    },
+    {
+      "path": "config/inventoryhud-client.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/inventoryhud-client.toml",
+      "sha256": "095ea8666045686e05a98703350f1213bc34fe7faaaee05e3c202c832cc791ad",
+      "size": 5506
+    },
+    {
+      "path": "config/inventoryprofilesnext/integrationHints/exampleIntegrationHints.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/inventoryprofilesnext/integrationHints/exampleIntegrationHints.json",
+      "sha256": "ca413dea02cce69c69dccdc525fb0ec013236876eff2d142772c68db3d772d3a",
+      "size": 1450
+    },
+    {
+      "path": "config/inventoryprofilesnext/inventoryprofiles.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/inventoryprofilesnext/inventoryprofiles.json",
+      "sha256": "a44027e5b5bf7106a7657a84978cbdb46b0d55ac9db0cf77636d4670c4ebfdc3",
+      "size": 57
+    },
+    {
+      "path": "config/inventoryprofilesnext/New World/prev-villager-trading-config.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/inventoryprofilesnext/New World/prev-villager-trading-config.json",
+      "sha256": "d8159a94fc4562651a5c47dc83e46a7fd71dd70e143fca53d7b288393a87b4ef",
+      "size": 1177
+    },
+    {
+      "path": "config/inventoryprofilesnext/New World/villager-trading-config.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/inventoryprofilesnext/New World/villager-trading-config.json",
+      "sha256": "d8159a94fc4562651a5c47dc83e46a7fd71dd70e143fca53d7b288393a87b4ef",
+      "size": 1177
+    },
+    {
+      "path": "config/inventoryprofilesnext/Reborn/prev-villager-trading-config.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/inventoryprofilesnext/Reborn/prev-villager-trading-config.json",
+      "sha256": "d8159a94fc4562651a5c47dc83e46a7fd71dd70e143fca53d7b288393a87b4ef",
+      "size": 1177
+    },
+    {
+      "path": "config/inventoryprofilesnext/Reborn/villager-trading-config.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/inventoryprofilesnext/Reborn/villager-trading-config.json",
+      "sha256": "d8159a94fc4562651a5c47dc83e46a7fd71dd70e143fca53d7b288393a87b4ef",
+      "size": 1177
+    },
+    {
+      "path": "config/inventoryprofilesnext/Resurrection/prev-villager-trading-config.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/inventoryprofilesnext/Resurrection/prev-villager-trading-config.json",
+      "sha256": "d8159a94fc4562651a5c47dc83e46a7fd71dd70e143fca53d7b288393a87b4ef",
+      "size": 1177
+    },
+    {
+      "path": "config/inventoryprofilesnext/Resurrection/villager-trading-config.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/inventoryprofilesnext/Resurrection/villager-trading-config.json",
+      "sha256": "d8159a94fc4562651a5c47dc83e46a7fd71dd70e143fca53d7b288393a87b4ef",
+      "size": 1177
+    },
+    {
+      "path": "config/inventoryprofilesnext/villager-trading-config.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/inventoryprofilesnext/villager-trading-config.json",
+      "sha256": "d8159a94fc4562651a5c47dc83e46a7fd71dd70e143fca53d7b288393a87b4ef",
+      "size": 1177
+    },
+    {
+      "path": "config/inventoryprofilesnext/zukashix.com/villager-trading-config.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/inventoryprofilesnext/zukashix.com/villager-trading-config.json",
+      "sha256": "d8159a94fc4562651a5c47dc83e46a7fd71dd70e143fca53d7b288393a87b4ef",
+      "size": 1177
+    },
+    {
+      "path": "config/jade/hide-blocks.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/jade/hide-blocks.json",
+      "sha256": "247df2699ebb5a0d4c9585aeeb267ef9388cd5bee2b13ca340f35124a135b35b",
+      "size": 191
+    },
+    {
+      "path": "config/jade/hide-entities.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/jade/hide-entities.json",
+      "sha256": "22b4560c3dc05da35a70bb6611da0ce04cff295ab8c663afd58e725c396a24b3",
+      "size": 325
+    },
+    {
+      "path": "config/jade/jade.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/jade/jade.json",
+      "sha256": "8a9c0403b385ca106d0c0b541ea2f2128bf39e3f9b05b342b176ca11834857a4",
+      "size": 974
+    },
+    {
+      "path": "config/jade/plugins.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/jade/plugins.json",
+      "sha256": "fee5bfc80c166f0de8a8eb128f0475886ce2e9868b2516083e1e7e33a6f065c7",
+      "size": 2472
+    },
+    {
+      "path": "config/jade/sort-order.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/jade/sort-order.json",
+      "sha256": "a88c9db0bf441952c521abba9e27a4e18ca495b291d4609f687931c875aaca8a",
+      "size": 2181
+    },
+    {
+      "path": "config/jei/blacklist.cfg",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/jei/blacklist.cfg",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "path": "config/jei/ingredient-list-mod-sort-order.ini",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/jei/ingredient-list-mod-sort-order.ini",
+      "sha256": "83d0fe00a9302097a4f3be8fae281bb8cba9096bf30c9127ab25cbd72afac6e8",
+      "size": 1421
+    },
+    {
+      "path": "config/jei/ingredient-list-type-sort-order.ini",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/jei/ingredient-list-type-sort-order.ini",
+      "sha256": "5a6c8729081e8fd7abaf634c9d238cab4700ef4dda04de73873edf4f6c997b3b",
+      "size": 155
+    },
+    {
+      "path": "config/jei/jei-client.ini",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/jei/jei-client.ini",
+      "sha256": "30503916553a0a302f433abd1c99a54303312cf426b7a6b49d0dff0461c82aba",
+      "size": 8658
+    },
+    {
+      "path": "config/jei/jei-colors.ini",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/jei/jei-colors.ini",
+      "sha256": "5f37aacd70460fdc2631ff45e98e8a2ce4e52d3e9a50917edf40eeed1236952e",
+      "size": 1338
+    },
+    {
+      "path": "config/jei/jei-debug.ini",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/jei/jei-debug.ini",
+      "sha256": "ee9bb0f0f8465629951fe9a532f3ebe3327671a12d4cc6395860d7f7494b970b",
+      "size": 918
+    },
+    {
+      "path": "config/jei/jei-mod-id-format.ini",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/jei/jei-mod-id-format.ini",
+      "sha256": "326b4f9b813ca8183bfaeee184cf7248c7a75c4d85b59322e349c0e964c253f3",
+      "size": 463
+    },
+    {
+      "path": "config/jei/recipe-category-sort-order.ini",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/jei/recipe-category-sort-order.ini",
+      "sha256": "67fe015d47d49241c48a2200fe3c8ed7ed80cda9910724799a67fcd309f04b3d",
+      "size": 2723
+    },
+    {
+      "path": "config/jeresources-common.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/jeresources-common.toml",
+      "sha256": "9dbe8c6973dc932be6dd20cb63381276740b23c75349dbe870fc8098c8529989",
+      "size": 236
+    },
+    {
+      "path": "config/jeresources.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/jeresources.toml",
+      "sha256": "9dbe8c6973dc932be6dd20cb63381276740b23c75349dbe870fc8098c8529989",
+      "size": 236
+    },
+    {
+      "path": "config/l2_configs/l2library-client.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/l2_configs/l2library-client.toml",
+      "sha256": "bee1c76cbc66e917babe40a1fc94132bc9c227aa69e17d27417cd77dab532e74",
+      "size": 502
+    },
+    {
+      "path": "config/l2_configs/l2library-common.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/l2_configs/l2library-common.toml",
+      "sha256": "1200e86c053c1bc905bfe01a6b69bc09c0ad21feae8ee25c23c48d345672a4f8",
+      "size": 70
+    },
+    {
+      "path": "config/legendarytooltips-common.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/legendarytooltips-common.toml",
+      "sha256": "c51c5a927c1f59d9373c038aea225dc618647ac076a9142d25111c86feaab64e",
+      "size": 8283
+    },
+    {
+      "path": "config/logprot.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/logprot.json",
+      "sha256": "5548e8fcf3ab17301d14c841ad51b76b872bcac6f698ab1706974334a493d87e",
+      "size": 697
+    },
+    {
+      "path": "config/lootr-client.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/lootr-client.toml",
+      "sha256": "4e37c085446f2a5be3a3cc4765ffc9657e71473245574c3e398c64fef07615a0",
+      "size": 243
+    },
+    {
+      "path": "config/lootr-common.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/lootr-common.toml",
+      "sha256": "8608b427ee774c20c04cdcd9044269bacd87d74c28497ca6c784a25286d4200f",
+      "size": 6610
+    },
+    {
+      "path": "config/mcjtylib-client.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/mcjtylib-client.toml",
+      "sha256": "d1e8040321a75d58a472dec80d22df4010ea5965e2e73dee1ddc28e2ff69cf36",
+      "size": 5763
+    },
+    {
+      "path": "config/midnightlib.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/midnightlib.json",
+      "sha256": "9bcdd9f5ae6c9fecc3a0dfee7507bf17c56702f14e40db9cdde90148f1d3b387",
+      "size": 34
+    },
+    {
+      "path": "config/mobplaques-client.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/mobplaques-client.toml",
+      "sha256": "b8e3c3b38c3668ce20fb0c0cd6f2d0c98c2c0523f8d86e7aa8b55eb4a190488e",
+      "size": 3258
+    },
+    {
+      "path": "config/modernfix-common.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/modernfix-common.toml",
+      "sha256": "fad9aea710ec3508eab562cd8f2b5f8e2dda6ee1c5fb1fe818f90ce253017f66",
+      "size": 107
+    },
+    {
+      "path": "config/modernfix-mixins.properties",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/modernfix-mixins.properties",
+      "sha256": "ff5ce98b908c6949e217e24f7d850c0f8bc86e6f4975e082f5e5121b3d1b60c0",
+      "size": 6452
+    },
+    {
+      "path": "config/moonlight-client.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/moonlight-client.toml",
+      "sha256": "47297d47ca3fa4525d1adbc7234b9b0dc2ee490b87216fe6002e34ff69acac08",
+      "size": 1027
+    },
+    {
+      "path": "config/moonlight-common.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/moonlight-common.toml",
+      "sha256": "02cd35fbcc371cf63303ae1264ad9f4613b3f73ace93417af825baf7d3ac7baf",
+      "size": 1023
+    },
+    {
+      "path": "config/MouseTweaks.cfg",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/MouseTweaks.cfg",
+      "sha256": "4069ce1a439d8c37453c1b1e9f2037e0942674c7e48723a39b37eab245792ad4",
+      "size": 135
+    },
+    {
+      "path": "config/mowziesmobs-client.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/mowziesmobs-client.toml",
+      "sha256": "b2ed15f55eb1b57f7e1b4a81b99edd02d98d9000d319d72d73caae13e5fc4cc4",
+      "size": 984
+    },
+    {
+      "path": "config/mowziesmobs-common.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/mowziesmobs-common.toml",
+      "sha256": "e1add6dce3cbd2d1b49536ccc3309e00a09455bd12d85a9dd6717529cdbdfcc7",
+      "size": 35974
+    },
+    {
+      "path": "config/naturalist.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/naturalist.json",
+      "sha256": "022aeb6c92073255d6ad01f0f47eecf574bcb19aa9bc9d8d11eeae1479079226",
+      "size": 3703
+    },
+    {
+      "path": "config/naturescompass-client.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/naturescompass-client.toml",
+      "sha256": "4215398614d28a24d2fe39593bf25981dd67ae46f85bc710ee07ba2d37c74c0b",
+      "size": 432
+    },
+    {
+      "path": "config/naturescompass-common.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/naturescompass-common.toml",
+      "sha256": "538aae74ea0b2f15762899e6ee36bb9df856c2a60ca6266b74d0b2008394fc2b",
+      "size": 2126
+    },
+    {
+      "path": "config/notenoughanimations.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/notenoughanimations.json",
+      "sha256": "45121987f8bbbb948bd5096ffb02b1361c762b3e34836b3f9097a9a4ef7222d4",
+      "size": 3357
+    },
+    {
+      "path": "config/nyctophobia-common.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/nyctophobia-common.toml",
+      "sha256": "dd7c38dda49c8bb19201c9c408266287d2169edaa7df395f9100bed88508e505",
+      "size": 2771
+    },
+    {
+      "path": "config/Obscuria/aquamirae-client.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/Obscuria/aquamirae-client.toml",
+      "sha256": "c5913558bc43a17ff28e21853f6be9713f3d0a6416235e11aaedb8a3998bcb4d",
+      "size": 200
+    },
+    {
+      "path": "config/Obscuria/aquamirae-common.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/Obscuria/aquamirae-common.toml",
+      "sha256": "605fcfc142b5932110449fba08631b06a039cceaa787c518a0a2d727af3b78a3",
+      "size": 2170
+    },
+    {
+      "path": "config/Obscuria/Data/aquamirae_cover.png",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/Obscuria/Data/aquamirae_cover.png",
+      "sha256": "86bec2df159c61ba721a71c7c951450332e3581ce3c8268611c140558989d5b9",
+      "size": 137180
+    },
+    {
+      "path": "config/Obscuria/Data/loot_journal_cover.png",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/Obscuria/Data/loot_journal_cover.png",
+      "sha256": "c516870f7eabb04f762e581df53a7c7330ec28c68f2245fb07885af71bd37830",
+      "size": 32741
+    },
+    {
+      "path": "config/Obscuria/Data/obscure_api_cover.png",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/Obscuria/Data/obscure_api_cover.png",
+      "sha256": "ecd943698913173d1513b8a300072557304e9c262eb8eaa012ba0a357a6a5ad1",
+      "size": 64456
+    },
+    {
+      "path": "config/Obscuria/obscure-api-client.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/Obscuria/obscure-api-client.toml",
+      "sha256": "90b60c01677fe0899e1b1fbf0deb8aba975f3540a0abb979a1c9aa7760930fe2",
+      "size": 359
+    },
+    {
+      "path": "config/oculus.properties",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/oculus.properties",
+      "sha256": "a92cc336b7b1b03daa44750c30bde59432ebecceff709f12ef0bf25b434a8598",
+      "size": 253
+    },
+    {
+      "path": "config/ok_zoomer/config.json5",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/ok_zoomer/config.json5",
+      "sha256": "77ad8c63a215bfec82bb2402d808fa02086ce7b9a500a7fb2fe2792dc68d5e67",
+      "size": 7436
+    },
+    {
+      "path": "config/openloader/advanced_options.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/openloader/advanced_options.json",
+      "sha256": "2ee7700b88371d21265000c50ef149c42863fd22e0ecbb5dc6af78fd7493fee8",
+      "size": 177
+    },
+    {
+      "path": "config/particular-common.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/particular-common.toml",
+      "sha256": "0eeec5e9bdfaee0dc353908131e3421c6cc79ff8930e6d69b99f17d8abb13445",
+      "size": 3083
+    },
+    {
+      "path": "config/phosphophyllite/general-server.json5",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/phosphophyllite/general-server.json5",
+      "sha256": "2d69b1d11a143a0e094b21c4e53e81c0a2d9fba789bb3252567024a68018811e",
+      "size": 408
+    },
+    {
+      "path": "config/phosphophyllite/quartz-client.json5",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/phosphophyllite/quartz-client.json5",
+      "sha256": "11afece71a71a217aa32563d06966638385163ba1661d46daa91541e3508c916",
+      "size": 617
+    },
+    {
+      "path": "config/polymorph-integrations.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/polymorph-integrations.toml",
+      "sha256": "f09398fbdb8880a2e2a0f234aa6578dd49ada68fecbe899608841f39c430034a",
+      "size": 333
+    },
+    {
+      "path": "config/ponder-client.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/ponder-client.toml",
+      "sha256": "56291af4bc3506692c79f5c0155c47cce8577d0aae6ed5930c9074d5cb9bc5c8",
+      "size": 619
+    },
+    {
+      "path": "config/powah.json5",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/powah.json5",
+      "sha256": "7ba135f66cb7ed1d7decfa7478be82e0f6b3f0498a25909ed3dd50f7462d71e3",
+      "size": 8023
+    },
+    {
+      "path": "config/powergrid-client.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/powergrid-client.toml",
+      "sha256": "4d2c8694734c433880385538bca96427d1313f946e6e6bce428f6764daf3e8e4",
+      "size": 1117
+    },
+    {
+      "path": "config/powergrid-common.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/powergrid-common.toml",
+      "sha256": "86046dd742e331c0ccb4050975a60a58c48f41ec9798ee93b9a96a4005208012",
+      "size": 609
+    },
+    {
+      "path": "config/presencefootsteps/updater.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/presencefootsteps/updater.json",
+      "sha256": "1e7c61df09c105e1eeca8cf3dcbdfeb976700e9904bcb3983fc7791adb7fad2e",
+      "size": 68
+    },
+    {
+      "path": "config/presencefootsteps/userconfig.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/presencefootsteps/userconfig.json",
+      "sha256": "8cf6192eda81b3a27737440cfdedc05c40a8c1b552583114c1aa6fb2673ca907",
+      "size": 427
+    },
+    {
+      "path": "config/railways-client.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/railways-client.toml",
+      "sha256": "f3e6295841dd104d85bbc1bd529c09c4a3bd4a6d0a7cc859f1aa7f866481a10c",
+      "size": 1979
+    },
+    {
+      "path": "config/railways-common.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/railways-common.toml",
+      "sha256": "1f660c8bd0c374799862392ef7a56253544f5adaf653e59386cd1eb34f94fa2f",
+      "size": 337
+    },
+    {
+      "path": "config/regions_unexplored/ru-common.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/regions_unexplored/ru-common.toml",
+      "sha256": "f172a7acb56bb4a3ce23925f1ef85b6441e47f94956c24e4db4c34bf8366745c",
+      "size": 3644
+    },
+    {
+      "path": "config/regions_unexplored/ru-primary-region.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/regions_unexplored/ru-primary-region.toml",
+      "sha256": "03a3a59b20d66a1be08da11863340029ea42060a92e413f145eaa5daf9a582d4",
+      "size": 13851
+    },
+    {
+      "path": "config/regions_unexplored/ru-secondary-region.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/regions_unexplored/ru-secondary-region.toml",
+      "sha256": "77d4b1625ba1754bc129bc47a98186ad1869e86737867dac98cabd8621ed916f",
+      "size": 13786
+    },
+    {
+      "path": "config/repurposed_structures-forge/modded_loot.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/repurposed_structures-forge/modded_loot.toml",
+      "sha256": "2e19ce956057b47999b99180c57c3cc591a58b7eeec739aa70c3c88c5adbcce5",
+      "size": 554
+    },
+    {
+      "path": "config/resourceful-config-web.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/resourceful-config-web.json",
+      "sha256": "cda2349b82042e176664f06618eda97661e74a430f818e364d5b16d358288457",
+      "size": 196
+    },
+    {
+      "path": "config/rftoolsbuilder-client.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/rftoolsbuilder-client.toml",
+      "sha256": "5c17254a35d8fdf5d4bab537a40cedfcb9a02b398c915c82dc4a657a13a6b73b",
+      "size": 780
+    },
+    {
+      "path": "config/rftoolsdim-common.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/rftoolsdim-common.toml",
+      "sha256": "a20418b35a349fd095d179878a20de1413b00899da101b20f68aba5090213a8f",
+      "size": 232
+    },
+    {
+      "path": "config/rftoolsutility-client.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/rftoolsutility-client.toml",
+      "sha256": "77b0594f22ea4de4e3f5d45d3426829bae7fa13daa351c39094fab7eff1caad5",
+      "size": 517
+    },
+    {
+      "path": "config/rottencreatures-common.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/rottencreatures-common.toml",
+      "sha256": "df3435fff28b5b7deb2329d2de56b369235b22798c00905cf0a24cdc367c61bf",
+      "size": 618
+    },
+    {
+      "path": "config/rsgauges-common.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/rsgauges-common.toml",
+      "sha256": "bd6610e1577bb832950bea7c7c385eaa9135df724d8be6efd0598364cc24ed39",
+      "size": 3066
+    },
+    {
+      "path": "config/ryoamiclights.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/ryoamiclights.toml",
+      "sha256": "9ad7f3e288fd7fd54ac7f9bd87bc0c68812532a89cb45971635cd7a9254d99e9",
+      "size": 3410
+    },
+    {
+      "path": "config/saturn-optimizations.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/saturn-optimizations.toml",
+      "sha256": "47019e25dcb00d2d1da22d725095dc39bcbbf10cdfb8429d8d5a97b231a272b3",
+      "size": 445
+    },
+    {
+      "path": "config/shieldexp-common.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/shieldexp-common.json",
+      "sha256": "bd13a380afc950c545e8421fb81caae575645e85d354ec0368deedb4df72e2a5",
+      "size": 434
+    },
+    {
+      "path": "config/simplyswords_extra/backupconfig.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/simplyswords_extra/backupconfig.json",
+      "sha256": "ec1a9e835b75774dcaf2975096e2ae38ad27c6a93b0606c4b0a2dc93b1a7fc38",
+      "size": 71
+    },
+    {
+      "path": "config/simplyswords_extra/loot_config.json5",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/simplyswords_extra/loot_config.json5",
+      "sha256": "7d3b5b582c6b33ed37f038f536bb005fd89a6d0c78349b75bc9547d0ba06829f",
+      "size": 2554
+    },
+    {
+      "path": "config/simplyswords_main/gem_effects.json5",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/simplyswords_main/gem_effects.json5",
+      "sha256": "3e953737dcb4ed50db8605db74df14983300f79f38b6f954ec0a0686ba2d82ea",
+      "size": 577
+    },
+    {
+      "path": "config/simplyswords_main/general.json5",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/simplyswords_main/general.json5",
+      "sha256": "e0c4e649ecd0932e5e66534cd6eb34beb3c3954ca6f985646879cd7775c24718",
+      "size": 269
+    },
+    {
+      "path": "config/simplyswords_main/loot.json5",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/simplyswords_main/loot.json5",
+      "sha256": "6dd8d790a6301b06d3dfa54c550f9a9c912034e3e4674084d95cbae5adcccb48",
+      "size": 1261
+    },
+    {
+      "path": "config/simplyswords_main/runic_effects.json5",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/simplyswords_main/runic_effects.json5",
+      "sha256": "07e0a8995b5e2d948a20910b9e3fed8d88733f677d384a5ea78589a9d9981f82",
+      "size": 1629
+    },
+    {
+      "path": "config/simplyswords_main/status_effects.json5",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/simplyswords_main/status_effects.json5",
+      "sha256": "4fa38ac43a2d8f996f7800c9d61235c3800bfd3cae7f6ba2d76093665bec8fb2",
+      "size": 20
+    },
+    {
+      "path": "config/simplyswords_main/unique_effects.json5",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/simplyswords_main/unique_effects.json5",
+      "sha256": "f939b3c7e04ac677da5a6f83ef56d52ddaeb869cd98d7ff2dccfa3ef83ef63d8",
+      "size": 5507
+    },
+    {
+      "path": "config/simplyswords_main/weapon_attributes.json5",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/simplyswords_main/weapon_attributes.json5",
+      "sha256": "6f794ab26ccec8d189c3e15374cb1ad965acaff5f3dcf0402387218ee02638cb",
+      "size": 5926
+    },
+    {
+      "path": "config/skinlayers.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/skinlayers.json",
+      "sha256": "45162f45aa2db525a0edc483959f35b6d958ba2e54066a4f87e7f3c3f0f99166",
+      "size": 497
+    },
+    {
+      "path": "config/sliceanddice-client.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/sliceanddice-client.toml",
+      "sha256": "257fbdd7a536a41ce332c3416da84946c6825c88cb81a28ae96956f79f36e6e2",
+      "size": 33
+    },
+    {
+      "path": "config/sliceanddice-common.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/sliceanddice-common.toml",
+      "sha256": "ac1a4e660c8a567b4c945962d063eeced1a0040615214ea4aebb947ff6af7d33",
+      "size": 427
+    },
+    {
+      "path": "config/smoothboot.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/smoothboot.json",
+      "sha256": "f12faa150cb54f565b8c26a4538650f9fb45d33dc39000b1149548a4670cce37",
+      "size": 198
+    },
+    {
+      "path": "config/sodiumextras-client.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/sodiumextras-client.toml",
+      "sha256": "505bfd4b5bd0a036854fee11b0179abfc88e768aad7301b92e1a2bfa51a61374",
+      "size": 4964
+    },
+    {
+      "path": "config/sophisticatedbackpacks-common.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/sophisticatedbackpacks-common.toml",
+      "sha256": "6674ec92f625296aa8accc93d71fdf1eecfc8050111c5ae7b6d9a94b4fe14506",
+      "size": 122
+    },
+    {
+      "path": "config/sophisticatedcore-client.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/sophisticatedcore-client.toml",
+      "sha256": "3175ac14ac1da55ba706d1f0321c0b5620cd968a381e60323b283778e7b6d9e6",
+      "size": 478
+    },
+    {
+      "path": "config/sophisticatedcore-common.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/sophisticatedcore-common.toml",
+      "sha256": "c5959de5a515aaeb1a29db9a564ed4f5bb1f88136eb5f7e6cc493e399321e800",
+      "size": 3514
+    },
+    {
+      "path": "config/sound_physics_remastered/allowed_sounds.properties",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/sound_physics_remastered/allowed_sounds.properties",
+      "sha256": "ec66ea72238a58e09a0c985a3c6683612477f1783aee02b2990db736f99c5282",
+      "size": 147806
+    },
+    {
+      "path": "config/sound_physics_remastered/occlusion.properties",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/sound_physics_remastered/occlusion.properties",
+      "sha256": "ebbac45fbb3ca01487b85ffee9601b213b71896e6606fb297bcb0f3ac9c30ffb",
+      "size": 4831
+    },
+    {
+      "path": "config/sound_physics_remastered/reflectivity.properties",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/sound_physics_remastered/reflectivity.properties",
+      "sha256": "e26b00784bb6239988759ed1a64551b9f301dc33c5a855d91e976ee4bf40ac8a",
+      "size": 4713
+    },
+    {
+      "path": "config/sound_physics_remastered/soundphysics.properties",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/sound_physics_remastered/soundphysics.properties",
+      "sha256": "068ccd6b0985f7ba643fb7ccd6e8149378b4679891a90aa2c787f8ba278330c6",
+      "size": 5105
+    },
+    {
+      "path": "config/spawn-client.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/spawn-client.toml",
+      "sha256": "d254506c48aab786ea4ad8efc164025fc2d089952bffe55230527c958239b2b9",
+      "size": 428
+    },
+    {
+      "path": "config/spawn-server.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/spawn-server.toml",
+      "sha256": "6d21fd85ac698352b163d8dfb0a71fa59e6f1d1d037a22b81340e410376c751c",
+      "size": 2174
+    },
+    {
+      "path": "config/supplementaries-client.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/supplementaries-client.toml",
+      "sha256": "af4180644ea4022a68dabbe16e9e8346170309b0214c6ba66a7ca042a5374d49",
+      "size": 9370
+    },
+    {
+      "path": "config/supplementaries-common.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/supplementaries-common.toml",
+      "sha256": "37295ba683f643bde30b751cc70f82c971c9651535385d6b96012ace1ee13e97",
+      "size": 24952
+    },
+    {
+      "path": "config/terrablender.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/terrablender.toml",
+      "sha256": "59d79e8bc4a42e678196a7164e5841a9803f8684f1b52b9944ce554c9f353691",
+      "size": 552
+    },
+    {
+      "path": "config/tobacconistmod-client.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/tobacconistmod-client.toml",
+      "sha256": "1542f4ce282d4178dd443bbecc03c563e500bae11a0ef30594e1ffb73be3d13e",
+      "size": 115
+    },
+    {
+      "path": "config/tobacconistmod-common.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/tobacconistmod-common.toml",
+      "sha256": "b0fc113d60e2df8e074f7ad4cee3eb4203fc2657ed3ac970b155483b94d21b67",
+      "size": 202
+    },
+    {
+      "path": "config/towns_and_towers/structure_enable_or_disable_new.json5",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/towns_and_towers/structure_enable_or_disable_new.json5",
+      "sha256": "3aaa6ac8835dbbce97928c4d0d03f9957749a7a57a3f1668597310e9227900da",
+      "size": 3088
+    },
+    {
+      "path": "config/towns_and_towers/structure_rarity_new.json5",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/towns_and_towers/structure_rarity_new.json5",
+      "sha256": "1f6cddbcb2d89fbcc774d7bdae9987ccb031ba8fe024307357076ca617b17eeb",
+      "size": 1581
+    },
+    {
+      "path": "config/transition.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/transition.json",
+      "sha256": "60420a41571a4658b91babfa2b47d6fefb7c1766eeea969f51ff98ab34c2431c",
+      "size": 97
+    },
+    {
+      "path": "config/travelerstitles-forge-1_20.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/travelerstitles-forge-1_20.toml",
+      "sha256": "c339ffec047e7faa8471f9c36ab83434db0262476194da70f4691575a6a1cea5",
+      "size": 10709
+    },
+    {
+      "path": "config/trender.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/trender.json",
+      "sha256": "fe0bed19bd0927b3d519816c73378730689080a8f07e66a6167c266ffde29dd2",
+      "size": 44
+    },
+    {
+      "path": "config/twilightdelight-client.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/twilightdelight-client.toml",
+      "sha256": "8c145f814d98a7a9465efb9496c5ebe703b89c92c6f5f43bb18a65e36a2d7f17",
+      "size": 73
+    },
+    {
+      "path": "config/twilightdelight-common.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/twilightdelight-common.toml",
+      "sha256": "478995f0277c0bd0745a91ab6914be37acafa0075a5f9ba876b018850481c08c",
+      "size": 151
+    },
+    {
+      "path": "config/twilightforest-client.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/twilightforest-client.toml",
+      "sha256": "7df74722394aa6f9b662317ad4840fc9b0a2e11c394ef6da2b3d9eabb62808d3",
+      "size": 1565
+    },
+    {
+      "path": "config/twilightforest-common.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/twilightforest-common.toml",
+      "sha256": "2d8051f2d41dd6ee7b9e6570e84cd18a3e2d013c0890c95c0b66e7ecce0346b8",
+      "size": 7758
+    },
+    {
+      "path": "config/valkyrienskies/clockwork/client.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/valkyrienskies/clockwork/client.toml",
+      "sha256": "4a6779823b7cad97ae985fbb810093d22d0f66200b14f94cb30daaedeaad7a69",
+      "size": 888
+    },
+    {
+      "path": "config/valkyrienskies/valkyrienskies-client.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/valkyrienskies/valkyrienskies-client.toml",
+      "sha256": "345e34a77c97820ad28f621f62b4725bbf0899725bb78ec5993b1728c5f4364e",
+      "size": 1154
+    },
+    {
+      "path": "config/valkyrienskies/valkyrienskies-common.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/valkyrienskies/valkyrienskies-common.toml",
+      "sha256": "5ca055e1b8c770dbe0f9fe33c7e9ad0ed7571461454fb3e0584e8dbb1b9737c6",
+      "size": 194
+    },
+    {
+      "path": "config/vinery.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/vinery.toml",
+      "sha256": "fe8acd27cd79406ce57b35ef6c41fe2641faab6ce230e94e17554ca188b77e5f",
+      "size": 2933
+    },
+    {
+      "path": "config/vs2+sup-cannon-fix.properties",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/vs2+sup-cannon-fix.properties",
+      "sha256": "a4eaefa21887679201037a968e103e4f40d440500405083b721a51e506d0be49",
+      "size": 605
+    },
+    {
+      "path": "config/waystones-common.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/waystones-common.toml",
+      "sha256": "4cf1d13d8827bcdce75acadb1f3ea24732fd6fa6575ec8a261a37b21c481674d",
+      "size": 6956
+    },
+    {
+      "path": "config/wirelessredstone.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/wirelessredstone.json",
+      "sha256": "e4c5650455b6dde48f341488d8c9b6e57d172abfdbb75bf7fcf3de7e2f590975",
+      "size": 170
+    },
+    {
+      "path": "config/xaero/lib/client.cfg",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/xaero/lib/client.cfg",
+      "sha256": "43ed9dbfa5b4d6f0f3d2e8c2ced17ad298164b22c68ff11d415257a39b074336",
+      "size": 26
+    },
+    {
+      "path": "config/xaero/lib/common.cfg",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/xaero/lib/common.cfg",
+      "sha256": "98f698d96a6d21d830a455b4ad045b70516fa63c298021742d8499e7f0366cd2",
+      "size": 236
+    },
+    {
+      "path": "config/xaero/lib/profiles/default.cfg",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/xaero/lib/profiles/default.cfg",
+      "sha256": "34ae854b17d896d7cb853bdc28c27231a3947e91cb9f0991f372846ee3c2a907",
+      "size": 121
+    },
+    {
+      "path": "config/xaero/lib/server_profiles/default.cfg",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/xaero/lib/server_profiles/default.cfg",
+      "sha256": "d438aea41ca41e93697e059f523686935c0add482f6abe96b532bbf10c6ed80a",
+      "size": 75
+    },
+    {
+      "path": "config/xaero/minimap/client.cfg",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/xaero/minimap/client.cfg",
+      "sha256": "c0915eff5d1a7905cd1038d646eb9086fd1a29e2f637d53535e4da161de17b9f",
+      "size": 235
+    },
+    {
+      "path": "config/xaero/minimap/common.cfg",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/xaero/minimap/common.cfg",
+      "sha256": "2b49df024c03a369c62a303c72755e7fedeb4f4653ff53a12fd37bd83ccd4ed0",
+      "size": 147
+    },
+    {
+      "path": "config/xaero/minimap/default_radar_categories_client.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/xaero/minimap/default_radar_categories_client.json",
+      "sha256": "8ec85ecdff2a7b60389a80cbffa420876fcf83b3a72120e3564076da50dc3fca",
+      "size": 5531
+    },
+    {
+      "path": "config/xaero/minimap/default_radar_categories_server.json",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/xaero/minimap/default_radar_categories_server.json",
+      "sha256": "a4c652cafa7dea324e5f5cf3b1df46a84e54b6d4f877195857bce55a559c1cfd",
+      "size": 4597
+    },
+    {
+      "path": "config/xaero/minimap/profiles/default.cfg",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/xaero/minimap/profiles/default.cfg",
+      "sha256": "db49c4dde15db318eb25e8a43fa06992778f0e17b3a963fff5cbee35da11fb81",
+      "size": 3657
+    },
+    {
+      "path": "config/xaero/minimap/profiles/info_display_config/default.cfg.txt",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/xaero/minimap/profiles/info_display_config/default.cfg.txt",
+      "sha256": "184e654fa1fc8ad09943c97c4e65ab78acb5b3cfca22417a831513d1b6d9bbc6",
+      "size": 684
+    },
+    {
+      "path": "config/xaero/minimap/server_profiles/default.cfg",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/xaero/minimap/server_profiles/default.cfg",
+      "sha256": "d438aea41ca41e93697e059f523686935c0add482f6abe96b532bbf10c6ed80a",
+      "size": 75
+    },
+    {
+      "path": "config/xaero/world-map/client.cfg",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/xaero/world-map/client.cfg",
+      "sha256": "deece0fe0d29f2203a9699143a6209c451e91d7ecb799489c328b0d0fa31a90d",
+      "size": 466
+    },
+    {
+      "path": "config/xaero/world-map/common.cfg",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/xaero/world-map/common.cfg",
+      "sha256": "0c229eb0daf85bd09af51f21eeeb99497a3bd50a825d5ab1ca695fb21bf6cf9d",
+      "size": 141
+    },
+    {
+      "path": "config/xaero/world-map/profiles/default.cfg",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/xaero/world-map/profiles/default.cfg",
+      "sha256": "7b24c882801bcc7f0a8aedc625d419f661fa490fa0e9d5ebe39599a1ce2dcbd5",
+      "size": 1379
+    },
+    {
+      "path": "config/xaero/world-map/server_profiles/default.cfg",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/xaero/world-map/server_profiles/default.cfg",
+      "sha256": "d438aea41ca41e93697e059f523686935c0add482f6abe96b532bbf10c6ed80a",
+      "size": 75
+    },
+    {
+      "path": "config/xaerohud.txt",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/xaerohud.txt",
+      "sha256": "ce65852b35281f09127742815fccaeb4be7e4548739ff4000c5cccb2d4718b04",
+      "size": 126
+    },
+    {
+      "path": "config/xaeropatreon.txt",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/xaeropatreon.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "size": 0
+    },
+    {
+      "path": "config/yacl.json5",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/yacl.json5",
+      "sha256": "d26a63d3cdf326412ba86dcc2781060bc53ed6c74ac7808e65325452e264e820",
+      "size": 35
+    },
+    {
+      "path": "config/YungsCaveBiomes-forge-1_20_1.toml",
+      "url": "https://bscraft.zukashix.com/modpack/files/config/YungsCaveBiomes-forge-1_20_1.toml",
+      "sha256": "955214f2a4d0b3ac1f77b6e4cd141a4eedc746888cd92c5d0f38a16bc58490a5",
+      "size": 2622
+    },
+    {
+      "path": "datapacks/Create Immersive Aircrafts Datapack 1.20.1 - 3.0.zip",
+      "url": "https://bscraft.zukashix.com/modpack/files/datapacks/Create Immersive Aircrafts Datapack 1.20.1 - 3.0.zip",
+      "sha256": "19e00d9062cd3b52975a36586072a3cb59dd8c2f6ea71f9f41f6704443a9ee70",
+      "size": 48074
+    },
+    {
+      "path": "mods/ad_astra-forge-1.20.1-1.15.20.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/ad_astra-forge-1.20.1-1.15.20.jar",
+      "sha256": "99e274894af7c3b01622a74775a9960b5857b35951888414e733f8c2ec683f26",
+      "size": 7508861
+    },
+    {
+      "path": "mods/ad_astra_more_structures-1.0.0.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/ad_astra_more_structures-1.0.0.jar",
+      "sha256": "ca204897174ede4c61cb5a74974a7d636f5ab81cb7445c69ea5f9b7d28094485",
+      "size": 564420
+    },
+    {
+      "path": "mods/ad_astra_rocketed-forge-1.20.1-1.0.3.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/ad_astra_rocketed-forge-1.20.1-1.0.3.jar",
+      "sha256": "2c2efb7438bdf23cbc31f72ecb147e27550ced86ec74d0051c33608b75d9f408",
+      "size": 4247558
+    },
+    {
+      "path": "mods/alexsmobs-1.22.9.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/alexsmobs-1.22.9.jar",
+      "sha256": "16bc5bcc19db9029c24f951346ec71098e6f5b0afef96e61894a2e9407aad37c",
+      "size": 26350793
+    },
+    {
+      "path": "mods/alternate_current-mc1.20-1.7.0.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/alternate_current-mc1.20-1.7.0.jar",
+      "sha256": "9dfa5365ef170323612d6ada820b7cac12e05135f00f16d0f627488426f59565",
+      "size": 36703
+    },
+    {
+      "path": "mods/AmbientSounds_FORGE_v6.3.8_mc1.20.1.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/AmbientSounds_FORGE_v6.3.8_mc1.20.1.jar",
+      "sha256": "41688a2ba90e5b07beb0e1844cfd0b21a4294b1073de144ae0a7f519b336a18b",
+      "size": 53429226
+    },
+    {
+      "path": "mods/appleskin-forge-mc1.20.1-2.5.1.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/appleskin-forge-mc1.20.1-2.5.1.jar",
+      "sha256": "e12419e43e3babc810af289403c5cd96bd7f09809b389acc6bb2f122b4b2a426",
+      "size": 47428
+    },
+    {
+      "path": "mods/aquamirae-forge-1.20.1-6.4.0.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/aquamirae-forge-1.20.1-6.4.0.jar",
+      "sha256": "1a9c845ba2e1fe0bbf321a66453e26e62bb6b528849be2f8281db9f17a0c7aca",
+      "size": 19073985
+    },
+    {
+      "path": "mods/architectury-9.2.14-forge.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/architectury-9.2.14-forge.jar",
+      "sha256": "218b471d0b8a1f6cda14cfc1beb9eeb0df54304500acc6c5613d9b88ec65d9af",
+      "size": 580602
+    },
+    {
+      "path": "mods/Armor of the Ages-forge-1.20.1-1.3.15.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/Armor of the Ages-forge-1.20.1-1.3.15.jar",
+      "sha256": "1abfc254d0ec223e318bf822e6d396a7c694a65776a5cd9cbfb4b05c0f5aafc8",
+      "size": 528949
+    },
+    {
+      "path": "mods/artifacts-forge-9.5.19.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/artifacts-forge-9.5.19.jar",
+      "sha256": "f1e4dc786866b6e4f2a48142f2acf63bb9bee54ac2f31621ad5d8f18ab54c7b0",
+      "size": 850974
+    },
+    {
+      "path": "mods/athena-forge-1.20.1-3.1.2.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/athena-forge-1.20.1-3.1.2.jar",
+      "sha256": "64eec9cffb8847a459536096ac396b135ffb07c7d9d13c6a47d9cd7b251276ab",
+      "size": 91808
+    },
+    {
+      "path": "mods/AttributeFix-Forge-1.20.1-21.0.5.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/AttributeFix-Forge-1.20.1-21.0.5.jar",
+      "sha256": "43ccfd91c1a24d1b3c9d3ccf2dd6a86e9f0c2ba442b111a2238fbff3cf88af11",
+      "size": 19499
+    },
+    {
+      "path": "mods/azurelib-neo-1.20.1-3.1.10.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/azurelib-neo-1.20.1-3.1.10.jar",
+      "sha256": "7bbd1069a82b72d8a63baa21e86aba35f14f47285edef84b318c62fe4ed88b4e",
+      "size": 1060145
+    },
+    {
+      "path": "mods/baguettelib-1.20.1-Forge-1.1.6.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/baguettelib-1.20.1-Forge-1.1.6.jar",
+      "sha256": "2e61c531121902499b558aa22b9860a5a1d7aaa26f9b5ea727d8a758d808470f",
+      "size": 31898
+    },
+    {
+      "path": "mods/balm-forge-1.20.1-7.3.38-all.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/balm-forge-1.20.1-7.3.38-all.jar",
+      "sha256": "1f5222d5c0ab72b1f60d83c5b371faa9cf733635810efb2695a7bd56dbfa4458",
+      "size": 591398
+    },
+    {
+      "path": "mods/BarteringStation-v8.0.0-1.20.1-Forge.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/BarteringStation-v8.0.0-1.20.1-Forge.jar",
+      "sha256": "b9b3606522e1242364773bcb5a68fa241699cfbebda23d9d976ac671b91e8e59",
+      "size": 116777
+    },
+    {
+      "path": "mods/BCLib-20.0.9.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/BCLib-20.0.9.jar",
+      "sha256": "fc495d2a7847c630012dbc62e9171a0fe8905e569aa766e39d04dabe99f31976",
+      "size": 2177038
+    },
+    {
+      "path": "mods/bellsandwhistles-0.4.5-1.20.x-Create6.0+.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/bellsandwhistles-0.4.5-1.20.x-Create6.0+.jar",
+      "sha256": "90f102b26c410f9dfebf6ea5dfc0ec42b1ac5bde9d4634f5e038a5d17121eb2f",
+      "size": 199902
+    },
+    {
+      "path": "mods/BetterAnimationsCollection-v8.0.1-1.20.1-Forge.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/BetterAnimationsCollection-v8.0.1-1.20.1-Forge.jar",
+      "sha256": "135f30e16ca17eda6521d1427530046aa3bb489966c3f6fffba7a7d23c7f4c64",
+      "size": 198755,
+      "performance": true
+    },
+    {
+      "path": "mods/BetterEnd-20.0.8.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/BetterEnd-20.0.8.jar",
+      "sha256": "499d0b441d20e10347bb9b226ad5e250f9d377d650d7e7ae909706a7cc473d3d",
+      "size": 93563673
+    },
+    {
+      "path": "mods/BetterF3-7.0.2-Forge-1.20.1.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/BetterF3-7.0.2-Forge-1.20.1.jar",
+      "sha256": "e46ced73bdf78a59573a7188cfbe7256353f21a67eef752dc39b5e5816fc61c0",
+      "size": 468517
+    },
+    {
+      "path": "mods/betterfpsdist-1.20.1-6.0.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/betterfpsdist-1.20.1-6.0.jar",
+      "sha256": "0fa8855bcdc67962f109a096381107f58917faa64c61dd99b32ae0e738aae4f7",
+      "size": 19917
+    },
+    {
+      "path": "mods/BetterNether-20.0.10.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/BetterNether-20.0.10.jar",
+      "sha256": "b35c80520f8b89a507efc80130016e28da54d2f17357e49677b2b4538a544174",
+      "size": 23322486
+    },
+    {
+      "path": "mods/biggerreactors-1.20.1-0.6.0-beta.10.5.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/biggerreactors-1.20.1-0.6.0-beta.10.5.jar",
+      "sha256": "191b777594ccdd3370ca5a5dafea0ed9fef001e6415d80ea0574674ed69d4e3b",
+      "size": 1243943
+    },
+    {
+      "path": "mods/block_factorys_bosses-2.1.1-forge-1.20.1.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/block_factorys_bosses-2.1.1-forge-1.20.1.jar",
+      "sha256": "f1ff4017b3da7048fc57f5d26836f29181220fad0492c163306970fab4097e20",
+      "size": 24234736
+    },
+    {
+      "path": "mods/Bookshelf-Forge-1.20.1-20.2.15.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/Bookshelf-Forge-1.20.1-20.2.15.jar",
+      "sha256": "7980d4a0beed1dcd2c283cf65f3c93f6b0085833f3ac490014979c95f1dfaf67",
+      "size": 343925
+    },
+    {
+      "path": "mods/botarium-forge-1.20.1-2.3.4.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/botarium-forge-1.20.1-2.3.4.jar",
+      "sha256": "470810a364ff4ad4d4fcd4e55798263938fc893970eacecc58e8b741a392b1cf",
+      "size": 157633
+    },
+    {
+      "path": "mods/BrewinAndChewin-1.20.1-3.2.1.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/BrewinAndChewin-1.20.1-3.2.1.jar",
+      "sha256": "d06edc7a145e8808903b7bd06e0639458a817fbc4ee589be239c0af77a6367db",
+      "size": 1206255
+    },
+    {
+      "path": "mods/bygonenether-1.3.2-1.20.x.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/bygonenether-1.3.2-1.20.x.jar",
+      "sha256": "6518399a2bf81f85488571203a2f3589a0aac976fd0c34364489b7c356000bad",
+      "size": 7642613
+    },
+    {
+      "path": "mods/caelus-forge-3.2.0+1.20.1.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/caelus-forge-3.2.0+1.20.1.jar",
+      "sha256": "43cabe35f0618c0bd01af02e7568ca6f15fd32bb6a90d04c9898bb01e8dc1e81",
+      "size": 40125
+    },
+    {
+      "path": "mods/canary-mc1.20.1-0.3.3.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/canary-mc1.20.1-0.3.3.jar",
+      "sha256": "51f6d78dd6c7874657e5757fd2f5d780aa3cd415052ad071077b8894c6430942",
+      "size": 594191
+    },
+    {
+      "path": "mods/cc-tweaked-1.20.1-forge-1.119.0.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/cc-tweaked-1.20.1-forge-1.119.0.jar",
+      "sha256": "188e185ec301db0b15708344e9317bb94f0a8581131252ede499294e4681b0c7",
+      "size": 3095555
+    },
+    {
+      "path": "mods/cccbridge-mc1.20.1-v1.7.1-forge.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/cccbridge-mc1.20.1-v1.7.1-forge.jar",
+      "sha256": "3a2deed262d2eec51123946c9fda83894434e0d4fc42ccb92a92bc10495eeea6",
+      "size": 495165
+    },
+    {
+      "path": "mods/charmofundying-forge-6.5.0+1.20.1.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/charmofundying-forge-6.5.0+1.20.1.jar",
+      "sha256": "9e0dc303fe2b96db0707487bff0e1cb1173d4e54367364130655c25f2c219f2f",
+      "size": 169487
+    },
+    {
+      "path": "mods/chipped-forge-1.20.1-3.0.7.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/chipped-forge-1.20.1-3.0.7.jar",
+      "sha256": "300e02535342b710fb34409821de9d097b0d8b17f56a57a17d75d05c4c1c5b63",
+      "size": 15060263
+    },
+    {
+      "path": "mods/citadel-2.6.3-1.20.1.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/citadel-2.6.3-1.20.1.jar",
+      "sha256": "56c7ab87348a5292583aac787b6cf11b5193e77f02af1d17ea75a96f8640b3ce",
+      "size": 3185275
+    },
+    {
+      "path": "mods/cleanswing-1.20-1.8.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/cleanswing-1.20-1.8.jar",
+      "sha256": "beb67f1af48b8ba77a8de1a48ea08d97a520a32b490bb4fd9a0da1dfd485a699",
+      "size": 8305
+    },
+    {
+      "path": "mods/cloth-config-11.1.136-forge.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/cloth-config-11.1.136-forge.jar",
+      "sha256": "1e895e85cf5b1e1905ef3178ec155c8badfe22a1577b92c09143a5aa1f4ce0f2",
+      "size": 1181413
+    },
+    {
+      "path": "mods/cofh_core-1.20.1-11.0.2.56.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/cofh_core-1.20.1-11.0.2.56.jar",
+      "sha256": "d7cd3ec8083e294e17cb50fe607b416c1dc83ce885e53ba3995d86e028f790e0",
+      "size": 1509649
+    },
+    {
+      "path": "mods/comforts-forge-6.4.0+1.20.1.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/comforts-forge-6.4.0+1.20.1.jar",
+      "sha256": "56398103e0e3821c98f21a5b556d57deb0686b9f50868b4278ecb73cc9d2f42c",
+      "size": 382083
+    },
+    {
+      "path": "mods/Corgilib-Forge-1.20.1-4.0.3.4.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/Corgilib-Forge-1.20.1-4.0.3.4.jar",
+      "sha256": "9e638c7e73d997bb4ecba4aa40de90e89dd15fdbc4235fb997eed9ad43c10cd3",
+      "size": 360700
+    },
+    {
+      "path": "mods/corpse-forge-1.20.1-1.0.23.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/corpse-forge-1.20.1-1.0.23.jar",
+      "sha256": "9f639204588512abe767bb5c2ff97d41f50352af916de939ac8029c95d57ae7b",
+      "size": 245643
+    },
+    {
+      "path": "mods/corpsecurioscompat-1.20.1-Forge-3.1.3.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/corpsecurioscompat-1.20.1-Forge-3.1.3.jar",
+      "sha256": "fd2cb6cf0dc5b66316c265e54e9681883f33d52427e04aded9bf4ef6c20b9fa3",
+      "size": 23655
+    },
+    {
+      "path": "mods/cp_tweaks-forge-1.20.1-1.0.21.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/cp_tweaks-forge-1.20.1-1.0.21.jar",
+      "sha256": "18ae0e45d4f5a6b3d7d5d0017b7d0b741828ce8cf364bae46159249a05f12e2f",
+      "size": 415401
+    },
+    {
+      "path": "mods/create-1.20.1-6.0.8.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/create-1.20.1-6.0.8.jar",
+      "sha256": "6fbb910c367dbce8e4fc7e5bf64b6edd4de980906ed00af8e47e4af843c0d9b0",
+      "size": 19170905
+    },
+    {
+      "path": "mods/create-new-age-1.1.7f+forge-mc1.20.1.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/create-new-age-1.1.7f+forge-mc1.20.1.jar",
+      "sha256": "8b8b14159ef1a696bc86f60ae474ed73ef0daba906e2a5aa9cea94d44ebafd38",
+      "size": 1145493
+    },
+    {
+      "path": "mods/create_ad_astra_compat-forge-1.20.1-1.0.0.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/create_ad_astra_compat-forge-1.20.1-1.0.0.jar",
+      "sha256": "fd942e664a5ca60f8999b900ff1da673325c107a01fc108ea4e1cc04172e56b6",
+      "size": 23401
+    },
+    {
+      "path": "mods/create_ad_astra_recipes-1.0.0-forge-1.20.1.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/create_ad_astra_recipes-1.0.0-forge-1.20.1.jar",
+      "sha256": "fc8b9769aecd0981ad465c9f1cf81f6f2caed660ce34b35e3776cd38796059d2",
+      "size": 1582970
+    },
+    {
+      "path": "mods/create_wt-forge-1.20.1-1.0.7.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/create_wt-forge-1.20.1-1.0.7.jar",
+      "sha256": "44eb63bbcfc723c190f657be1092c9f1716afaa84995c450f80eecf90e566b7c",
+      "size": 823838
+    },
+    {
+      "path": "mods/createaddition-1.20.1-1.3.3.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/createaddition-1.20.1-1.3.3.jar",
+      "sha256": "9bf3ae15d86ec95d128542caf10e4b5498e49ca02f725b9302d6daecd5eae1db",
+      "size": 1577313
+    },
+    {
+      "path": "mods/createdieselgenerators-1.20.1-1.3.12.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/createdieselgenerators-1.20.1-1.3.12.jar",
+      "sha256": "808e87b98ea9d42a43096a113a7fa1a89c65bee95608855c6cfe2914d6f1f642",
+      "size": 3128610
+    },
+    {
+      "path": "mods/createnuclear-1.3.1-forge.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/createnuclear-1.3.1-forge.jar",
+      "sha256": "82293551374ceb4f0cc0e8b1eb9ab3649c0e937687e64ee8562b59d79604a10f",
+      "size": 1825902
+    },
+    {
+      "path": "mods/CreativeCore_FORGE_v2.12.37_mc1.20.1.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/CreativeCore_FORGE_v2.12.37_mc1.20.1.jar",
+      "sha256": "c6073eb7423f92709aef1e934da00983f6d4e8f05508ba0daa7287600869b441",
+      "size": 1144037
+    },
+    {
+      "path": "mods/cristellib-1.1.6-forge.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/cristellib-1.1.6-forge.jar",
+      "sha256": "3856ad565ea45d6189452d813e2f021b365b686d3b1adae5f747c56a1e535d9f",
+      "size": 431318
+    },
+    {
+      "path": "mods/Croptopia-1.20.1-FORGE-4.0.1.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/Croptopia-1.20.1-FORGE-4.0.1.jar",
+      "sha256": "bbd35cbdbe8b9d20a70ab79a42781a82f19f51de068861c431879becbce66d28",
+      "size": 2155802
+    },
+    {
+      "path": "mods/croptopiadelight-1.3.2.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/croptopiadelight-1.3.2.jar",
+      "sha256": "a36fb828fdecd83453226a350d9aeb529ac4f3c44a86fe632f4e220b2ecfbaa9",
+      "size": 86280
+    },
+    {
+      "path": "mods/CullLessLeaves-Reforged-1.20.1-1.0.5.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/CullLessLeaves-Reforged-1.20.1-1.0.5.jar",
+      "sha256": "b91ca5cd028b1c919e28851b984edd61874d44ad8038cdeee87315d2656cb292",
+      "size": 22474
+    },
+    {
+      "path": "mods/cupboard-1.20.1-3.7.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/cupboard-1.20.1-3.7.jar",
+      "sha256": "7c6069d42e3693dc4f80d06632f008fffe6f2507902dfca6c02bf035776ccaf3",
+      "size": 31643
+    },
+    {
+      "path": "mods/curios-forge-5.14.1+1.20.1.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/curios-forge-5.14.1+1.20.1.jar",
+      "sha256": "1e817919a35b37cf30524aaec73f0ca5130452f23f168f844854df282eb8e51f",
+      "size": 398066
+    },
+    {
+      "path": "mods/dawnoftimebuilder-forge-1.20.1-1.5.51.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/dawnoftimebuilder-forge-1.20.1-1.5.51.jar",
+      "sha256": "abfec303a0bd69e66ce91d5bc24de3a164288d3320e22f69a9d08109d867d0bc",
+      "size": 3213226
+    },
+    {
+      "path": "mods/decorative_blocks-forge-1.20.1-4.1.3.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/decorative_blocks-forge-1.20.1-4.1.3.jar",
+      "sha256": "19bc47b32258dd703b808f76e7b89da1746ecddaec4ad2bd5eaa356c0d2b3d87",
+      "size": 573928
+    },
+    {
+      "path": "mods/Delightful-1.20.1-3.7.8.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/Delightful-1.20.1-3.7.8.jar",
+      "sha256": "9b1751166153eea48674463b1e3b9bedaf21985c1f924744ed1830511c52a04e",
+      "size": 1609113
+    },
+    {
+      "path": "mods/delightfulcreators-1.2.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/delightfulcreators-1.2.jar",
+      "sha256": "dfe1f0904e70ebd99fd6518f189e955c3d2f6834a68019dafb3ec349214f0d25",
+      "size": 357197
+    },
+    {
+      "path": "mods/DistantHorizons-3.0.3-b-1.20.1-fabric-forge.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/DistantHorizons-3.0.3-b-1.20.1-fabric-forge.jar",
+      "sha256": "591c07d649dde7669b1e8d9a53e89a8bc3aa0b9b7e4d768c2209017b02193356",
+      "size": 29467253
+    },
+    {
+      "path": "mods/dragonmounts-1.20.1-1.2.3-beta.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/dragonmounts-1.20.1-1.2.3-beta.jar",
+      "sha256": "23aa1ba94bcf1e00766c4fab54d2e6491927e9106bfff2c2fd4db048f90ce524",
+      "size": 575353
+    },
+    {
+      "path": "mods/drinkbeer-refill-1.20.1-1.0.5.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/drinkbeer-refill-1.20.1-1.0.5.jar",
+      "sha256": "9daf9a45b30dca5a8bb09f975d73638304dd61b81b49c8f31dd3d7c138826c5d",
+      "size": 1520963
+    },
+    {
+      "path": "mods/dungeons-and-taverns-3.0.3.f.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/dungeons-and-taverns-3.0.3.f.jar",
+      "sha256": "251b531ff2882c61a4c2eba3bd7b1683aa22b6c2d459e27bfde04a2948c99e1e",
+      "size": 13161907
+    },
+    {
+      "path": "mods/dungeons-and-taverns-ancient-city-overhaul-1.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/dungeons-and-taverns-ancient-city-overhaul-1.jar",
+      "sha256": "74e6e1f495a92ab6c2bb15d3df611cc19ff591fc7bab5a50b5159b9fb1e90fd7",
+      "size": 691038
+    },
+    {
+      "path": "mods/DungeonsArise-1.20.x-2.1.58-release.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/DungeonsArise-1.20.x-2.1.58-release.jar",
+      "sha256": "f8f1254dbe7ed7c1d5403f20361a36f0d0587c82b71313e3f427c7f1ce7c8a90",
+      "size": 8762342
+    },
+    {
+      "path": "mods/ecologics-forge-1.20.1-2.2.6.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/ecologics-forge-1.20.1-2.2.6.jar",
+      "sha256": "7ad70307f9413ca3652aff79206f28754899c160f95415db91b6c655209d7842",
+      "size": 1842405
+    },
+    {
+      "path": "mods/elytraslot-forge-6.4.4+1.20.1.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/elytraslot-forge-6.4.4+1.20.1.jar",
+      "sha256": "f96c26e7ac9e2dade0aa04f71b9f8708a2b7af92b9cc691103ae32c62764e6ab",
+      "size": 100660
+    },
+    {
+      "path": "mods/embeddium-0.3.31+mc1.20.1.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/embeddium-0.3.31+mc1.20.1.jar",
+      "sha256": "eed3d1325f2acc2fd4e69bb495e5ccb91d962126ac5330f0582ebc2a3daf47fb",
+      "size": 1320675
+    },
+    {
+      "path": "mods/EnchantmentDescriptions-Forge-1.20.1-17.1.21.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/EnchantmentDescriptions-Forge-1.20.1-17.1.21.jar",
+      "sha256": "909d1941d4ef6e4b7336738ee31380d6e1117c3c22feb70b64fed47f1cba2b07",
+      "size": 66883
+    },
+    {
+      "path": "mods/ensorcellation-1.20.1-5.0.2.24.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/ensorcellation-1.20.1-5.0.2.24.jar",
+      "sha256": "84cb18702db2a26dfd5a21ff007e2bcf40e16092adf7b2a33b8489987c4d7b45",
+      "size": 113193
+    },
+    {
+      "path": "mods/entityculling-forge-1.10.2-mc1.20.1.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/entityculling-forge-1.10.2-mc1.20.1.jar",
+      "sha256": "34da8e10cf31ade2b86b02e4f55c4d3b480a0992148ac12f9ec49eb7be4bfda0",
+      "size": 1587585
+    },
+    {
+      "path": "mods/EpheroLib-1.20.1-FORGE-1.2.0.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/EpheroLib-1.20.1-FORGE-1.2.0.jar",
+      "sha256": "8924a015f28348c806e6680addc2d5a8bcaf8439dd51ce48ce3b2f2b0e522407",
+      "size": 756864
+    },
+    {
+      "path": "mods/Epic Villages 1.3.1 (1.20+).jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/Epic Villages 1.3.1 (1.20+).jar",
+      "sha256": "e39223a81bfbf16eb81fa0853115cebe9278b772ebfcd1ebdd186c11fe97f91b",
+      "size": 6438924
+    },
+    {
+      "path": "mods/fabric-api-0.92.6+1.11.14+1.20.1.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/fabric-api-0.92.6+1.11.14+1.20.1.jar",
+      "sha256": "9b140af437581d32e5ee17d20f8fe882000e6a34cba85c152ae5bccc9570cc03",
+      "size": 3065813
+    },
+    {
+      "path": "mods/fallingleaves-1.20.1-2.1.2.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/fallingleaves-1.20.1-2.1.2.jar",
+      "sha256": "6202d8241f01e21278fd5de644fd2e992824069f2cf0fc9dc6a74ab2218015b6",
+      "size": 124212
+    },
+    {
+      "path": "mods/FarmersDelight-1.20.1-1.3.2.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/FarmersDelight-1.20.1-1.3.2.jar",
+      "sha256": "47aed94bb9192c4978fe199f9d3ca5895aeccfbe5b5a0869fdf3aa011c2641f7",
+      "size": 3313327
+    },
+    {
+      "path": "mods/farsight-1.20.1-4.5.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/farsight-1.20.1-4.5.jar",
+      "sha256": "8347d07ee5bb0898ef32dc4161f065f36cb3c60dcc19cad164a58417af5ffee5",
+      "size": 441356
+    },
+    {
+      "path": "mods/Fastload-Reforged-mc1.20.1-3.4.0.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/Fastload-Reforged-mc1.20.1-3.4.0.jar",
+      "sha256": "038a5fa1c044d5afae22502ca1444eeb1a700d34a224996c25f233524ae35a7a",
+      "size": 66989
+    },
+    {
+      "path": "mods/ferritecore-6.0.1-forge.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/ferritecore-6.0.1-forge.jar",
+      "sha256": "9c2c9396a49e796d88497758caa4637d2bcbb433c318e2dd9cebcffbaf0f6c54",
+      "size": 123034
+    },
+    {
+      "path": "mods/fixmyspawnr-forge-1.20.1-2.0.1.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/fixmyspawnr-forge-1.20.1-2.0.1.jar",
+      "sha256": "72a649ff02d8e5bd8c5cf2d7b717e54f0890571402be876f5c7f3697ea712c39",
+      "size": 12154
+    },
+    {
+      "path": "mods/FluxNetworks-1.20.1-7.2.1.15.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/FluxNetworks-1.20.1-7.2.1.15.jar",
+      "sha256": "8d24f39b6e1b2d83426a28a62ae0b65294b7e6e925e39a26b62f8ae077f54a89",
+      "size": 515573
+    },
+    {
+      "path": "mods/forgottenruins-forge-1.20.1-0.0.13.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/forgottenruins-forge-1.20.1-0.0.13.jar",
+      "sha256": "cb4bd7d002c9b3fc575a1744ead82131368981f322d5250907d64f9e470b6eaf",
+      "size": 366625
+    },
+    {
+      "path": "mods/fusion-1.2.12-forge-mc1.20.1.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/fusion-1.2.12-forge-mc1.20.1.jar",
+      "sha256": "5cb039922e08ae6b8705d50e484a8759579025fb4f48413fa62d2056505fb45e",
+      "size": 544586
+    },
+    {
+      "path": "mods/geckolib-forge-1.20.1-4.8.3.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/geckolib-forge-1.20.1-4.8.3.jar",
+      "sha256": "477d5d014d6641522cd0deb93c66aefff755760259970c4c255fadb3d88ff702",
+      "size": 1039047
+    },
+    {
+      "path": "mods/handcrafted-forge-1.20.1-3.0.6.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/handcrafted-forge-1.20.1-3.0.6.jar",
+      "sha256": "1da3c7c524bfb656bb370757af55f08f1678e8e1cb934e1c4c04aa773ed64a79",
+      "size": 7111059
+    },
+    {
+      "path": "mods/Iceberg-1.20.1-forge-1.1.25.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/Iceberg-1.20.1-forge-1.1.25.jar",
+      "sha256": "91ad6b459e0c7a16a9f3dc90230248a696600ceec6646aa23263559b8648dbc3",
+      "size": 134551
+    },
+    {
+      "path": "mods/immersive_aircraft-1.4.0+1.20.1-forge.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/immersive_aircraft-1.4.0+1.20.1-forge.jar",
+      "sha256": "45dd68b6707b3eeae0c958d0242b29ec03cdd0d8fc88af20761661ebf3c456cd",
+      "size": 2428368
+    },
+    {
+      "path": "mods/immersive_armors-1.7.2+1.20.1-forge.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/immersive_armors-1.7.2+1.20.1-forge.jar",
+      "sha256": "e4d36920377ec184648f181bfd38c44ccf53868934284265dfa081be9c788b9b",
+      "size": 1264260
+    },
+    {
+      "path": "mods/immersive_furniture-forge-0.1.3+1.20.1.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/immersive_furniture-forge-0.1.3+1.20.1.jar",
+      "sha256": "b79e37189bc7621a01b07ef1dfa309b50a1b33bef49e3e638ef70c516bcc0d65",
+      "size": 904028
+    },
+    {
+      "path": "mods/immersive_machinery-0.2.0+1.20.1-forge.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/immersive_machinery-0.2.0+1.20.1-forge.jar",
+      "sha256": "b19dbe62974f70891704ee418feb40cc259ff0ff63c943a4657d09d5b4b06344",
+      "size": 899304
+    },
+    {
+      "path": "mods/inventoryhud.forge.1.20.1-3.4.26.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/inventoryhud.forge.1.20.1-3.4.26.jar",
+      "sha256": "01d9a2d1e26fffff78eb47f3e4837189e7567dde849810b1bf6d278520c1e971",
+      "size": 238088
+    },
+    {
+      "path": "mods/InventoryProfilesNext-forge-1.20-1.10.20.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/InventoryProfilesNext-forge-1.20-1.10.20.jar",
+      "sha256": "2f664f23ed031f6cfacce01b0461c450e2248435936cb6b7e2e0463c6ec56343",
+      "size": 1457354
+    },
+    {
+      "path": "mods/ironchest-1.20.1-14.4.4.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/ironchest-1.20.1-14.4.4.jar",
+      "sha256": "6bc75f288d2e8158d2e23c6881a1b341a894c38bab129ca0f20db6abd59d373f",
+      "size": 311290
+    },
+    {
+      "path": "mods/Jade-1.20.1-Forge-11.13.2.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/Jade-1.20.1-Forge-11.13.2.jar",
+      "sha256": "31949971a7a8d5a5bc95ad9d400cbedfd2d65ffbfb3cea7c0b2fa3b47431a0a5",
+      "size": 552486
+    },
+    {
+      "path": "mods/jei-1.20.1-forge-15.20.0.130.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/jei-1.20.1-forge-15.20.0.130.jar",
+      "sha256": "36d3dfb2214b9dca38c447fd971dd2dedc5f69719a5aca6ffcef69b2840ece0a",
+      "size": 1409705
+    },
+    {
+      "path": "mods/JustEnoughResources-1.20.1-1.4.0.247.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/JustEnoughResources-1.20.1-1.4.0.247.jar",
+      "sha256": "cfea462b5ab4f15b38da6003f7d151bdbb68fa5af30084ae81b8ac0970d7aaae",
+      "size": 276231
+    },
+    {
+      "path": "mods/kotlinforforge-4.12.0-all.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/kotlinforforge-4.12.0-all.jar",
+      "sha256": "6a66c6a68ec09f8717cdbf06883394f0ee24d7cd826b7134a0f81839e8e720ae",
+      "size": 7442998
+    },
+    {
+      "path": "mods/KryptonReforged-0.2.3.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/KryptonReforged-0.2.3.jar",
+      "sha256": "9b281428d0e7560b7b6e74cdc808c0ffd7a8e662ba84d1a12a6616b49cedec10",
+      "size": 206758
+    },
+    {
+      "path": "mods/LegendaryTooltips-1.20.1-forge-1.4.5.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/LegendaryTooltips-1.20.1-forge-1.4.5.jar",
+      "sha256": "15521ab414b92f60e75bdd49724eb65bb6aa8b3d6f72c157cc261011d58d625e",
+      "size": 55258
+    },
+    {
+      "path": "mods/letsdo-vinery-forge-1.4.41.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/letsdo-vinery-forge-1.4.41.jar",
+      "sha256": "5d7e11f6e2218562ce75d60788fdcfc9ccf59e4532757c18bf37759d5fc739ee",
+      "size": 2041283
+    },
+    {
+      "path": "mods/libIPN-forge-1.20-4.0.2.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/libIPN-forge-1.20-4.0.2.jar",
+      "sha256": "cb96fa15eddc74c243677f7f5b6e3ecaa87bb33f4854ae0353646f304058add6",
+      "size": 693301
+    },
+    {
+      "path": "mods/lightspeed-1.20.1-1.1.2hotfix.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/lightspeed-1.20.1-1.1.2hotfix.jar",
+      "sha256": "a12769af09782be0063cd41279d4706f9136b36581eff47ef57e0c591cc88623",
+      "size": 40285
+    },
+    {
+      "path": "mods/logprot-1.20.1-3.5.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/logprot-1.20.1-3.5.jar",
+      "sha256": "22374c27fefbba07c4f62b5cfb212ab186e43b24025252ba42579632c1e5052a",
+      "size": 14015
+    },
+    {
+      "path": "mods/lootr-forge-1.20-0.7.35.94.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/lootr-forge-1.20-0.7.35.94.jar",
+      "sha256": "01200ee5889e6bcc3c5fa8f32b7b49a4bd58e653699eeb655c6f2dd314e3ce51",
+      "size": 463485
+    },
+    {
+      "path": "mods/man_of_many_planes-0.2.0+1.20.1-forge.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/man_of_many_planes-0.2.0+1.20.1-forge.jar",
+      "sha256": "c8b649c12c344435b7821c713fa43f1b7104e4a6741108f33252d3a3ae5d9dc6",
+      "size": 309137
+    },
+    {
+      "path": "mods/mcjtylib-1.20-8.0.7.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/mcjtylib-1.20-8.0.7.jar",
+      "sha256": "9562fe5e1a8582544c0a73d9967fa03438b9279d727ad150758edb5ff9131f0a",
+      "size": 714330
+    },
+    {
+      "path": "mods/mcw-furniture-3.4.1-mc1.20.1forge.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/mcw-furniture-3.4.1-mc1.20.1forge.jar",
+      "sha256": "9f068315ac5ae7c4b76a6ac0679cde9be59d5cbf37488a477f13b95fe1cbc37d",
+      "size": 2174615
+    },
+    {
+      "path": "mods/mcw-lights-1.1.5-mc1.20.1forge.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/mcw-lights-1.1.5-mc1.20.1forge.jar",
+      "sha256": "174437555ff8b3938b5af8fa3f6efcc528fc101e90e35b89570323e4a3726f0a",
+      "size": 547779
+    },
+    {
+      "path": "mods/memoryleakfix-forge-1.17+-1.1.5.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/memoryleakfix-forge-1.17+-1.1.5.jar",
+      "sha256": "925c3db4e1d085a43c4d2beaa4eec18367c22abc90c2ce8594b8a129fd3f28dd",
+      "size": 227925
+    },
+    {
+      "path": "mods/MobPlaques-v8.0.1-1.20.1-Forge.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/MobPlaques-v8.0.1-1.20.1-Forge.jar",
+      "sha256": "b8b2d2c3df8ed13cbe56c277421d68a1c8a6bb10613c471f9d28fa2cf290583e",
+      "size": 84543
+    },
+    {
+      "path": "mods/modernfix-forge-5.27.25+mc1.20.1.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/modernfix-forge-5.27.25+mc1.20.1.jar",
+      "sha256": "1b0dc9c72c67e0715166e91f7f76e104dc54a31b2ed0e907feadc8bd4211ed98",
+      "size": 951054
+    },
+    {
+      "path": "mods/moogs_structure_lib-1.1.0-1.20-1.20.4-forge.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/moogs_structure_lib-1.1.0-1.20-1.20.4-forge.jar",
+      "sha256": "284e25e4b216bebf6aa2b3859bad7c0f47aa23281e658f0725484f994f85eac4",
+      "size": 259848
+    },
+    {
+      "path": "mods/MoogsEndStructures-1.20-2.0.3.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/MoogsEndStructures-1.20-2.0.3.jar",
+      "sha256": "9142bde3f2e42e609af29d26626c9904ef21586de00e55d989faba1a6d42cc1b",
+      "size": 1510937
+    },
+    {
+      "path": "mods/MoogsNetherStructures-1.20-2.0.4.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/MoogsNetherStructures-1.20-2.0.4.jar",
+      "sha256": "84bc5e90a89a833b28f60addfe03b0f79a13f1f633481b3ef3c603c1b38918d8",
+      "size": 295442
+    },
+    {
+      "path": "mods/MoogsSoaringStructures-1.20-2.1.0.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/MoogsSoaringStructures-1.20-2.1.0.jar",
+      "sha256": "4e5f49cb8d7f6ba6666c1efe595c227a68bbd9186d861ea2d628bb43475fff27",
+      "size": 3105016
+    },
+    {
+      "path": "mods/MoogsTemplesReimagined-1.20-1.1.3.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/MoogsTemplesReimagined-1.20-1.1.3.jar",
+      "sha256": "08a29426d7b84a7080f7ac33a280905419b18b660d7eda746d236b5cd65579bb",
+      "size": 956178
+    },
+    {
+      "path": "mods/MoogsVoyagerStructures-1.20-5.0.6.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/MoogsVoyagerStructures-1.20-5.0.6.jar",
+      "sha256": "0e9f5c1b13714f408bc0e6f992cc05dba33fcec032a4cca590999f666fe3563b",
+      "size": 1564157
+    },
+    {
+      "path": "mods/moonlight-1.20-2.16.32-forge.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/moonlight-1.20-2.16.32-forge.jar",
+      "sha256": "abe6ef01c6d950789f55ee06b3767aa636655d41cd55f7ca2af3a34e8752d155",
+      "size": 1393038
+    },
+    {
+      "path": "mods/moredelight-26.04.30-1.20-forge.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/moredelight-26.04.30-1.20-forge.jar",
+      "sha256": "3967263ab7b5e7e09d63c9031980e5a87dd65acccc3c95d5530d023c7931d86c",
+      "size": 145500
+    },
+    {
+      "path": "mods/MouseTweaks-forge-mc1.20.1-2.25.1.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/MouseTweaks-forge-mc1.20.1-2.25.1.jar",
+      "sha256": "6c27d16aa715ac6613a55fc463739e2c7b78279e4e4c4cede299e4a2d4a70f08",
+      "size": 76237
+    },
+    {
+      "path": "mods/mowziesmobs-1.8.2.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/mowziesmobs-1.8.2.jar",
+      "sha256": "e8ce1768cda6f1e1fadd2321c92921b473bd0cee45ba4b8387fb30f8326cb31c",
+      "size": 36033850
+    },
+    {
+      "path": "mods/naturalist-5.0pre2+forge-1.20.1.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/naturalist-5.0pre2+forge-1.20.1.jar",
+      "sha256": "2bdf7df54d5d0287016aa0f4228e426be74ce83a4ef30c7107d3010056a1d4d2",
+      "size": 3793857
+    },
+    {
+      "path": "mods/NaturesCompass-1.20.1-1.12.0-forge.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/NaturesCompass-1.20.1-1.12.0-forge.jar",
+      "sha256": "bc3601e9e050802569647de843fe9d3160934c5f31412cba62ca2ea8c1485197",
+      "size": 227495
+    },
+    {
+      "path": "mods/no-more-villages-1.1.0.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/no-more-villages-1.1.0.jar",
+      "sha256": "8931c6e8eb7593a2c986bbd671549f50f02347328aa50fba3c16484cb2a750f0",
+      "size": 14559
+    },
+    {
+      "path": "mods/notenoughanimations-forge-1.12.3-mc1.20.1.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/notenoughanimations-forge-1.12.3-mc1.20.1.jar",
+      "sha256": "284a9095dfde943ed97597a1e8f37aec0cff9f855e7ea5b66c18d1bdfa42ae24",
+      "size": 1942586
+    },
+    {
+      "path": "mods/Nyctophobia_1.6_(FORGE)_for_1.20+.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/Nyctophobia_1.6_(FORGE)_for_1.20+.jar",
+      "sha256": "b79d10517e4c7d73cccc284c7142faf7a6cbf8eba82da503c5144e931a64d99a",
+      "size": 278132
+    },
+    {
+      "path": "mods/obscure_api-18.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/obscure_api-18.jar",
+      "sha256": "14f099e9b8c1cae0c98b5ccb792d5eaf56b71c456cf2c2d59de3c175be3e3b7e",
+      "size": 1128392
+    },
+    {
+      "path": "mods/ObsidianUI-forge-0.2.3+mc1.20.1.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/ObsidianUI-forge-0.2.3+mc1.20.1.jar",
+      "sha256": "1f181e93507dda03e34419d970c90162b6f793d85d5dfcd47c405935dc0889a9",
+      "size": 212286
+    },
+    {
+      "path": "mods/oculus-mc1.20.1-1.8.0.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/oculus-mc1.20.1-1.8.0.jar",
+      "sha256": "0945df0cba0f62b3901dd80c3268e5311b770ece78c78037a45db12ac0425fef",
+      "size": 2851119
+    },
+    {
+      "path": "mods/Oh-The-Biomes-Weve-Gone-Forge-1.7.5.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/Oh-The-Biomes-Weve-Gone-Forge-1.7.5.jar",
+      "sha256": "3aed757e3509013d7c32b0b707c8b3e070248722f02e953293cf8e8325b8363f",
+      "size": 19308698
+    },
+    {
+      "path": "mods/Oh-The-Trees-Youll-Grow-forge-1.20.1-1.6.0.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/Oh-The-Trees-Youll-Grow-forge-1.20.1-1.6.0.jar",
+      "sha256": "67009ac61403300c88757289acc1dbdfa2ed52f58bc710b619712101e4e369ff",
+      "size": 168345
+    },
+    {
+      "path": "mods/ok_zoomer-forge-5.4.0-beta.9.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/ok_zoomer-forge-5.4.0-beta.9.jar",
+      "sha256": "b07bfb5673832577789b6c2ab160b5d80e0ef73ef229717ebbcea174fbdc36a7",
+      "size": 530268
+    },
+    {
+      "path": "mods/OpenLoader-Forge-1.20.1-19.0.5.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/OpenLoader-Forge-1.20.1-19.0.5.jar",
+      "sha256": "56da03448ce1c63cb0f41e99ae38c5857d663886f9249c234f18b7c0de44b151",
+      "size": 23937
+    },
+    {
+      "path": "mods/particular-1.20.1-Forge-1.2.7.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/particular-1.20.1-Forge-1.2.7.jar",
+      "sha256": "6690973d8d9c651d5b2e17aff48392a5cc8752c01d208012a80c76fd44e63cb1",
+      "size": 420332
+    },
+    {
+      "path": "mods/phosphophyllite-1.20.1-0.7.0-alpha.0.2.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/phosphophyllite-1.20.1-0.7.0-alpha.0.2.jar",
+      "sha256": "9e9aab3a1751cc6a309b3fb55cc7c5545b3af5ae22d7d7566571e49851fe651e",
+      "size": 455071
+    },
+    {
+      "path": "mods/planets+-bv1.7.5-1.20x.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/planets+-bv1.7.5-1.20x.jar",
+      "sha256": "e38f3a796e2f5202045244d4efabc6e2c156ac39d9ab9cef7f325ef9e7f62a6f",
+      "size": 2363164
+    },
+    {
+      "path": "mods/Platform-forge-1.20.1-1.3.3.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/Platform-forge-1.20.1-1.3.3.jar",
+      "sha256": "a3ddf6af5defdb5eece2955b56e0aba85ee017863406e825035db52da785fc2f",
+      "size": 512186
+    },
+    {
+      "path": "mods/polymorph-forge-0.49.10+1.20.1.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/polymorph-forge-0.49.10+1.20.1.jar",
+      "sha256": "cbe63a0a1cb6ae8dbc0e29bb96d149a137cd4e714b295fa49d230994091d157f",
+      "size": 299601
+    },
+    {
+      "path": "mods/powergrid-mc1.20.1-0.5.5.1.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/powergrid-mc1.20.1-0.5.5.1.jar",
+      "sha256": "ebf1b79894c0bc48ba4773d313eedf55d2eb364604a2610e2941bce58cbe1838",
+      "size": 6209133
+    },
+    {
+      "path": "mods/Presence Footsteps [FORGE] 1.0.0.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/Presence Footsteps [FORGE] 1.0.0.jar",
+      "sha256": "290cce2b6e9916c5713769fc830475d8a51e9745f5b33688e32a35dd10d43e37",
+      "size": 5567573
+    },
+    {
+      "path": "mods/Prism-1.20.1-forge-1.0.5.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/Prism-1.20.1-forge-1.0.5.jar",
+      "sha256": "b1a576f920faeb2175f693e3ee7ba9e5ff0bcf0e404da29f1824ea3c66efd240",
+      "size": 52205
+    },
+    {
+      "path": "mods/PuzzlesLib-v8.1.33-1.20.1-Forge.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/PuzzlesLib-v8.1.33-1.20.1-Forge.jar",
+      "sha256": "f3077a9f817629b8e8929c1951042d1a1adc62d30b72adebd54d2b074a4faf4f",
+      "size": 1342987
+    },
+    {
+      "path": "mods/quartz-1.20.1-0.2.0-alpha.0.1.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/quartz-1.20.1-0.2.0-alpha.0.1.jar",
+      "sha256": "d36eb4bf742a083bcf7c2aaae27f7d038eaca3413feae644b0f2e2bc0b6cd7ba",
+      "size": 242702
+    },
+    {
+      "path": "mods/radiantgear-forge-2.2.0+1.20.1.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/radiantgear-forge-2.2.0+1.20.1.jar",
+      "sha256": "2a6c7e0825c69bd38dc1bb1ce8a8d6b097cac835e16e46afaa0f207fb819bb96",
+      "size": 47170
+    },
+    {
+      "path": "mods/RegionsUnexploredForge-0.5.6+1.20.1.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/RegionsUnexploredForge-0.5.6+1.20.1.jar",
+      "sha256": "5ba96a83d12c0e2eb3b22c0fa11262ff6d49ba8d2ebd03e1c59ab47ea7dcc2c6",
+      "size": 5726781
+    },
+    {
+      "path": "mods/repurposed_structures-7.1.23+1.20.1-forge.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/repurposed_structures-7.1.23+1.20.1-forge.jar",
+      "sha256": "cdb099d1724c9a1423f3bfadfd6e9db0d3cefef11c651ea3625d0efed4ded35e",
+      "size": 8229864
+    },
+    {
+      "path": "mods/resourcefulconfig-forge-1.20.1-2.1.3.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/resourcefulconfig-forge-1.20.1-2.1.3.jar",
+      "sha256": "c404b9e5cf8595427a72d4ca6ee5730289168762b463f169be3ae5dfe3727ded",
+      "size": 136923
+    },
+    {
+      "path": "mods/resourcefullib-forge-1.20.1-2.1.29.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/resourcefullib-forge-1.20.1-2.1.29.jar",
+      "sha256": "b13afb95231d88e1caea5a045967e0fc291b29020b0d26ad39e6f9e9a551fee8",
+      "size": 432753
+    },
+    {
+      "path": "mods/rftoolsbase-1.20-5.0.6.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/rftoolsbase-1.20-5.0.6.jar",
+      "sha256": "72e0996abe9a2b209d034744707603ef97181644c1552881376ca4925e3119e3",
+      "size": 419412
+    },
+    {
+      "path": "mods/rftoolsbuilder-1.20-6.0.8.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/rftoolsbuilder-1.20-6.0.8.jar",
+      "sha256": "f71cabad91d65185dff45611a5d47b6aa399037e9d1642d756e17662fc8a56e1",
+      "size": 899028
+    },
+    {
+      "path": "mods/rftoolsdim-1.20-11.0.10.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/rftoolsdim-1.20-11.0.10.jar",
+      "sha256": "d55becc1bbcb2c12d12c352e5d2d6ca11e226d38588c783ecac6bd912e3176da",
+      "size": 1736751
+    },
+    {
+      "path": "mods/rftoolsutility-1.20-6.0.6.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/rftoolsutility-1.20-6.0.6.jar",
+      "sha256": "472733d4992bc7544d5d4a58f3fc01ddb4187c01ce45521dd18b4f00a7b1161f",
+      "size": 1368153
+    },
+    {
+      "path": "mods/rottencreatures-forge-1.20.1-1.1.0.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/rottencreatures-forge-1.20.1-1.1.0.jar",
+      "sha256": "cbf97ceeb4378b493884fc49fb668098edaca135dad81db548dea6f4c324e81b",
+      "size": 2595007
+    },
+    {
+      "path": "mods/rsgauges-1.2.22.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/rsgauges-1.2.22.jar",
+      "sha256": "cf4aabf5a10745bc95ccb2fb1b8a96cbf8b19543635d4f2440d325a3a604ed6f",
+      "size": 930758
+    },
+    {
+      "path": "mods/RyoamicLights-forge-0.2.3+mc1.20.1.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/RyoamicLights-forge-0.2.3+mc1.20.1.jar",
+      "sha256": "90eb8cda41d1781f8f99f2ddbee0fbe980a8e7864635ff0ba07162c7946b9b96",
+      "size": 160065
+    },
+    {
+      "path": "mods/saturn-mc1.20.1-0.1.3.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/saturn-mc1.20.1-0.1.3.jar",
+      "sha256": "7e6dcc7c2b0db19ec2f965fac91a49e13dcc611f2d86f6bb56d7d68da901aaf8",
+      "size": 92319
+    },
+    {
+      "path": "mods/shieldexp-forge-1.20.1-1.3.7.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/shieldexp-forge-1.20.1-1.3.7.jar",
+      "sha256": "200d52e20c0eaf059d6975df6d428760755d883709e7c5896ce2ce00807db40d",
+      "size": 419824
+    },
+    {
+      "path": "mods/SimpleLogin-1.20.1-1.0.2-all.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/SimpleLogin-1.20.1-1.0.2-all.jar",
+      "sha256": "1e923563c4d85793ef59849114c0a7c51ba1e1446e1976eeedb58acb81f52b44",
+      "size": 99700
+    },
+    {
+      "path": "mods/simplyswords-forge-1.56.0-1.20.1.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/simplyswords-forge-1.56.0-1.20.1.jar",
+      "sha256": "318f1c362b69db22324cc87307549643b795d7c57b652cebdc9d946f03a21c5f",
+      "size": 15202091
+    },
+    {
+      "path": "mods/sit-1.20.1-1.3.5.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/sit-1.20.1-1.3.5.jar",
+      "sha256": "e036518b740ab399e153241d73919d9650bb9d8ba0d205a32f5995a69468c6bc",
+      "size": 14510
+    },
+    {
+      "path": "mods/skinlayers3d-forge-1.11.1-mc1.20.1.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/skinlayers3d-forge-1.11.1-mc1.20.1.jar",
+      "sha256": "acedcb6d850a669f7f8e17919a36e87ff6d95461da32098cec730bc293e79d10",
+      "size": 2163998
+    },
+    {
+      "path": "mods/sliceanddice-forge-3.6.0.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/sliceanddice-forge-3.6.0.jar",
+      "sha256": "bafdcbeda044603b59eb16059829a6698c1a58d1ce865b8658e598f2718d315a",
+      "size": 588268
+    },
+    {
+      "path": "mods/SmartBrainLib-forge-1.20.1-1.15.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/SmartBrainLib-forge-1.20.1-1.15.jar",
+      "sha256": "dc1f5497e1a175397fa10ea84170d8311c71b592976128700fb008139dde55d4",
+      "size": 362339
+    },
+    {
+      "path": "mods/smoothboot(reloaded)-mc1.20.1-0.0.4.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/smoothboot(reloaded)-mc1.20.1-0.0.4.jar",
+      "sha256": "5a0d2682493ffa7b140a7b81f0d1e70c7536c97969397cf9e718e31391b5b9d5",
+      "size": 41044
+    },
+    {
+      "path": "mods/sodiumextras-forge-1.0.7-1.20.1.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/sodiumextras-forge-1.0.7-1.20.1.jar",
+      "sha256": "ce9a13c5f07e350f9c0b86af9e096aedb91cbc72996e59646da61ec724f1e4df",
+      "size": 438540
+    },
+    {
+      "path": "mods/sodiumoptionsapi-forge-1.0.10-1.20.1.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/sodiumoptionsapi-forge-1.0.10-1.20.1.jar",
+      "sha256": "37ec0b6248f04e856e6e5ba2066c4ded9981ce128282a9b45cdb10b67b9c8415",
+      "size": 443978
+    },
+    {
+      "path": "mods/sophisticatedbackpacks-1.20.1-3.24.40.1745.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/sophisticatedbackpacks-1.20.1-3.24.40.1745.jar",
+      "sha256": "555c35ed1a0f4e0cdeaf4cb1ed208f67ed5d6395d1af0fbe9221bc8fee3061c5",
+      "size": 1047841
+    },
+    {
+      "path": "mods/sophisticatedcore-1.20.1-1.3.36.1854.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/sophisticatedcore-1.20.1-1.3.36.1854.jar",
+      "sha256": "0a4b4fa1a94e37c9aee4c1dbf5a64e825154469633dfe79c978c86fc6c76f8bb",
+      "size": 1563312
+    },
+    {
+      "path": "mods/sound-physics-remastered-forge-1.20.1-1.4.10.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/sound-physics-remastered-forge-1.20.1-1.4.10.jar",
+      "sha256": "5919cd2f2d7deea798d22cdf91cdf06bd5d7393a640ca8e6861873fd7ddc37e7",
+      "size": 203819
+    },
+    {
+      "path": "mods/spawn-4.0-1.20.1.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/spawn-4.0-1.20.1.jar",
+      "sha256": "1ba184c1f239181cee5d5b929512399a073458a0d75691401e7801efea25dd98",
+      "size": 83552821
+    },
+    {
+      "path": "mods/starlight-1.1.5+forge.c562a3a.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/starlight-1.1.5+forge.c562a3a.jar",
+      "sha256": "b87be0bbfcbb3a8b76d9daee9a01c6112641f380712bc1384948cb7c81ad022b",
+      "size": 112329
+    },
+    {
+      "path": "mods/Steam_Rails-1.7.2+forge-mc1.20.1.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/Steam_Rails-1.7.2+forge-mc1.20.1.jar",
+      "sha256": "da82605f01a4a43ea0907467583704253c2e718392d44be1cd7b9761edcb0da1",
+      "size": 16819720
+    },
+    {
+      "path": "mods/supplementaries-1.20-3.1.43-forge.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/supplementaries-1.20-3.1.43-forge.jar",
+      "sha256": "6132fc23a2fe1da0ca57439b35526ee9a1a8d898397ff8e61b2d08fb951cdf6a",
+      "size": 13667742
+    },
+    {
+      "path": "mods/TerraBlender-forge-1.20.1-3.0.1.10.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/TerraBlender-forge-1.20.1-3.0.1.10.jar",
+      "sha256": "c77a13e3879f9f991cf592abac60ad0c6d2ed17f5ff697ec2db3872b22902d4a",
+      "size": 107533
+    },
+    {
+      "path": "mods/tf_dnv-1.2.3.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/tf_dnv-1.2.3.jar",
+      "sha256": "f6c4780c214c098a20b5d666f8ef0b8d6e92fa67a36f68f8259de1d9a12ed6f8",
+      "size": 257178
+    },
+    {
+      "path": "mods/The_Graveyard_3.1_(FORGE)_for_1.20.1.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/The_Graveyard_3.1_(FORGE)_for_1.20.1.jar",
+      "sha256": "9a53d019eef20bbb70fef89ff7d41f1d175e1c29faf9c6380b8ed0b18832f27c",
+      "size": 10298057
+    },
+    {
+      "path": "mods/tidal-towns-1.3.4.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/tidal-towns-1.3.4.jar",
+      "sha256": "cb4f6b0c415b929121f50071941a14f4772665f4f4e37f9f8f17778d328ebab1",
+      "size": 110098
+    },
+    {
+      "path": "mods/tobacconistmod-3.0.0-forge-1.20.1.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/tobacconistmod-3.0.0-forge-1.20.1.jar",
+      "sha256": "d3684f27d210e67a055b9b25ffc8f13293887ed6be643ca618a6a622b2d78aad",
+      "size": 721966
+    },
+    {
+      "path": "mods/Towns-and-Towers-1.12-Fabric+Forge.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/Towns-and-Towers-1.12-Fabric+Forge.jar",
+      "sha256": "9c8115af7109579da990249fdd67b38323a45be70f8a3a962b61da69c7021984",
+      "size": 2864275
+    },
+    {
+      "path": "mods/TravelersTitles-1.20-Forge-4.0.2.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/TravelersTitles-1.20-Forge-4.0.2.jar",
+      "sha256": "e72bcce5e31ab2d5f09eff53697969b32e56c35801b3014e03d558b442b9d38b",
+      "size": 228191
+    },
+    {
+      "path": "mods/trek-B0.6.1.1.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/trek-B0.6.1.1.jar",
+      "sha256": "f543c3d747e570ea07eec015478b18d05c54bb5fa2a91885d3dee071f5403f83",
+      "size": 12258699
+    },
+    {
+      "path": "mods/tru.e-ending-v1.1.0c.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/tru.e-ending-v1.1.0c.jar",
+      "sha256": "3bf63a4ed7cb9a75727da2301fe0642ce74c9e0384cdb79e9b3570d3ab320aaa",
+      "size": 5525883
+    },
+    {
+      "path": "mods/twilightdelight-2.2.1.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/twilightdelight-2.2.1.jar",
+      "sha256": "cd89b35786c977b599a94ecd0f050d5dee28eb88f161afb147525d09a0dbed3e",
+      "size": 1459661
+    },
+    {
+      "path": "mods/twilightforest-1.20.1-4.3.2508-universal.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/twilightforest-1.20.1-4.3.2508-universal.jar",
+      "sha256": "0bdc89263616d1b35c32ef82c5e9c14cbd20368e2fe8b468c72a28320be7a778",
+      "size": 23332091
+    },
+    {
+      "path": "mods/waystones-forge-1.20.1-14.1.20.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/waystones-forge-1.20.1-14.1.20.jar",
+      "sha256": "f03014fabf2186a1dff69bbe2473b3373ab9d6c7d2ea8aa18e46b4f5c7dbacb2",
+      "size": 533739
+    },
+    {
+      "path": "mods/wheel-1.0.0-forge-1.20.1.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/wheel-1.0.0-forge-1.20.1.jar",
+      "sha256": "9de75c7004c92dc4d3079267c0b07ea4dc3e59bf07aa0cb0b5630cb47a3c5378",
+      "size": 24882
+    },
+    {
+      "path": "mods/wirelessredstone-forge-1.2.2+1.20.1.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/wirelessredstone-forge-1.2.2+1.20.1.jar",
+      "sha256": "937b41f6e3b8dafdb576d83be3e082bfcaba240bfcae73e8bba0e7dbf48024a6",
+      "size": 236600
+    },
+    {
+      "path": "mods/WunderLib-20.0.1.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/WunderLib-20.0.1.jar",
+      "sha256": "33d30150d69f0b1f1b077dab0edbefdca5e274bfa9a56578c6fe35d4dc62ccbd",
+      "size": 227846
+    },
+    {
+      "path": "mods/xaerominimap-forge-1.20.1-25.3.13.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/xaerominimap-forge-1.20.1-25.3.13.jar",
+      "sha256": "107a686c1a1637998c8ce7fa2262bb8c36f24277d6b2cf4b512a0b176ff41e89",
+      "size": 2147217
+    },
+    {
+      "path": "mods/xaeroworldmap-forge-1.20.1-1.40.16.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/xaeroworldmap-forge-1.20.1-1.40.16.jar",
+      "sha256": "49fbf2a0c91ca7e161b17f3b1784d4e798d0cd19f361ad3ebf6613e559f6371d",
+      "size": 1389566
+    },
+    {
+      "path": "mods/yet_another_config_lib_v3-3.6.6+1.20.1-forge.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/yet_another_config_lib_v3-3.6.6+1.20.1-forge.jar",
+      "sha256": "bd05da3d9df29b914165583f1c6dfd918a138996447ff32c0418329824027a8f",
+      "size": 1105891
+    },
+    {
+      "path": "mods/YungsApi-1.20-Forge-4.0.6.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/YungsApi-1.20-Forge-4.0.6.jar",
+      "sha256": "101c30d01d0cf9d86190f578eb1e43bd06b64092e95662a00ef52946f472c7b1",
+      "size": 370524
+    },
+    {
+      "path": "mods/YungsBetterDesertTemples-1.20-Forge-3.0.3.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/YungsBetterDesertTemples-1.20-Forge-3.0.3.jar",
+      "sha256": "5a74294725232c665b908af6e25224d111550cf69d74613e415b9f48ff150d16",
+      "size": 918012
+    },
+    {
+      "path": "mods/YungsBetterDungeons-1.20-Forge-4.0.4.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/YungsBetterDungeons-1.20-Forge-4.0.4.jar",
+      "sha256": "93c24e4075c51da0866f3fc92322bdb60e590ac2cd78dce275460839c54c36f5",
+      "size": 792381
+    },
+    {
+      "path": "mods/YungsBetterEndIsland-1.20-Forge-2.0.6.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/YungsBetterEndIsland-1.20-Forge-2.0.6.jar",
+      "sha256": "05c2f43a67116f0bbca32d903b55ce1655b9319ed6554080de02bd1d0c232a83",
+      "size": 387111
+    },
+    {
+      "path": "mods/YungsBetterJungleTemples-1.20-Forge-2.0.5.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/YungsBetterJungleTemples-1.20-Forge-2.0.5.jar",
+      "sha256": "728c0a807742356887edf7d4f736b3870b7c84007ec9c495c27da1dc0b61078d",
+      "size": 806652
+    },
+    {
+      "path": "mods/YungsBetterMineshafts-1.20-Forge-4.0.4.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/YungsBetterMineshafts-1.20-Forge-4.0.4.jar",
+      "sha256": "6632e7bcc58325098e85bcb755483de7cb3af92a5ea548f3b5c0162cbf0dc1dc",
+      "size": 492998
+    },
+    {
+      "path": "mods/YungsBetterNetherFortresses-1.20-Forge-2.0.6.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/YungsBetterNetherFortresses-1.20-Forge-2.0.6.jar",
+      "sha256": "12cffc99dccca69d294ba5bc39c331367794b339061572a6f3773620303a2f51",
+      "size": 619255
+    },
+    {
+      "path": "mods/YungsBetterOceanMonuments-1.20-Forge-3.0.4.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/YungsBetterOceanMonuments-1.20-Forge-3.0.4.jar",
+      "sha256": "bea2640c4afeb5231362a756d886ca4f246c7951175c91348272b3ce5d483bae",
+      "size": 1033262
+    },
+    {
+      "path": "mods/YungsBetterStrongholds-1.20-Forge-4.0.3.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/YungsBetterStrongholds-1.20-Forge-4.0.3.jar",
+      "sha256": "054b0a1be86510ed6bd05de66a29200f13f5603c0c9eb7e62074ddc3d19cb0e4",
+      "size": 473564
+    },
+    {
+      "path": "mods/YungsBetterWitchHuts-1.20-Forge-3.0.3.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/YungsBetterWitchHuts-1.20-Forge-3.0.3.jar",
+      "sha256": "24b3bdc844755e8a39571b5000d8dd829543f7b150d154016ccd926e47d06a71",
+      "size": 179190
+    },
+    {
+      "path": "mods/YungsBridges-1.20-Forge-4.0.3.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/YungsBridges-1.20-Forge-4.0.3.jar",
+      "sha256": "728e49e81a088291c75835130f59357fe772d77c1f2de91c63872579d5485f6c",
+      "size": 136236
+    },
+    {
+      "path": "mods/YungsCaveBiomes-1.20.1-Forge-2.0.5.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/YungsCaveBiomes-1.20.1-Forge-2.0.5.jar",
+      "sha256": "b799668cbbc0903e885f5b638119d0221186e5dbfe812eaf391f86ab8a97bd42",
+      "size": 13014967
+    },
+    {
+      "path": "mods/ZeroCore2-1.20.1-2.1.48.jar",
+      "url": "https://bscraft.zukashix.com/modpack/files/mods/ZeroCore2-1.20.1-2.1.48.jar",
+      "sha256": "ea131b92aadbe093d163d16b75c82ffd63952e6ed96736c4afe1dc8bb86ed766",
+      "size": 1341342
+    },
+    {
+      "path": "resourcepacks/Create Immersive Aircrafts Resource Pack 1.20.1 - 3.0.zip",
+      "url": "https://bscraft.zukashix.com/modpack/files/resourcepacks/Create Immersive Aircrafts Resource Pack 1.20.1 - 3.0.zip",
+      "sha256": "6474ca9582bccb35c96851f5c8f51657fe0d09b139004144c30cad88264d2fea",
+      "size": 190791
+    },
+    {
+      "path": "resourcepacks/Enhanced Audio Ambience r2.zip",
+      "url": "https://bscraft.zukashix.com/modpack/files/resourcepacks/Enhanced Audio Ambience r2.zip",
+      "sha256": "1d4c836e83a30340edb20100e76a7d18e4ea88ad98914d5d0944c9cda4289309",
+      "size": 10791718
+    },
+    {
+      "path": "resourcepacks/Enhanced Audio r7.zip",
+      "url": "https://bscraft.zukashix.com/modpack/files/resourcepacks/Enhanced Audio r7.zip",
+      "sha256": "77baaeb8469acf33c6f852aa70336d09cda781322dd32cb599eb6089ab4f323c",
+      "size": 18977120
+    },
+    {
+      "path": "resourcepacks/MandalasGUI+Dakmode_1.21.11_v2.6.zip",
+      "url": "https://bscraft.zukashix.com/modpack/files/resourcepacks/MandalasGUI+Dakmode_1.21.11_v2.6.zip",
+      "sha256": "088c0fbb7bfa9a9099b8e15558943d3ff751b8ad10ab0d00f152a4490a4ae9fd",
+      "size": 727411
+    },
+    {
+      "path": "resourcepacks/SE Vanilla Consistency 1.20.1.zip",
+      "url": "https://bscraft.zukashix.com/modpack/files/resourcepacks/SE Vanilla Consistency 1.20.1.zip",
+      "sha256": "767ad33f82139a8be0c246262d8a70074cddc2e09f74fb39e9c9dd3d509eb46f",
+      "size": 85743
+    },
+    {
+      "path": "resourcepacks/The Graveyard - BYG Compatability.zip",
+      "url": "https://bscraft.zukashix.com/modpack/files/resourcepacks/The Graveyard - BYG Compatability.zip",
+      "sha256": "3f90e911c9803869e3aca899d8dd0d97391de80ae25480c04ae82b7f65c41390",
+      "size": 111752
+    },
+    {
+      "path": "resourcepacks/Visual Titles 1.3.zip",
+      "url": "https://bscraft.zukashix.com/modpack/files/resourcepacks/Visual Titles 1.3.zip",
+      "sha256": "7a08d58bc4c31767d08c98f0b824433eaa4b842b1dd8695e9e2b1d7ee856598b",
+      "size": 444982
+    },
+    {
+      "path": "shaderpacks/Bliss_v2.1.2_(Chocapic13_Shaders_edit).zip",
+      "url": "https://bscraft.zukashix.com/modpack/files/shaderpacks/Bliss_v2.1.2_(Chocapic13_Shaders_edit).zip",
+      "sha256": "f41db92acc585fe9ffe0cc124d6ecaea27cef9ded91129ebc2a8e60226947b2c",
+      "size": 1791406
+    },
+    {
+      "path": "shaderpacks/BSL_v8.4.zip",
+      "url": "https://bscraft.zukashix.com/modpack/files/shaderpacks/BSL_v8.4.zip",
+      "sha256": "f57821c6f0d744ca72b41d3ad9762452e53d5b0eb3a888c0636ad29b7d0d1548",
+      "size": 1105442
+    },
+    {
+      "path": "shaderpacks/ComplementaryUnbound_r5.7.1.zip",
+      "url": "https://bscraft.zukashix.com/modpack/files/shaderpacks/ComplementaryUnbound_r5.7.1.zip",
+      "sha256": "5cbf4d99bc7ce4f0df5c15974d276e0949bf6974d48d88a77d5e307b0b9be8af",
+      "size": 522973
+    },
+    {
+      "path": "shaderpacks/Sildur's Vibrant Shaders v1.51 Extreme-VL.zip",
+      "url": "https://bscraft.zukashix.com/modpack/files/shaderpacks/Sildur's Vibrant Shaders v1.51 Extreme-VL.zip",
+      "sha256": "2c88fa2ad00e9006c4bc469fb3438376345b00fa31adad0d716a12a72cce182b",
+      "size": 142239
+    },
+    {
+      "path": "shaderpacks/Solas Shader V3.6.zip",
+      "url": "https://bscraft.zukashix.com/modpack/files/shaderpacks/Solas Shader V3.6.zip",
+      "sha256": "6d6f1065cbe2310b8246b7a702eeda651428ce2a6b742540f014e8e7b640a2ad",
+      "size": 1229545
+    }
+  ]
+}
