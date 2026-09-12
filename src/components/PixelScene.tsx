@@ -566,7 +566,8 @@ export function PixelScene({ time, paused, title = false, className }: Props) {
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
       const p = pointer.current
-      p.tx = (e.clientX / window.innerWidth) * 2 - 1
+      // Inverted: pointing left slides the world right, like turning to look that way
+      p.tx = 1 - (e.clientX / window.innerWidth) * 2
       p.ty = (e.clientY / window.innerHeight) * 2 - 1
       const c = canvasRef.current
       if (!c) return
