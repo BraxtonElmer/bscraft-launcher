@@ -1,0 +1,6 @@
+<!-- Dev helper for the Vite mock preview: /tools/ui-preview/scene.html?t=night&q=s%3Dinstalled -->
+<script>
+  const p = new URLSearchParams(location.search)
+  localStorage.setItem('bscraft.scenery', p.get('t') || 'auto')
+  location.replace('/?' + (p.get('q') || ''))
+</script>
