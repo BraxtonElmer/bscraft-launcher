@@ -40,6 +40,11 @@ from typing import Optional
 
 CONFIG_FILE = Path(__file__).parent / "config.ini"
 
+# Root-level files that belong to each player, not the pack. The launcher
+# re-downloads any listed file whose hash differs, so shipping these would
+# reset everyone's settings on every update.
+SKIP_ROOT_FILES = {"options.txt", "servers.dat", "usercache.json"}
+
 # ── Helpers ────────────────────────────────────────────────────────────────
 
 def sha256_file(path: Path) -> str:
@@ -93,6 +98,8 @@ def scan_modpack_dir(modpack_dir: Path, base_url: str) -> list[dict]:
         if any(rel.startswith(p) for p in ["logs/", "crash-reports/", ".git"]):
             continue
         if rel.endswith(".log") or rel.endswith(".tmp"):
+            continue
+        if rel in SKIP_ROOT_FILES:
             continue
 
         digest = sha256_file(abs_path)
@@ -240,6 +247,14 @@ def main():
     print("Scanning modpack directory…")
     new_files = scan_modpack_dir(modpack_dir, base_url)
     print(f"  Found {len(new_files)} files")
+
+    # Keep launcher-only flags (Performance Mode) that were set on the existing manifest
+    perf_paths = {f["path"] for f in existing_files if f.get("performance")}
+    for f in new_files:
+        if f["path"] in perf_paths:
+            f["performance"] = True
+    if perf_paths:
+        print(f"  Kept Performance Mode flag on {sum(1 for f in new_files if f.get('performance'))} file(s)")
     print()
 
     # Diff
