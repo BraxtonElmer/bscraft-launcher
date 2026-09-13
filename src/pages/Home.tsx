@@ -4,16 +4,14 @@ import { PlayerHead } from '../components/PlayerHead'
 import { PasswordForm } from '../components/PasswordForm'
 import { ProgressBar, Segmented, Spinner, describeOperation } from '../components/ui'
 import {
-  AlertIcon, CheckIcon, ChevronUpIcon, DownloadIcon, HomeIcon, KeyIcon, MemoryIcon,
+  AlertIcon, CheckIcon, ChevronUpIcon, DownloadIcon, GaugeIcon, HomeIcon, KeyIcon, MemoryIcon,
   RefreshIcon, ServerIcon, SparklesIcon, StopIcon, TerminalIcon,
 } from '../components/Icons'
-import { OnlineField } from '../components/OnlineField'
-import { useServerStatus } from '../hooks/useServerStatus'
 import { formatBytes, formatRam, sanitizeUsername, usernameProblem } from '../lib/format'
 import { usePublishedSkin } from '../hooks/useSkin'
 import type { AccountApi } from '../hooks/useAccount'
 import type { LauncherApi } from '../hooks/useLauncher'
-import type { ActiveOperation, AppConfig, Page, ServerStatus } from '../types'
+import type { ActiveOperation, AppConfig, Page } from '../types'
 
 interface Props {
   launcher: LauncherApi
@@ -33,7 +31,6 @@ let passwordPromptSkipped = false
 export function HomePage({ launcher, config, operation, startedAt, onNavigate, onStopGame, account, onStartIn }: Props) {
   const { status, manifest, launcherUpdate, modpackUpdate, running } = launcher
   const [askPassword, setAskPassword] = useState(false)
-  const server = useServerStatus(true)
 
   const mcVersion = config.installed_mc_version ?? manifest?.minecraft_version
 
@@ -119,7 +116,7 @@ export function HomePage({ launcher, config, operation, startedAt, onNavigate, o
             onStop={onStopGame}
           />
         ) : (
-          <DockControls launcher={launcher} config={config} onNavigate={onNavigate} onPlay={play} server={server.status} />
+          <DockControls launcher={launcher} config={config} onNavigate={onNavigate} onPlay={play} />
         )}
         <PlayButton
           launcher={launcher}
@@ -182,9 +179,8 @@ function PasswordPrompt({ username, onSave, onSkip, onClose }: {
 
 // ── Dock: idle controls ──────────────────────────────────────
 
-function DockControls({ launcher, config, onNavigate, onPlay, server }: {
+function DockControls({ launcher, config, onNavigate, onPlay }: {
   launcher: LauncherApi; config: AppConfig; onNavigate: (p: Page) => void; onPlay: () => void
-  server: ServerStatus | null
 }) {
   const { username, setUsername, usernameNudge, busy, perfBusy } = launcher
   const { skin } = usePublishedSkin(username)
@@ -244,8 +240,8 @@ function DockControls({ launcher, config, onNavigate, onPlay, server }: {
           onChange={v => launcher.setPerformanceMode(v === 'performance')}
           disabled={busy}
           options={[
-            { value: 'quality', label: 'Quality', title: 'All mods active' },
-            { value: 'performance', label: 'Performance', title: 'Visual mods are removed for better FPS' },
+            { value: 'quality', label: 'Quality', icon: <SparklesIcon size={13} />, title: 'All mods active' },
+            { value: 'performance', label: 'Performance', icon: <GaugeIcon size={13} />, title: 'Visual mods are removed for better FPS' },
           ]}
         />
       </div>
@@ -259,10 +255,6 @@ function DockControls({ launcher, config, onNavigate, onPlay, server }: {
           {formatRam(config.ram_mb)}
         </button>
       </div>
-
-      <div className="dock-sep" />
-
-      <OnlineField status={server} me={config.username || username} />
 
       <div className="dock-spacer" />
     </>

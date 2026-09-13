@@ -15,6 +15,10 @@ import {
   createLife, drawBirds, drawMobs, mobAt, pokeLife, stepLife,
   type Life, type LifeConfig, type ScenePointer,
 } from './sceneLife'
+import {
+  createParty, drawParty, figureAt, pokeParty, retargetParty, stepParty, syncParty,
+  type OnlinePlayer, type Party, type PartyLight,
+} from './scenePlayers'
 
 export type Scenery = 'auto' | 'dawn' | 'day' | 'dusk' | 'night'
 export type SceneTime = Exclude<Scenery, 'auto'>
@@ -264,6 +268,8 @@ interface Scene {
   flies: Fly[]
   shooting: { x: number; y: number; life: number } | null
   nextShooting: number
+  /** How online players are lit: like the mobs, a little brighter than the terrain */
+  playerLight: PartyLight
 }
 
 function buildScene(W: number, H: number, time: SceneTime): Scene {
@@ -437,6 +443,12 @@ function buildScene(W: number, H: number, time: SceneTime): Scene {
     stars, clouds, flies,
     shooting: null,
     nextShooting: 6000 + r() * 10000,
+    playerLight: {
+      light: Math.min(1, pal.light + 0.25),
+      tint: pal.tint,
+      tintAmt: pal.tintAmt * 0.7,
+      night: time === 'night' || time === 'dusk',
+    },
   }
 }
 
@@ -554,12 +566,25 @@ interface Props {
   paused: boolean
   /** Draw the BSCRAFT title into the sky */
   title?: boolean
+  /** Players online on the server, shown hanging out in the landscape */
+  players?: OnlinePlayer[]
   className?: string
 }
 
-export function PixelScene({ time, paused, title = false, className }: Props) {
+const NO_PLAYERS: OnlinePlayer[] = []
+
+export function PixelScene({ time, paused, title = false, players = NO_PLAYERS, className }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  // Players are drawn at twice the scene's resolution, so a skin pixel is one pixel here
+  const playersRef = useRef<HTMLCanvasElement>(null)
   const sceneRef = useRef<{ time: SceneTime; scene: Scene } | null>(null)
+  const partyRef = useRef<Party | null>(null)
+  const onlineRef = useRef(players)
+
+  useEffect(() => {
+    onlineRef.current = players
+    if (partyRef.current) syncParty(partyRef.current, players)
+  }, [players])
   // tx/ty: parallax target, x/y: eased parallax, cx/cy: cursor in canvas pixels
   const pointer = useRef({ tx: 0, ty: 0, x: 0, y: 0, cx: 0, cy: 0, inside: false })
 
@@ -602,12 +627,33 @@ export function PixelScene({ time, paused, title = false, className }: Props) {
     const ctx = canvas.getContext('2d')!
     ctx.imageSmoothingEnabled = false
 
+    const overlay = playersRef.current!
+    if (overlay.width !== W * 2 || overlay.height !== H * 2) {
+      overlay.width = W * 2
+      overlay.height = H * 2
+    }
+    const octx = overlay.getContext('2d')!
+    const night = scene.playerLight.night
+    if (!partyRef.current) {
+      partyRef.current = createParty(scene.life.env, night)
+      syncParty(partyRef.current, onlineRef.current)
+    } else if (partyRef.current.env !== scene.life.env) {
+      retargetParty(partyRef.current, scene.life.env, night)
+    }
+    const party = partyRef.current
+    // Handy from devtools: `__party.timer = 0` moves everyone on to the next activity
+    if (import.meta.env.DEV) (window as unknown as { __party: Party }).__party = party
+
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const p = pointer.current
     let last = performance.now()
+    const draw = (now: number, dt: number) => {
+      drawFrame(ctx, scene, now, dt, p.x, p.y, title)
+      drawParty(octx, party, now, p.x, p.y, scene.playerLight)
+    }
 
     if (paused || reduced) {
-      drawFrame(ctx, scene, last, 0, p.x, p.y, title)
+      draw(last, 0)
       return
     }
 
@@ -627,7 +673,7 @@ export function PixelScene({ time, paused, title = false, className }: Props) {
       const r = canvas.getBoundingClientRect()
       if (e.clientX < r.left || e.clientX >= r.right || e.clientY < r.top || e.clientY >= r.bottom) return
       const hit = { x: ((e.clientX - r.left) / r.width) * canvas.width, y: ((e.clientY - r.top) / r.height) * canvas.height }
-      pokeLife(scene.life, hit, p.x, p.y)
+      if (!pokeParty(party, hit, p.x, p.y)) pokeLife(scene.life, hit, p.x, p.y)
     }
     window.addEventListener('pointerdown', onDown)
 
@@ -641,10 +687,11 @@ export function PixelScene({ time, paused, title = false, className }: Props) {
       p.y += (p.ty - p.y) * 0.06
       const at = cursor()
       stepLife(scene.life, dt, at, p.x, p.y)
-      drawFrame(ctx, scene, now, dt, p.x, p.y, title)
-      setHover(!!at && !!mobAt(scene.life, at, p.x, p.y))
+      stepParty(party, dt)
+      draw(now, dt)
+      setHover(!!at && (figureAt(party, at, p.x, p.y) || !!mobAt(scene.life, at, p.x, p.y)))
     }
-    drawFrame(ctx, scene, last, 0, p.x, p.y, title)
+    draw(last, 0)
     raf = requestAnimationFrame(loop)
     return () => {
       cancelAnimationFrame(raf)
@@ -653,5 +700,10 @@ export function PixelScene({ time, paused, title = false, className }: Props) {
     }
   }, [time, paused, title])
 
-  return <canvas ref={canvasRef} className={`pixel-scene ${className ?? ''}`} aria-hidden />
+  return (
+    <>
+      <canvas ref={canvasRef} className={`pixel-scene ${className ?? ''}`} aria-hidden />
+      <canvas ref={playersRef} className={`pixel-scene ${className ?? ''}`} aria-hidden />
+    </>
+  )
 }

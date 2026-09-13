@@ -15,7 +15,7 @@ pack are in [`pack-overrides/`](pack-overrides/README.md).
 
 | Page | |
 |---|---|
-| **Play** | Pixel-art landscape (follows the time of day). The bottom bar shows how many players are on the BSCraft server; hovering it lists who's in game (in a Minecraft-style tooltip). Install, modpack and launcher updates with progress, then Play. The ▴ beside Play picks where the game starts: Minecraft's main menu (default) or straight into the BSCraft server. BSCraft is always in the in-game server list. Asks for a server password before the first launch. |
+| **Play** | Pixel-art landscape (follows the time of day). Everyone on the BSCraft server hangs out in it, drawn from their own skin with a name tag: round a campfire in the evening, fishing, chasing a chicken, wandering about. Click one and they wave. Install, modpack and launcher updates with progress, then Play. The ▴ beside Play picks where the game starts: Minecraft's main menu (default) or straight into the BSCraft server. BSCraft is always in the in-game server list. Asks for a server password before the first launch. |
 | **Profile** | Name (with a live free / yours / taken check), server password, a rotatable 3D preview (skinview3d), and a wardrobe: skin with classic/slim arms, cape, elytra design, "copy a look" from any BSCraft player or Minecraft account. Also Minecraft's Skin Customization switches and main hand, written into `options.txt`. |
 | **Console** | Live game log with filters, search, copy, and Stop. |
 | **Settings** | Memory, preferred GPU, where the game starts, console, background, performance mode, check for updates, verify and repair files. |
@@ -31,9 +31,11 @@ pack are in [`pack-overrides/`](pack-overrides/README.md).
   `https://bscraft.zukashix.com/skins/`, where the skin service publishes what
   players upload from Profile. Minecraft paints the elytra from the cape texture,
   so an elytra design is stored in the cape's wing area.
-- **Player count:** the launcher asks the game server for its status the way the
-  multiplayer screen does (Server List Ping). Minecraft shares up to 12 names and
-  hides players who turned off "Allow Server Listings"; the rest show as "+N more".
+- **Who's online:** the launcher asks the game server for its status the way the
+  multiplayer screen does (Server List Ping), every 30 s while the Play screen is
+  showing. Minecraft shares up to 12 names and hides players who turned off "Allow
+  Server Listings"; those still appear, without a name tag. The landscape shows up
+  to 8, each wearing the skin published for them (or the generated default).
 - **Launcher updates:** the Tauri updater reads
   `https://bscraft.zukashix.com/launcher/version.json`; the Play screen shows its
   `notes` and the Play button turns into Update.
@@ -61,10 +63,11 @@ Query parameters pick the situation:
 | `s=installed\|fresh\|update\|offline\|launcherupdate` | Install state (default `installed`) |
 | `acct=new\|registered\|mismatch`, `nopw=1` | Server account state; mock password is `hunter22` |
 | `speed=2` | Run mock downloads faster |
-| `srv=down\|empty\|busy` | Server status (default: 3 players online) |
+| `srv=down\|empty\|busy\|hidden` | Server status (default: 3 players online; `hidden` has 2 unnamed) |
 
 `tools/ui-preview/scene.html?t=night&q=s%3Dfresh` opens the preview with a fixed
-time of day.
+time of day. In dev builds `__party` in the console is the players' scene state;
+`__party.timer = 0` moves them on to the next activity.
 
 **Try a modpack change before publishing it:** dev builds read the manifest
 from `BSCRAFT_MANIFEST_URL` when it's set (release builds ignore it):
@@ -92,10 +95,12 @@ suite, run on the server: `python3 server/skin-service/test_skin_service.py`.
 src/                      React frontend
   App.tsx                 shell: nav rail, stage, pages, modals, toasts
   pages/                  Home (Play), Profile (+ profile/), Console, Settings
-  components/             PixelScene + sceneLife (landscape, mobs), SkinViewer3D,
+  components/             PixelScene + sceneLife (landscape, mobs) + scenePlayers
+                          (who's online), SkinViewer3D,
                           PlayerHead, PasswordForm, ui controls, icons
   hooks/                  useLauncher (install/update/launch flows), useOperation
-                          (progress), useGameSession, useAccount, useSkin, useConfig
+                          (progress), useGameSession, useAccount, useSkin, useConfig,
+                          useOnlinePlayers
   lib/                    skin.ts (texture checks, cape wings), defaultSkin.ts, format.ts
 src-tauri/src/
   commands/install.rs     Java, Minecraft, Forge

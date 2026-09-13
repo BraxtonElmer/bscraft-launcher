@@ -49,6 +49,29 @@ export function usePublishedLook(username: string): { look: Look; loading: boole
   return { look: cache.get(key) ?? EMPTY_LOOK, loading: !cache.has(key) && (pending.has(key) || /^[A-Za-z0-9_]{3,16}$/.test(username)) }
 }
 
+/** Published looks for several players at once (e.g. everyone online), keyed by lowercase name */
+export function usePublishedLooks(names: string[]): Map<string, Look> {
+  const [, force] = useState(0)
+  const key = names.map(n => n.toLowerCase()).join(',')
+
+  useEffect(() => {
+    const fn = () => force(n => n + 1)
+    listeners.add(fn)
+    return () => { listeners.delete(fn) }
+  }, [])
+
+  useEffect(() => {
+    for (const name of names) if (!cache.has(name.toLowerCase())) load(name)
+  }, [key])
+
+  const looks = new Map<string, Look>()
+  for (const name of names) {
+    const look = cache.get(name.toLowerCase())
+    if (look) looks.set(name.toLowerCase(), look)
+  }
+  return looks
+}
+
 /** The skin published for this username, or null for the default */
 export function usePublishedSkin(username: string): { skin: Skin | null; loading: boolean } {
   const { look, loading } = usePublishedLook(username)

@@ -6,6 +6,7 @@ import { useOperation } from './hooks/useOperation'
 import { useGameSession } from './hooks/useGameSession'
 import { useLauncher } from './hooks/useLauncher'
 import { useAccount } from './hooks/useAccount'
+import { useOnlinePlayers } from './hooks/useOnlinePlayers'
 import { NavRail } from './components/NavRail'
 import { TitleBar } from './components/TitleBar'
 import { PixelScene, useSceneTime, type Scenery } from './components/PixelScene'
@@ -51,6 +52,8 @@ export default function App() {
     onLaunched: () => { if (cfg.config.console_enabled) setPage('console') },
   })
   const account = useAccount(launcher.username)
+  // Who's on the server, shown in the landscape; checked while the Play screen is showing
+  const onlinePlayers = useOnlinePlayers(page === 'home' && !game.running)
 
   useEffect(() => {
     getVersion().then(setLauncherVersion).catch(() => {})
@@ -97,6 +100,7 @@ export default function App() {
           time={sceneTime}
           paused={page !== 'home' || game.running}
           title={page === 'home'}
+          players={onlinePlayers}
           className={page !== 'home' ? 'dimmed' : ''}
         />
         <TitleBar />
