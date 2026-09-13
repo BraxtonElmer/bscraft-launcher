@@ -119,6 +119,10 @@ fn get_manifest_cache_path() -> Result<std::path::PathBuf, String> {
 fn save_manifest_cache(manifest: &ModpackManifest) {
     if let Ok(path) = get_manifest_cache_path() {
         if let Ok(json) = serde_json::to_string(manifest) {
+            // On a first run the launcher's data folder doesn't exist yet
+            if let Some(dir) = path.parent() {
+                std::fs::create_dir_all(dir).ok();
+            }
             std::fs::write(path, json).ok();
         }
     }
@@ -147,6 +151,51 @@ fn save_installed_manifest(manifest: &ModpackManifest) {
     }
 }
 
+/// Where each pack file lives on this PC. With Performance Mode on, the files it
+/// switches off wait in the backup folder, so syncing, verifying and repairing
+/// don't quietly put them back into the game.
+struct FileHomes {
+    mc_dir: std::path::PathBuf,
+    backup_dir: std::path::PathBuf,
+    performance: bool,
+}
+
+impl FileHomes {
+    fn load() -> Result<Self, String> {
+        Ok(Self {
+            mc_dir: get_mc_dir()?,
+            backup_dir: crate::commands::settings::get_data_dir()?.join("performance_backup"),
+            performance: load_config_internal().map(|c| c.performance_mode).unwrap_or(false),
+        })
+    }
+
+    fn path(&self, mf: &ManifestFile) -> std::path::PathBuf {
+        if self.performance && mf.performance == Some(true) {
+            self.backup_dir.join(&mf.path)
+        } else {
+            self.mc_dir.join(&mf.path)
+        }
+    }
+
+    /// A switched-off file found in the game folder goes (back) to the backup folder
+    fn park(&self, mf: &ManifestFile) {
+        if !(self.performance && mf.performance == Some(true)) {
+            return;
+        }
+        let in_game = self.mc_dir.join(&mf.path);
+        let parked = self.backup_dir.join(&mf.path);
+        if !in_game.exists() {
+            return;
+        }
+        if parked.exists() {
+            std::fs::remove_file(&in_game).ok();
+        } else if let Some(parent) = parked.parent() {
+            std::fs::create_dir_all(parent).ok();
+            std::fs::rename(&in_game, &parked).ok();
+        }
+    }
+}
+
 /// Enables or disables Performance Mode by moving flagged modpack files
 /// to/from a backup folder.  Works offline once the manifest has been cached.
 #[tauri::command]
@@ -155,9 +204,13 @@ pub async fn apply_performance_mode(enabled: bool) -> Result<String, String> {
     let data_dir = crate::commands::settings::get_data_dir()?;
     let backup_dir = data_dir.join("performance_backup");
 
-    let manifest = load_manifest_cache().ok_or(
-        "Manifest not cached yet. Open the launcher online first so it can cache the manifest.",
-    )?;
+    // The cached copy lets this work offline; without one, ask the server
+    let manifest = match load_manifest_cache() {
+        Some(m) => m,
+        None => fetch_manifest().await.map_err(|e| {
+            format!("Couldn't get the modpack's file list from the server to switch modes. {}", e)
+        })?,
+    };
 
     let perf_files: Vec<&ManifestFile> = manifest
         .files
@@ -208,6 +261,7 @@ pub async fn apply_performance_mode(enabled: bool) -> Result<String, String> {
 #[tauri::command]
 pub async fn sync_modpack(app: tauri::AppHandle, remove_deleted: bool) -> Result<SyncResult, String> {
     let mc_dir = get_mc_dir()?;
+    let homes = FileHomes::load()?;
     let previous = load_installed_manifest();
     let manifest = fetch_manifest().await?;
 
@@ -228,7 +282,8 @@ pub async fn sync_modpack(app: tauri::AppHandle, remove_deleted: bool) -> Result
 
     for mf in &manifest.files {
         files_done += 1;
-        let local_path = mc_dir.join(&mf.path);
+        homes.park(mf);
+        let local_path = homes.path(mf);
 
         let needs_download = if local_path.exists() {
             // Check SHA-256
@@ -305,7 +360,7 @@ pub async fn sync_modpack(app: tauri::AppHandle, remove_deleted: bool) -> Result
 /// Does not download anything — only reports what is wrong.
 #[tauri::command]
 pub async fn verify_files(app: tauri::AppHandle) -> Result<VerifyResult, String> {
-    let mc_dir = get_mc_dir()?;
+    let homes = FileHomes::load()?;
     let manifest = fetch_manifest().await?;
 
     let total = manifest.files.len() as u32;
@@ -313,7 +368,7 @@ pub async fn verify_files(app: tauri::AppHandle) -> Result<VerifyResult, String>
     let mut failed: Vec<String> = Vec::new();
 
     for (i, mf) in manifest.files.iter().enumerate() {
-        let local_path = mc_dir.join(&mf.path);
+        let local_path = homes.path(mf);
 
         let ok = if local_path.exists() {
             match sha256_file(&local_path) {
@@ -353,7 +408,7 @@ pub async fn repair_files(app: tauri::AppHandle, paths: Vec<String>) -> Result<(
         return Ok(());
     }
 
-    let mc_dir = get_mc_dir()?;
+    let homes = FileHomes::load()?;
     let manifest = fetch_manifest().await?;
 
     let client = reqwest::Client::builder()
@@ -373,7 +428,7 @@ pub async fn repair_files(app: tauri::AppHandle, paths: Vec<String>) -> Result<(
             .find(|f| &f.path == path)
             .ok_or_else(|| format!("File not found in manifest: {}", path))?;
 
-        let local_path = mc_dir.join(&mf.path);
+        let local_path = homes.path(mf);
 
         app.emit(
             "sync-progress",
@@ -459,8 +514,9 @@ pub async fn verify_all(app: tauri::AppHandle) -> Result<VerifyAllResult, String
         let mut passed = 0u32;
         let mut failed = Vec::new();
 
+        let homes = FileHomes::load()?;
         for (i, mf) in manifest.files.iter().enumerate() {
-            let local_path = mc_dir.join(&mf.path);
+            let local_path = homes.path(mf);
             let ok = if local_path.exists() {
                 sha256_file(&local_path)
                     .map(|h| h == mf.sha256)

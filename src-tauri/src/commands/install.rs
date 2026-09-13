@@ -52,6 +52,16 @@ pub fn get_runtime_dir() -> Result<PathBuf, String> {
     get_mc_dir().map(|d| d.join("runtime"))
 }
 
+/// A command for a console program (java.exe) that doesn't pop up a console window.
+/// The launcher reads its output through pipes, so nobody needs to see one.
+pub fn hidden_command(program: &Path) -> tokio::process::Command {
+    #[allow(unused_mut)]
+    let mut cmd = tokio::process::Command::new(program);
+    #[cfg(windows)]
+    cmd.creation_flags(0x0800_0000); // CREATE_NO_WINDOW
+    cmd
+}
+
 /// Scans the runtime directory for java.exe and returns its path if found.
 pub fn find_java_exe() -> Option<PathBuf> {
     let runtime_dir = get_runtime_dir().ok()?;
@@ -329,7 +339,7 @@ pub async fn install_forge(
     }
 
     // Run the official Forge installer in headless client mode
-    let output = tokio::process::Command::new(&java_exe)
+    let output = hidden_command(&java_exe)
         .arg("-jar")
         .arg(&installer_path)
         .arg("--installClient")

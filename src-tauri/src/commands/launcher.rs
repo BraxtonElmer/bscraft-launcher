@@ -2,9 +2,9 @@
 // commands/launcher.rs — Game launch, log streaming, process control
 // ============================================================
 
-use crate::commands::install::{find_java_exe, get_mc_dir};
+use crate::commands::install::{find_java_exe, get_mc_dir, hidden_command};
 use crate::commands::settings::load_config_internal;
-use crate::constants::{GAME_SERVER_ADDRESS, GAME_SERVER_NAME, LAUNCHER_NAME, LAUNCHER_VERSION};
+use crate::constants::{GAME_SERVER_ADDRESS, GAME_SERVER_NAME, LAUNCHER_NAME, LAUNCHER_VERSION, OLD_GAME_SERVER_ADDRESSES};
 use crate::state::AppState;
 use serde::Serialize;
 use std::collections::HashMap;
@@ -89,7 +89,7 @@ pub async fn launch_game(
     )?;
 
     // BSCraft is always in the multiplayer list; with auto-join the game goes straight there
-    if let Err(err) = crate::servers_dat::ensure_server_listed(&mc_dir, GAME_SERVER_NAME, GAME_SERVER_ADDRESS) {
+    if let Err(err) = crate::servers_dat::ensure_server_listed(&mc_dir, GAME_SERVER_NAME, GAME_SERVER_ADDRESS, OLD_GAME_SERVER_ADDRESSES) {
         eprintln!("Server list not updated: {}", err);
     }
     if config.auto_join {
@@ -306,7 +306,7 @@ fn build_launch_command(
     vars.insert("clientid".into(), "".into());
     vars.insert("auth_xuid".into(), "".into());
 
-    let mut cmd = tokio::process::Command::new(java_exe);
+    let mut cmd = hidden_command(java_exe);
 
     // ── JVM arguments ──────────────────────────────────────────
     //

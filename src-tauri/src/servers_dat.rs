@@ -5,7 +5,8 @@
 // "servers" of compounds { name, ip, icon?, acceptTextures?, ... }.
 // The reader keeps every tag exactly as it was (strings stay raw
 // bytes), so a player's own servers survive untouched; we only add
-// BSCraft at the top when it's missing.
+// BSCraft at the top when it's missing, or point its entry at the new
+// address when the server moves.
 // ============================================================
 
 use std::path::Path;
@@ -226,8 +227,9 @@ fn server_entry(name: &str, address: &str) -> Tag {
     ])
 }
 
-/// Returns the new file contents, or None if the server is already listed
-fn with_server(existing: Option<&[u8]>, name: &str, address: &str) -> Result<Option<Vec<u8>>, String> {
+/// Returns the new file contents, or None if the server is already listed.
+/// Entries for the server's `old` addresses are moved to the current one.
+fn with_server(existing: Option<&[u8]>, name: &str, address: &str, old: &[&str]) -> Result<Option<Vec<u8>>, String> {
     let (root_name, mut fields) = match existing {
         Some(data) if !data.is_empty() => parse(data)?,
         _ => (Vec::new(), Vec::new()),
@@ -244,13 +246,34 @@ fn with_server(existing: Option<&[u8]>, name: &str, address: &str) -> Result<Opt
                     _ => None,
                 }
             };
-            let ours = |t: &Tag| matches!(field(t, b"ip"), Some(Tag::String(ip)) if same_address(&String::from_utf8_lossy(&ip), address));
+            let ip_is = |t: &Tag, addr: &str| matches!(field(t, b"ip"), Some(Tag::String(ip)) if same_address(&String::from_utf8_lossy(&ip), addr));
+            let ours = |t: &Tag| ip_is(t, address);
+            let moved_away = |t: &Tag| old.iter().any(|o| ip_is(t, o));
             let hidden = |t: &Tag| matches!(field(t, b"hidden"), Some(Tag::Byte(b)) if b != 0);
             // Quick play remembers servers as hidden entries, which the list doesn't show
             let before = items.len();
-            items.retain(|t| !(ours(t) && hidden(t)));
+            items.retain(|t| !((ours(t) || moved_away(t)) && hidden(t)));
+            // The server moved: point the player's entry at the new address, keeping its name and icon
+            let mut changed = items.len() != before;
+            for t in items.iter_mut() {
+                if !moved_away(t) {
+                    continue;
+                }
+                if let Tag::Compound(f) = t {
+                    for (k, v) in f.iter_mut() {
+                        if k.as_slice() == b"ip" {
+                            *v = Tag::String(address.as_bytes().to_vec());
+                        }
+                    }
+                }
+                changed = true;
+            }
             if items.iter().any(|t| ours(t)) {
-                return Ok((items.len() != before).then(|| serialize(&root_name, &fields)));
+                // Keep one entry if both the old and the new address were listed
+                let mut seen = false;
+                items.retain(|t| !ours(t) || !std::mem::replace(&mut seen, true));
+                changed |= items.len() != before;
+                return Ok(changed.then(|| serialize(&root_name, &fields)));
             }
             *elem = 10;
             items.insert(0, entry);
@@ -263,14 +286,14 @@ fn with_server(existing: Option<&[u8]>, name: &str, address: &str) -> Result<Opt
 
 /// Makes sure the server appears in the game's multiplayer list. Leaves an
 /// unreadable servers.dat alone rather than risk losing a player's servers.
-pub fn ensure_server_listed(mc_dir: &Path, name: &str, address: &str) -> Result<bool, String> {
+pub fn ensure_server_listed(mc_dir: &Path, name: &str, address: &str, old: &[&str]) -> Result<bool, String> {
     let path = mc_dir.join("servers.dat");
     let existing = match std::fs::read(&path) {
         Ok(d) => Some(d),
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => None,
         Err(e) => return Err(format!("Could not read servers.dat: {}", e)),
     };
-    let Some(updated) = with_server(existing.as_deref(), name, address)? else {
+    let Some(updated) = with_server(existing.as_deref(), name, address, old)? else {
         return Ok(false);
     };
     std::fs::create_dir_all(mc_dir).map_err(|e| e.to_string())?;
@@ -286,10 +309,10 @@ mod tests {
 
     #[test]
     fn creates_list_when_missing() {
-        let out = with_server(None, "BSCraft", "bscraft.zukashix.com").unwrap().unwrap();
+        let out = with_server(None, "BSCraft", "bscraft.zukashix.com", &[]).unwrap().unwrap();
         let (_, fields) = parse(&out).unwrap();
         assert_eq!(fields.len(), 1);
-        assert!(with_server(Some(&out), "BSCraft", "bscraft.zukashix.com:25565").unwrap().is_none());
+        assert!(with_server(Some(&out), "BSCraft", "bscraft.zukashix.com:25565", &[]).unwrap().is_none());
     }
 
     #[test]
@@ -300,9 +323,41 @@ mod tests {
             (b"name".to_vec(), Tag::String(b"Minecraft Server".to_vec())),
         ]);
         let original = serialize(b"", &[(b"servers".to_vec(), Tag::List(10, vec![hidden]))]);
-        let out = with_server(Some(&original), "BSCraft", "bscraft.zukashix.com").unwrap().unwrap();
+        let out = with_server(Some(&original), "BSCraft", "bscraft.zukashix.com", &[]).unwrap().unwrap();
         let (_, fields) = parse(&out).unwrap();
         assert_eq!(fields[0].1, Tag::List(10, vec![server_entry("BSCraft", "bscraft.zukashix.com")]));
+    }
+
+    #[test]
+    fn moves_entry_from_old_address() {
+        let old_entry = Tag::Compound(vec![
+            (b"icon".to_vec(), Tag::String(b"iVBOR".to_vec())),
+            (b"ip".to_vec(), Tag::String(b"bscraft.zukashix.com".to_vec())),
+            (b"name".to_vec(), Tag::String(b"BSCraft".to_vec())),
+        ]);
+        let original = serialize(b"", &[(b"servers".to_vec(), Tag::List(10, vec![old_entry]))]);
+        let out = with_server(Some(&original), "BSCraft", "bsc.akariyu.com", &["bscraft.zukashix.com"]).unwrap().unwrap();
+        let (_, fields) = parse(&out).unwrap();
+        let moved = Tag::Compound(vec![
+            (b"icon".to_vec(), Tag::String(b"iVBOR".to_vec())),
+            (b"ip".to_vec(), Tag::String(b"bsc.akariyu.com".to_vec())),
+            (b"name".to_vec(), Tag::String(b"BSCraft".to_vec())),
+        ]);
+        assert_eq!(fields[0].1, Tag::List(10, vec![moved]));
+        // Nothing more to do on the next launch
+        assert!(with_server(Some(&out), "BSCraft", "bsc.akariyu.com", &["bscraft.zukashix.com"]).unwrap().is_none());
+    }
+
+    #[test]
+    fn keeps_one_entry_when_old_and_new_are_listed() {
+        let entry = |ip: &[u8]| Tag::Compound(vec![
+            (b"ip".to_vec(), Tag::String(ip.to_vec())),
+            (b"name".to_vec(), Tag::String(b"BSCraft".to_vec())),
+        ]);
+        let original = serialize(b"", &[(b"servers".to_vec(), Tag::List(10, vec![entry(b"bsc.akariyu.com"), entry(b"bscraft.zukashix.com")]))]);
+        let out = with_server(Some(&original), "BSCraft", "bsc.akariyu.com", &["bscraft.zukashix.com"]).unwrap().unwrap();
+        let (_, fields) = parse(&out).unwrap();
+        assert_eq!(fields[0].1, Tag::List(10, vec![entry(b"bsc.akariyu.com")]));
     }
 
     #[test]
@@ -314,7 +369,7 @@ mod tests {
             (b"acceptTextures".to_vec(), Tag::Byte(1)),
         ]);
         let original = serialize(b"", &[(b"servers".to_vec(), Tag::List(10, vec![mine.clone()]))]);
-        let out = with_server(Some(&original), "BSCraft", "bscraft.zukashix.com").unwrap().unwrap();
+        let out = with_server(Some(&original), "BSCraft", "bscraft.zukashix.com", &[]).unwrap().unwrap();
         let (_, fields) = parse(&out).unwrap();
         match &fields[0].1 {
             Tag::List(10, items) => {

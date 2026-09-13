@@ -84,6 +84,7 @@ pub struct GpuInfo {
 
 #[cfg(target_os = "windows")]
 #[derive(Deserialize, Debug)]
+#[serde(rename = "Win32_VideoController")] // the WMI class queried; the struct name alone isn't it
 #[allow(non_snake_case)] // WMI property names are PascalCase
 struct Win32VideoController {
     Name: Option<String>,

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { PixelText } from './PixelText'
+import { BscLogo } from './BscLogo'
 import { GearIcon, PlayIcon, TerminalIcon, UserIcon } from './Icons'
 import type { Page } from '../types'
 
@@ -16,7 +16,7 @@ export function NavRail({ page, onNavigate, gameRunning, working, launcherVersio
     <nav className="rail" aria-label="Main">
       <div className="rail-brand" data-tauri-drag-region>
         <div className="rail-logo" data-tauri-drag-region title="BSCraft">
-          <PixelText text="BSC" scale={2} color="#ffffff" shadow="rgba(42, 12, 70, 0.55)" />
+          <BscLogo size={46} />
         </div>
       </div>
 

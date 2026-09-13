@@ -14,7 +14,9 @@ pub const LAUNCHER_NAME: &str = "BSCraftLauncher";
 
 /// The BSCraft game server, as it appears in the in-game server list.
 pub const GAME_SERVER_NAME: &str = "BSCraft";
-pub const GAME_SERVER_ADDRESS: &str = "bscraft.zukashix.com";
+pub const GAME_SERVER_ADDRESS: &str = "bsc.akariyu.com";
+/// Where the game server used to be: players' server list entries for these move to the address above
+pub const OLD_GAME_SERVER_ADDRESSES: &[&str] = &["bscraft.zukashix.com"];
 
 // ── External service URLs ──────────────────────────────────────────────────
 
