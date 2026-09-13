@@ -1,6 +1,6 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
 import { invoke } from '@tauri-apps/api/core'
-import { ProgressBar, Segmented, Spinner, Toggle, describeOperation } from '../components/ui'
+import { ProgressBar, Segmented, Spinner, Toggle, describeOperation, totalPercent } from '../components/ui'
 import {
   AlertIcon, CheckIcon, ChevronRightIcon, ChipIcon, ImageIcon, InfoIcon,
   MemoryIcon, RefreshIcon, ShieldCheckIcon, SlidersIcon, WrenchIcon, XCircleIcon,
@@ -328,7 +328,7 @@ function ActionRow({ id, icon, title, desc, onClick, disabled, result, op, child
             <span>{op.step > 0 && op.stepCount > 1 ? `Step ${op.step}/${op.stepCount} · ` : ''}{op.title}</span>
             <span>{d.percentText}</span>
           </div>
-          <ProgressBar percent={op.overallPercent} indeterminate={op.indeterminate} />
+          <ProgressBar percent={totalPercent(op)} indeterminate={op.indeterminate} />
           {(d.item || d.meta.length > 0) && (
             <div className="action-progress-item">{[d.item, ...d.meta].filter(Boolean).join('  ·  ')}</div>
           )}

@@ -15,7 +15,7 @@ const BLANK: Omit<ActiveOperation, 'kind' | 'title'> = {
   detail: '',
   file: '',
   filePercent: 0,
-  overallPercent: 0,
+  stepPercent: 0,
   speedBps: 0,
   filesDone: 0,
   filesTotal: 0,
@@ -64,8 +64,8 @@ export function useOperation(): OperationApi {
   const phase = useRef({ from: 0, to: 100 })
   const withinPhase = (percent: number) =>
     phase.current.from + ((phase.current.to - phase.current.from) * Math.min(100, Math.max(0, percent))) / 100
-  const patchInstall = useCallback((p: Partial<ActiveOperation> & { overallPercent: number }) => {
-    setOperation(prev => (prev ? { ...prev, ...p, overallPercent: Math.max(prev.overallPercent, p.overallPercent) } : prev))
+  const patchInstall = useCallback((p: Partial<ActiveOperation> & { stepPercent: number }) => {
+    setOperation(prev => (prev ? { ...prev, ...p, stepPercent: Math.max(prev.stepPercent, p.stepPercent) } : prev))
   }, [])
 
   useEffect(() => {
@@ -75,7 +75,7 @@ export function useOperation(): OperationApi {
         detail: p.detail,
         file: p.file,
         filePercent: p.percent,
-        overallPercent: withinPhase(p.percent),
+        stepPercent: withinPhase(p.percent),
         speedBps: p.speed_bps,
         bytesDone: p.downloaded,
         bytesTotal: p.total,
@@ -90,7 +90,7 @@ export function useOperation(): OperationApi {
           title: stageTitle(p.stage),
           detail: p.detail,
           file: '',
-          overallPercent: marks ? p.percent : withinPhase(p.percent),
+          stepPercent: marks ? p.percent : withinPhase(p.percent),
           speedBps: 0,
           bytesDone: 0,
           bytesTotal: 0,
@@ -103,7 +103,7 @@ export function useOperation(): OperationApi {
         title: stageTitle(p.stage),
         detail: p.stage === 'downloading' ? 'Downloading' : p.stage === 'repairing' ? 'Repairing' : 'Checking files',
         file: p.file,
-        overallPercent: p.overall_percent,
+        stepPercent: p.overall_percent,
         speedBps: 0,
         bytesDone: 0,
         bytesTotal: 0,
@@ -116,7 +116,7 @@ export function useOperation(): OperationApi {
         // The file counts are shown separately, so don't repeat them in the detail line
         detail: p.files_total ? 'Checking modpack files' : p.detail,
         file: '',
-        overallPercent: p.percent,
+        stepPercent: p.percent,
         filesDone: p.files_done ?? 0,
         filesTotal: p.files_total ?? 0,
         indeterminate: false,
@@ -124,7 +124,7 @@ export function useOperation(): OperationApi {
       listen<UpdateProgress>('launcher-update-progress', ({ payload: p }) => patch({
         title: 'Updating Launcher',
         detail: 'Downloading update',
-        overallPercent: p.percent,
+        stepPercent: p.percent,
         bytesDone: p.downloaded,
         bytesTotal: p.total ?? 0,
         indeterminate: p.total == null,

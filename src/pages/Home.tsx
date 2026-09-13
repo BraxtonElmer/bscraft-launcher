@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { PixelText } from '../components/PixelText'
 import { PlayerHead } from '../components/PlayerHead'
 import { PasswordForm } from '../components/PasswordForm'
-import { ProgressBar, Segmented, Spinner, describeOperation } from '../components/ui'
+import { ProgressBar, Segmented, Spinner, describeOperation, totalPercent } from '../components/ui'
 import {
   AlertIcon, CheckIcon, ChevronUpIcon, DownloadIcon, GaugeIcon, HomeIcon, KeyIcon, MemoryIcon,
   RefreshIcon, ServerIcon, SparklesIcon, StopIcon, TerminalIcon,
@@ -277,7 +277,7 @@ function DockProgress({ op }: { op: ActiveOperation }) {
         <div className="dp-meta">{meta.join('  ·  ')}</div>
       </div>
       <ProgressBar
-        percent={op.overallPercent}
+        percent={op.stepPercent}
         indeterminate={op.indeterminate}
         step={op.step}
         stepCount={op.stepCount}
@@ -374,7 +374,7 @@ function PlayButton({ launcher, operation, mcVersion, autoJoin, onPlay, onStartI
   if (running) {
     label = 'PLAYING'; sub = 'Have fun!'; tone = 'live'
   } else if (operation) {
-    const pct = Math.floor(Math.min(Math.max(operation.overallPercent, 0), 100))
+    const pct = Math.floor(totalPercent(operation))
     label = operation.indeterminate ? 'WORKING' : `${pct}%`
     sub = operation.kind === 'install' ? 'Installing…' : 'Please wait…'
     tone = 'busy'

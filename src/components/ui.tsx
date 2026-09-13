@@ -113,6 +113,15 @@ export function ProgressBar({ percent, indeterminate, step = 0, stepCount = 0 }:
   )
 }
 
+/** Progress through the whole operation, 0–100: each step counts equally, the current one partway */
+export function totalPercent(op: ActiveOperation): number {
+  const within = Math.min(Math.max(op.stepPercent, 0), 100)
+  if (op.stepCount > 1 && op.step > 0) {
+    return ((Math.min(op.step, op.stepCount) - 1 + within / 100) / op.stepCount) * 100
+  }
+  return within
+}
+
 /** Human-readable pieces of an operation's progress */
 export function describeOperation(op: ActiveOperation) {
   const meta: string[] = []
@@ -122,6 +131,6 @@ export function describeOperation(op: ActiveOperation) {
   if (speed) meta.push(speed)
 
   const item = op.file ? op.file.split('/').pop() ?? op.file : op.detail
-  const percentText = op.indeterminate ? '' : `${Math.floor(Math.min(Math.max(op.overallPercent, 0), 100))}%`
+  const percentText = op.indeterminate ? '' : `${Math.floor(totalPercent(op))}%`
   return { meta, item, percentText }
 }

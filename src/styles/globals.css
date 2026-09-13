@@ -155,12 +155,10 @@ button:focus-visible, [role='switch']:focus-visible, a:focus-visible {
 }
 
 .rail-logo {
-  width: 46px;
-  height: 46px;
   display: grid;
   place-items: center;
-  border-radius: 14px;
-  filter: drop-shadow(0 6px 12px rgba(74, 127, 46, 0.45));
+  padding: 6px 4px;
+  filter: drop-shadow(0 4px 10px rgba(255, 110, 200, 0.28));
 }
 .rail-logo svg { pointer-events: none; }
 

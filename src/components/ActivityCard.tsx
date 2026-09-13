@@ -1,4 +1,4 @@
-import { ProgressBar, Spinner, describeOperation } from './ui'
+import { ProgressBar, Spinner, describeOperation, totalPercent } from './ui'
 import type { ActiveOperation } from '../types'
 
 interface Props {
@@ -16,7 +16,7 @@ export function ActivityCard({ operation, onClick }: Props) {
         <span className="activity-title">{operation.title}</span>
         <span className="activity-pct">{percentText}</span>
       </div>
-      <ProgressBar percent={operation.overallPercent} indeterminate={operation.indeterminate} />
+      <ProgressBar percent={totalPercent(operation)} indeterminate={operation.indeterminate} />
       {item && <div className="activity-item">{item}</div>}
     </button>
   )

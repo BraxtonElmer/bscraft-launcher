@@ -211,7 +211,8 @@ export interface ActiveOperation {
   detail: string;
   file: string;
   filePercent: number;
-  overallPercent: number;
+  /** Progress within the current step (the whole operation when it has no steps); see totalPercent */
+  stepPercent: number;
   speedBps: number;
   filesDone: number;
   filesTotal: number;

@@ -132,7 +132,7 @@ export function useLauncher({ cfg, op, game, onLaunched, notify }: Options) {
   // ── Install + launch ───────────────────────────────────────
 
   const startStep = (step: number, title: string) => op.patch({
-    step, title, detail: '', file: '', overallPercent: 0, speedBps: 0,
+    step, title, detail: '', file: '', stepPercent: 0, speedBps: 0,
     bytesDone: 0, bytesTotal: 0, filesDone: 0, filesTotal: 0, indeterminate: true,
   })
 
