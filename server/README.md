@@ -1,23 +1,44 @@
 # Server side
 
-Everything BSCraft runs on the server at `bscraft.zukashix.com`
-(Ubuntu 24.04, nginx).
+Two machines:
 
-| Path on the server | What |
+- **Web server**, `bscraft.zukashix.com` (Ubuntu 24.04, nginx): the modpack,
+  launcher updates and the skin service.
+- **Game server**, `bsc.akariyu.com` (129.159.19.58): the Forge server in
+  `/home/elmer/game-hosting/bscraft4/` (leave `bscraft4-cleancopy` alone).
+
+| Path on the web server | What |
 |---|---|
 | `/var/www/bscraft/modpack/` | Launcher modpack: `manifest.json` + `files/` |
-| `/var/www/bscraft/launcher/version.json` | Launcher self-update feed |
+| `/var/www/bscraft/launcher/` | Launcher self-update feed (`version.json`) and installers |
 | `/var/www/bscraft/skins/` | Published skins (written by the skin service) |
-| `/home/ubuntu/bscraft-skins/` | Skin service code + its private `data/index.json` |
-| `/home/ubuntu/game_hosting/BSCraft4/` | Forge game server (screen session `bscraft`) |
+| `/home/ubuntu/bscraft-skins/` | Skin service code, its private `data/` (index, accounts copy) |
 | `/etc/nginx/sites-available/bscraftfs` | Site config, tracked here as `nginx/bscraftfs.conf` |
 
 ## Skin service (`skin-service/`)
 
 A small Python service (standard library + `python3-bcrypt`) that lets
 players set their skin, cape and elytra from the launcher. Accounts are the
-SimpleLogin registrations in `BSCraft4/world/sl_entries.dat` (read-only), so
-an upload needs the same password the player joins with. Textures are
+SimpleLogin registrations in the game server's `world/sl_entries.dat`
+(read-only), so an upload needs the same password the player joins with.
+
+The game server is on the other machine, so whenever the service needs the
+accounts (an upload or a password check, at most every 10 s) it fetches the
+file over ssh and keeps the last good copy in `data/sl_entries.dat`; if the
+game server can't be reached it carries on with that copy. The key it uses,
+`/home/ubuntu/.ssh/bsc_sl_pull`, can do nothing but print that one file, from
+this machine only. It's this line in `elmer`'s `~/.ssh/authorized_keys` on the
+game server:
+
+```
+from="140.245.6.70",command="cat /home/elmer/game-hosting/bscraft4/world/sl_entries.dat",no-port-forwarding,no-X11-forwarding,no-agent-forwarding,no-pty ssh-ed25519 AAAA… bscraft-skins-sl-pull
+```
+
+The ssh command is set in `skin-service/bscraft-skins-sl-entries.conf`
+(installed as `/etc/systemd/system/bscraft-skins.service.d/sl-entries.conf`),
+with the game server's host key pinned in `/home/ubuntu/bscraft-skins/akariyu_known_hosts`.
+
+Textures are
 published in CustomSkinLoader's CustomSkinAPI format
 (`<Name>.json` with `skins`, `cape` and `elytra` pointing into `textures/`),
 which the modpack's CustomSkinLoader loads from
@@ -77,4 +98,5 @@ console run `/simplelogin unregister <name>` with the name in **lowercase**
 `unregister Elmer` says "Registry for player %s does not exist", `unregister
 elmer` works). Their next join registers the name again with whatever
 password their launcher has. New registrations reach `sl_entries.dat`, and
-so the skin service, within about 5 minutes (SimpleLogin's auto-save).
+so the skin service, within about 5 minutes (SimpleLogin's auto-save; the
+service itself always reads the file fresh).

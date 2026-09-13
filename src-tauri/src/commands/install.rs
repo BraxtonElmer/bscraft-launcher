@@ -62,18 +62,71 @@ pub fn hidden_command(program: &Path) -> tokio::process::Command {
     cmd
 }
 
-/// Scans the runtime directory for java.exe and returns its path if found.
-pub fn find_java_exe() -> Option<PathBuf> {
-    let runtime_dir = get_runtime_dir().ok()?;
-    let entries = std::fs::read_dir(&runtime_dir).ok()?;
-    for entry in entries.flatten() {
-        // JRE is extracted as e.g. jdk-17.0.11+9-jre/
-        let java_exe = entry.path().join("bin").join("java.exe");
-        if java_exe.exists() {
-            return Some(java_exe);
+// ── Java runtimes ──────────────────────────────────────────────────────────
+//
+// Each Java version the modpack asks for gets its own folder, runtime/java-<major>/,
+// holding the extracted Adoptium JRE (e.g. jdk-21.0.4+7-jre/). Launchers before 1.1.2
+// extracted Java 17 straight into runtime/, and that copy still counts as Java 17.
+
+/// Major version of the Java runtime at `home`, read from its `release` file
+fn java_major(home: &Path) -> Option<u8> {
+    let release = std::fs::read_to_string(home.join("release")).ok()?;
+    parse_java_major(&release)
+}
+
+fn parse_java_major(release: &str) -> Option<u8> {
+    let line = release.lines().find(|l| l.starts_with("JAVA_VERSION="))?;
+    let version = line["JAVA_VERSION=".len()..].trim().trim_matches('"');
+    let mut parts = version.split('.');
+    let first: u8 = parts.next()?.parse().ok()?;
+    // Java 8 and older call themselves "1.8.0_…"
+    if first == 1 { parts.next()?.parse().ok() } else { Some(first) }
+}
+
+fn java_binary(home: &Path) -> PathBuf {
+    home.join("bin").join(if cfg!(windows) { "java.exe" } else { "java" })
+}
+
+/// Every Java runtime the launcher has installed, as (major version, java executable)
+fn installed_javas() -> Vec<(u8, PathBuf)> {
+    let Ok(runtime_dir) = get_runtime_dir() else { return Vec::new() };
+    let mut homes = Vec::new();
+    for entry in std::fs::read_dir(&runtime_dir).into_iter().flatten().flatten() {
+        let path = entry.path();
+        if !path.is_dir() {
+            continue;
         }
+        for inner in std::fs::read_dir(&path).into_iter().flatten().flatten() {
+            if inner.path().is_dir() {
+                homes.push(inner.path());
+            }
+        }
+        homes.push(path);
     }
-    None
+    homes
+        .into_iter()
+        .filter(|home| java_binary(home).exists())
+        .filter_map(|home| java_major(&home).map(|major| (major, java_binary(&home))))
+        .collect()
+}
+
+/// The launcher's Java runtime of this major version, if installed
+pub fn find_java(major: u8) -> Option<PathBuf> {
+    installed_javas().into_iter().find(|(m, _)| *m == major).map(|(_, p)| p)
+}
+
+/// The Java the modpack runs on: the version its manifest asks for (the newest
+/// installed one when there's no manifest on this PC yet)
+pub fn java_for_pack() -> Result<PathBuf, String> {
+    match crate::commands::modpack::required_java() {
+        Some(major) => find_java(major)
+            .ok_or_else(|| format!("Java {} isn't installed yet. Press Play to install it.", major)),
+        None => installed_javas()
+            .into_iter()
+            .max_by_key(|(m, _)| *m)
+            .map(|(_, p)| p)
+            .ok_or_else(|| "Java isn't installed yet. Press Play to install it.".to_string()),
+    }
 }
 
 fn emit_install(app: &tauri::AppHandle, stage: &str, detail: &str, percent: f32, done: u32, total: u32) {
@@ -92,17 +145,28 @@ fn emit_install(app: &tauri::AppHandle, stage: &str, detail: &str, percent: f32,
 
 // ── Tauri commands ─────────────────────────────────────────────────────────
 
-/// Returns what is currently installed on the user's machine.
+/// Returns what is installed. Given the versions the modpack's manifest asks for,
+/// each part only counts as installed in exactly that version; without them, whatever
+/// was installed last counts.
 #[tauri::command]
-pub async fn get_install_status() -> Result<InstallStatus, String> {
+pub async fn get_install_status(
+    java_version: Option<u8>,
+    mc_version: Option<String>,
+    forge_version: Option<String>,
+) -> Result<InstallStatus, String> {
     let mc_dir = get_mc_dir()?;
-    let jre_path = find_java_exe().map(|p| p.to_string_lossy().to_string());
+    let java = match java_version {
+        Some(major) => find_java(major),
+        None => java_for_pack().ok(),
+    };
+    let jre_path = java.map(|p| p.to_string_lossy().to_string());
     let jre_installed = jre_path.is_some();
 
     let config = load_config_internal()?;
+    let mc = mc_version.or(config.installed_mc_version);
+    let forge = forge_version.or(config.installed_forge_version);
 
-    let minecraft_installed = config
-        .installed_mc_version
+    let minecraft_installed = mc
         .as_ref()
         .map(|v| {
             mc_dir
@@ -113,7 +177,7 @@ pub async fn get_install_status() -> Result<InstallStatus, String> {
         })
         .unwrap_or(false);
 
-    let forge_installed = match (&config.installed_mc_version, &config.installed_forge_version) {
+    let forge_installed = match (&mc, &forge) {
         (Some(mc), Some(forge)) => {
             let vid = format!("{}-forge-{}", mc, forge);
             mc_dir
@@ -133,46 +197,59 @@ pub async fn get_install_status() -> Result<InstallStatus, String> {
     })
 }
 
-/// Downloads and extracts the Java 17 JRE from Adoptium into the runtime directory.
-/// Skips the download if java.exe is already present.
+/// Installs the Java version the modpack asks for (Adoptium's JRE), unless it's already
+/// there, then removes runtimes of other versions so old ones don't pile up.
 #[tauri::command]
-pub async fn install_jre(app: tauri::AppHandle) -> Result<(), String> {
+pub async fn install_jre(app: tauri::AppHandle, java_version: u8) -> Result<(), String> {
     let runtime_dir = get_runtime_dir()?;
     std::fs::create_dir_all(&runtime_dir).map_err(|e| e.to_string())?;
 
-    // Skip if already installed
-    if find_java_exe().is_some() {
-        emit_install(&app, "jre", "Java runtime already installed", 100.0, 1, 1);
-        return Ok(());
+    if find_java(java_version).is_none() {
+        let client = build_client()?;
+        // Adoptium's binary endpoint redirects to the latest release's archive:
+        // /v3/binary/latest/{version}/{release_type}/{os}/{arch}/{image_type}/{jvm}/{heap}/{vendor}
+        let download_url = format!(
+            "https://api.adoptium.net/v3/binary/latest/{}/ga/windows/x64/jre/hotspot/normal/eclipse",
+            java_version
+        );
+        let label = format!("Downloading Java {}", java_version);
+        emit_install(&app, "jre", &format!("{}…", label), 5.0, 0, 1);
+
+        let home = runtime_dir.join(format!("java-{}", java_version));
+        if home.exists() {
+            // A half-finished earlier attempt
+            std::fs::remove_dir_all(&home).map_err(|e| format!("Couldn't clear {:?}: {}", home, e))?;
+        }
+        std::fs::create_dir_all(&home).map_err(|e| e.to_string())?;
+        let archive = runtime_dir.join(format!("java-{}.zip", java_version));
+        download_file(&app, &client, &download_url, &archive, "jre", &label, 0).await?;
+
+        emit_install(&app, "jre", "Extracting Java runtime…", 90.0, 0, 1);
+        let extracted = extract_zip(&archive, &home);
+        std::fs::remove_file(&archive).ok();
+        extracted?;
+        if find_java(java_version).is_none() {
+            return Err(format!("The Java {} download didn't contain a usable runtime", java_version));
+        }
     }
 
-    let client = build_client()?;
+    // Other versions are no longer needed (the game only runs on the one the pack names)
+    for (major, exe) in installed_javas() {
+        if major == java_version {
+            continue;
+        }
+        // exe is <home>/bin/java.exe; remove <home>, or its java-<major> folder when it has one
+        let Some(home) = exe.parent().and_then(|bin| bin.parent()) else { continue };
+        let target = match home.parent() {
+            Some(parent) if parent != runtime_dir && parent.starts_with(&runtime_dir) => parent.to_path_buf(),
+            _ => home.to_path_buf(),
+        };
+        if target.starts_with(&runtime_dir) && target != runtime_dir {
+            std::fs::remove_dir_all(&target).ok();
+        }
+    }
 
-    // Use Adoptium's direct binary endpoint — follows a redirect to the actual zip.
-    // Avoids JSON parsing entirely. Much more reliable.
-    // /v3/binary/latest/{version}/{release_type}/{os}/{arch}/{image_type}/{jvm}/{heap}/{vendor}
-    let download_url =
-        "https://api.adoptium.net/v3/binary/latest/17/ga/windows/x64/jre/hotspot/normal/eclipse";
-
-    emit_install(&app, "jre", "Downloading Java 17 JRE…", 5.0, 0, 1);
-
-    let jre_zip = runtime_dir.join("jre.zip");
-    download_file(
-        &app,
-        &client,
-        download_url,
-        &jre_zip,
-        "jre",
-        "Downloading Java 17 JRE",
-        0, // size is unknown before following the redirect
-    )
-    .await?;
-
-    emit_install(&app, "jre", "Extracting Java runtime…", 90.0, 0, 1);
-    extract_zip(&jre_zip, &runtime_dir)?;
-    std::fs::remove_file(&jre_zip).ok();
-
-    emit_install(&app, "jre", "Java runtime ready", 100.0, 1, 1);
+    emit_install(&app, "jre", &format!("Java {} ready", java_version), 100.0, 1, 1);
     Ok(())
 }
 
@@ -289,8 +366,7 @@ pub async fn install_forge(
 ) -> Result<(), String> {
     let mc_dir = get_mc_dir()?;
 
-    let java_exe =
-        find_java_exe().ok_or("Java runtime not found. Install JRE first.")?;
+    let java_exe = java_for_pack()?;
 
     let client = build_client()?;
 
@@ -813,4 +889,19 @@ fn extract_zip_filtered(zip_path: &Path, dest_dir: &Path, exclude: &[&str]) -> R
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse_java_major;
+
+    #[test]
+    fn reads_java_major_from_release_file() {
+        let jre21 = "IMPLEMENTOR=\"Eclipse Adoptium\"\nJAVA_RUNTIME_VERSION=\"21.0.4+7-LTS\"\nJAVA_VERSION=\"21.0.4\"\n";
+        assert_eq!(parse_java_major(jre21), Some(21));
+        assert_eq!(parse_java_major("JAVA_VERSION=\"17.0.12\"\r\n"), Some(17));
+        assert_eq!(parse_java_major("JAVA_VERSION=\"1.8.0_402\""), Some(8));
+        assert_eq!(parse_java_major("JAVA_VERSION=\"25\""), Some(25));
+        assert_eq!(parse_java_major("IMPLEMENTOR=\"x\""), None);
+    }
 }

@@ -2,7 +2,7 @@
 // commands/modpack.rs — Modpack manifest, sync, verify, repair
 // ============================================================
 
-use crate::commands::install::{download_file_quiet, find_java_exe, get_mc_dir};
+use crate::commands::install::{download_file_quiet, get_mc_dir, java_for_pack};
 use crate::commands::settings::{load_config_internal, save_config_internal};
 use crate::constants::modpack_manifest_url;
 use serde::{Deserialize, Serialize};
@@ -132,6 +132,11 @@ fn load_manifest_cache() -> Option<ModpackManifest> {
     let path = get_manifest_cache_path().ok()?;
     let raw = std::fs::read_to_string(path).ok()?;
     serde_json::from_str(&raw).ok()
+}
+
+/// The Java version the modpack runs on, from the last manifest fetched
+pub(crate) fn required_java() -> Option<u8> {
+    load_manifest_cache().map(|m| m.java_version)
 }
 
 /// The manifest of the last completed sync: what the pack put on this PC. The cache above
@@ -461,7 +466,7 @@ pub async fn verify_all(app: tauri::AppHandle) -> Result<VerifyAllResult, String
         serde_json::json!({ "step": "jre", "detail": "Checking Java runtime…", "percent": 10.0 }),
     )
     .ok();
-    let jre_ok = find_java_exe().is_some();
+    let jre_ok = java_for_pack().is_ok();
 
     // Step 2: Minecraft client JAR
     app.emit(

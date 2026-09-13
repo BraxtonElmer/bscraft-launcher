@@ -7,7 +7,8 @@ Accounts are the SimpleLogin registrations on the game server: a request is
 authorised with the same credential the game client sends when joining
 (lowercase hex SHA-256 of the SimpleLogin password), checked against
 world/sl_entries.dat, where SimpleLogin keeps bcrypt(SHA-256 of that). That file is only ever read here; the game
-server owns it.
+server owns it. When the game server runs on another machine, BSC_SL_REMOTE fetches it
+from there whenever it's needed (see fetch_remote_accounts).
 
 Textures are published as static files in CustomSkinLoader's CustomSkinAPI
 format, which nginx serves from SKINS_DIR:
@@ -34,7 +35,9 @@ Standard library only, plus python3-bcrypt.
 import json
 import os
 import re
+import shlex
 import struct
+import subprocess
 import sys
 import tempfile
 import threading
@@ -47,6 +50,11 @@ from urllib.parse import parse_qs, urlparse
 import bcrypt
 
 SL_ENTRIES = os.environ.get("BSC_SL_ENTRIES", "/home/ubuntu/game_hosting/BSCraft4/world/sl_entries.dat")
+# When the game server runs on another machine: a command that prints its accounts file
+# (an ssh key restricted to exactly that, see server/README.md). It runs whenever accounts
+# are needed, at most every SL_REFRESH seconds; SL_ENTRIES then holds the last good copy.
+SL_REMOTE = os.environ.get("BSC_SL_REMOTE", "")
+SL_REFRESH = float(os.environ.get("BSC_SL_REFRESH", "10"))
 SKINS_DIR = os.environ.get("BSC_SKINS_DIR", "/var/www/bscraft/skins")
 INDEX_FILE = os.environ.get("BSC_INDEX_FILE", "/home/ubuntu/bscraft-skins/data/index.json")
 HOST = os.environ.get("BSC_HOST", "127.0.0.1")
@@ -76,8 +84,34 @@ class ApiError(Exception):
 
 # ── Accounts ─────────────────────────────────────────────────────────────
 
+_remote_lock = threading.Lock()
+_remote_checked = 0.0
+
+
+def fetch_remote_accounts() -> None:
+    """Copies the game server's accounts file here, if it's remote and our copy isn't fresh.
+    When the game server can't be reached, the last copy stays in use."""
+    global _remote_checked
+    if not SL_REMOTE:
+        return
+    with _remote_lock:
+        if time.time() - _remote_checked < SL_REFRESH:
+            return
+        _remote_checked = time.time()
+        try:
+            out = subprocess.run(shlex.split(SL_REMOTE), stdin=subprocess.DEVNULL, capture_output=True,
+                                 timeout=8, check=True).stdout
+            if not isinstance(json.loads(out), list):
+                raise ValueError("not a list of accounts")
+        except (OSError, subprocess.SubprocessError, ValueError) as e:
+            print(f"Couldn't fetch accounts from the game server, using the last copy: {e}", file=sys.stderr)
+            return
+        atomic_write(SL_ENTRIES, out, 0o600)
+
+
 def load_accounts() -> dict[str, str]:
     """username (lowercase) -> bcrypt hash, from SimpleLogin's file storage."""
+    fetch_remote_accounts()
     try:
         with open(SL_ENTRIES, encoding="utf-8") as f:
             entries = json.load(f)

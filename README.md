@@ -24,6 +24,9 @@ pack are in [`pack-overrides/`](pack-overrides/README.md).
 
 - **Modpack:** `https://bscraft.zukashix.com/modpack/manifest.json` lists every
   file with its SHA-256. The launcher downloads what's missing or changed.
+  The manifest's `java_version`, `minecraft_version` and `forge_version` are
+  checked every time Play is pressed: anything not installed in exactly that
+  version is installed first, whether or not `modpack_version` changed.
 - **Accounts:** the server is offline-mode with the SimpleLogin mod. The launcher
   writes the password SimpleLogin reads (`<game>/.sl_password`), so players never
   see its prompt, and uses the same credential for skin uploads.

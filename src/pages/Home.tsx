@@ -86,9 +86,15 @@ export function HomePage({ launcher, config, operation, startedAt, onNavigate, o
           <div className="callout">
             <div className="callout-icon"><DownloadIcon size={18} /></div>
             <div className="callout-text">
-              <strong>Modpack v{modpackUpdate.modpack_version} is available</strong>
+              <strong>
+                {config.installed_modpack_version === modpackUpdate.modpack_version
+                  ? 'Update needed'
+                  : `Modpack v${modpackUpdate.modpack_version} is available`}
+              </strong>
               <span>
-                {config.installed_modpack_version
+                {launcher.setupNeeds.length > 0
+                  ? `The modpack now runs on ${launcher.setupNeeds.join(', ')}. Update, or press Play, to install it.`
+                  : config.installed_modpack_version
                   ? `You have v${config.installed_modpack_version}. Update to stay compatible with the server.`
                   : 'Modpack files are missing. Sync them before playing.'}
               </span>

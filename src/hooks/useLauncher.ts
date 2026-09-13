@@ -42,6 +42,8 @@ export function useLauncher({ cfg, op, game, onLaunched, notify }: Options) {
   const [checkResult, setCheckResult] = useState<TaskResult | null>(null)
   const [verifyResult, setVerifyResult] = useState<TaskResult | null>(null)
   const [verifyDetail, setVerifyDetail] = useState<VerifyAllResult | null>(null)
+  /** What the manifest asks for that this PC doesn't have yet, e.g. ["Java 21"] */
+  const [setupNeeds, setSetupNeeds] = useState<string[]>([])
 
   // Async flows read these so they always see current values
   const cfgRef = useRef(cfg)
@@ -100,6 +102,24 @@ export function useLauncher({ cfg, op, game, onLaunched, notify }: Options) {
     return ok
   }
 
+  /**
+   * Which of Java, Minecraft and Forge aren't installed in exactly the versions the
+   * manifest names. The manifest decides these, whether or not the modpack's own
+   * version changed with them.
+   */
+  const missingParts = async (m: ModpackManifest) => {
+    const s = await invoke<InstallStatus>('get_install_status', {
+      javaVersion: m.java_version, mcVersion: m.minecraft_version, forgeVersion: m.forge_version,
+    })
+    const parts = { java: !s.jre_installed, minecraft: !s.minecraft_installed, forge: !s.forge_installed }
+    setSetupNeeds([
+      parts.java && `Java ${m.java_version}`,
+      parts.minecraft && `Minecraft ${m.minecraft_version}`,
+      parts.forge && `Forge ${m.forge_version}`,
+    ].filter((x): x is string => !!x))
+    return parts
+  }
+
   const runStartup = async () => {
     setStatus('init')
     setError(null)
@@ -107,7 +127,7 @@ export function useLauncher({ cfg, op, game, onLaunched, notify }: Options) {
     checkLauncherUpdate()
     if (isInstalled) {
       setStatus('ready')
-      fetchManifest()
+      fetchManifest().then(m => { if (m) missingParts(m).catch(() => {}) })
     } else {
       // Nothing to launch yet — we need the manifest to install
       setStatus((await fetchManifest()) ? 'ready' : 'offline')
@@ -148,8 +168,8 @@ export function useLauncher({ cfg, op, game, onLaunched, notify }: Options) {
     }
 
     try {
-      startStep(1, 'Installing Java Runtime')
-      await invoke('install_jre')
+      startStep(1, `Installing Java ${m.java_version}`)
+      await invoke('install_jre', { javaVersion: m.java_version })
       startStep(2, 'Installing Minecraft')
       await invoke('install_minecraft', { mcVersion: m.minecraft_version })
       startStep(3, 'Installing Forge')
@@ -162,6 +182,7 @@ export function useLauncher({ cfg, op, game, onLaunched, notify }: Options) {
         await invoke('apply_performance_mode', { enabled: true }).catch(() => {})
       }
       setInstalled(true)
+      setSetupNeeds([])
       await cfgRef.current.refresh()
       op.end()
     } catch (e) {
@@ -219,8 +240,25 @@ export function useLauncher({ cfg, op, game, onLaunched, notify }: Options) {
       setUsernameNudge(n => n + 1)
       return
     }
-    if (!installed) await installThenLaunch()
-    else await launch()
+    if (!installed) {
+      await installThenLaunch()
+      return
+    }
+    // Always play on what the manifest says: bring Java, Minecraft, Forge and the
+    // modpack in line with it first (quick when nothing changed). Offline, play what's here.
+    const m = await fetchManifest() ?? manifestRef.current
+    if (m) {
+      try {
+        const parts = await missingParts(m)
+        const outdated = cfgRef.current.config.installed_modpack_version !== m.modpack_version
+        if (parts.java || parts.minecraft || parts.forge || outdated) await updateModpack(m)
+      } catch (e) {
+        setStatus('error')
+        showError(e, 'Update failed')
+        return
+      }
+    }
+    await launch()
   }
 
   // ── Performance mode ───────────────────────────────────────
@@ -240,20 +278,29 @@ export function useLauncher({ cfg, op, game, onLaunched, notify }: Options) {
 
   // ── Modpack update ─────────────────────────────────────────
 
-  /** Installs new MC/Forge versions if the manifest changed them, then syncs. Throws on failure. */
+  /**
+   * Brings Java, Minecraft and Forge to the versions the manifest names (whatever the
+   * modpack version says), then syncs the modpack. Throws on failure.
+   */
   const updateModpack = async (m: ModpackManifest) => {
     setStatus('busy')
     try {
       const fresh = (await cfgRef.current.refresh()) ?? cfgRef.current.config
-      const mcChanged = fresh.installed_mc_version !== m.minecraft_version
+      const parts = await missingParts(m)
+      const javaChanged = parts.java
+      const mcChanged = parts.minecraft || fresh.installed_mc_version !== m.minecraft_version
       // Forge is tied to the MC version, so reinstall it if either changed
-      const forgeChanged = mcChanged || fresh.installed_forge_version !== m.forge_version
-      const stepCount = 1 + (mcChanged ? 1 : 0) + (forgeChanged ? 1 : 0)
+      const forgeChanged = mcChanged || parts.forge || fresh.installed_forge_version !== m.forge_version
+      const stepCount = 1 + (javaChanged ? 1 : 0) + (mcChanged ? 1 : 0) + (forgeChanged ? 1 : 0)
       let step = 0
 
       op.begin('modpack-update', `Updating to v${m.modpack_version}`, {
         stepCount: stepCount > 1 ? stepCount : 0,
       })
+      if (javaChanged) {
+        startStep(++step, `Installing Java ${m.java_version}`)
+        await invoke('install_jre', { javaVersion: m.java_version })
+      }
       if (mcChanged) {
         startStep(++step, `Installing Minecraft ${m.minecraft_version}`)
         await invoke('install_minecraft', { mcVersion: m.minecraft_version })
@@ -270,6 +317,7 @@ export function useLauncher({ cfg, op, game, onLaunched, notify }: Options) {
         await invoke('apply_performance_mode', { enabled: true }).catch(() => {})
       }
       await cfgRef.current.refresh()
+      await missingParts(m)
     } finally {
       op.end()
       setStatus('ready')
@@ -316,13 +364,17 @@ export function useLauncher({ cfg, op, game, onLaunched, notify }: Options) {
     }
 
     let latest: ModpackManifest | null = null
+    let needsSetup = false
     if (manifestRes.status === 'fulfilled') {
       latest = manifestRes.value
       setManifest(latest)
+      const missing = installed ? await missingParts(latest).catch(() => null) : null
+      needsSetup = !!missing && (missing.java || missing.minecraft || missing.forge)
       const current = fresh.installed_modpack_version
-      parts.push(current === latest.modpack_version
-        ? `Modpack v${current} is up to date`
-        : `Modpack v${latest.modpack_version} available`)
+      parts.push(current !== latest.modpack_version
+        ? `Modpack v${latest.modpack_version} available`
+        : needsSetup ? `Modpack v${current} needs an update`
+        : `Modpack v${current} is up to date`)
     } else {
       parts.push('Modpack: server unreachable')
     }
@@ -338,7 +390,7 @@ export function useLauncher({ cfg, op, game, onLaunched, notify }: Options) {
       return
     }
 
-    if (latest && fresh.installed_modpack_version !== latest.modpack_version) {
+    if (latest && (fresh.installed_modpack_version !== latest.modpack_version || needsSetup)) {
       if (!installed) {
         setCheckResult({ state: 'done', message: `Modpack v${latest.modpack_version} will be installed when you press Install.` })
         return
@@ -408,7 +460,7 @@ export function useLauncher({ cfg, op, game, onLaunched, notify }: Options) {
 
   const installedModpack = cfg.config.installed_modpack_version
   const modpackUpdate =
-    installed && manifest && installedModpack !== manifest.modpack_version ? manifest : null
+    installed && manifest && (installedModpack !== manifest.modpack_version || setupNeeds.length > 0) ? manifest : null
 
   const maintenanceBlocked = running
     ? 'Close Minecraft to run maintenance tasks.'
@@ -422,6 +474,7 @@ export function useLauncher({ cfg, op, game, onLaunched, notify }: Options) {
     manifest,
     launcherUpdate,
     modpackUpdate,
+    setupNeeds,
     running,
     busy,
     perfBusy,

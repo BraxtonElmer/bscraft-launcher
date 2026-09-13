@@ -9,6 +9,7 @@ touches the real server data.
 
 import json
 import os
+import shlex
 import struct
 import subprocess
 import sys
@@ -191,8 +192,53 @@ def main() -> int:
         proc.terminate()
         proc.wait(timeout=5)
 
+    remote_accounts(check, stored)
+
     print(f"\n{'ALL PASSED' if not failures else f'{len(failures)} FAILED: {failures}'}")
     return 1 if failures else 0
+
+
+def remote_accounts(check, stored: str) -> None:
+    """The game server on another machine: accounts are fetched when needed, with the
+    last copy used while the game server can't be reached."""
+    global BASE
+    tmp = tempfile.mkdtemp(prefix="bsc-skin-remote-")
+    remote = os.path.join(tmp, "remote_sl_entries.dat")   # the file on the game server
+    copy = os.path.join(tmp, "data", "sl_entries.dat")    # the skin service's copy
+    with open(remote, "w") as f:
+        json.dump([{"username": "remoteuser", "password": stored, "gameType": 0}], f)
+    # Stands in for the restricted ssh key: prints the file, fails when it's gone
+    printer = f"{shlex.quote(sys.executable)} -c {shlex.quote('import sys; sys.stdout.write(open(sys.argv[1]).read())')} {shlex.quote(remote)}"
+    port = PORT + 1
+    env = dict(os.environ, BSC_SL_ENTRIES=copy, BSC_SL_REMOTE=printer, BSC_SL_REFRESH="0",
+               BSC_SKINS_DIR=os.path.join(tmp, "skins"), BSC_INDEX_FILE=os.path.join(tmp, "index.json"), BSC_PORT=str(port))
+    proc = subprocess.Popen([sys.executable, os.path.join(HERE, "skin_service.py")], env=env, stderr=subprocess.DEVNULL)
+    saved, BASE = BASE, f"http://127.0.0.1:{port}"
+    verify = lambda name: call("POST", "/api/account/verify", json.dumps({"username": name, "passwordHash": sha256(b"hunter22").hexdigest()}).encode())
+    try:
+        for _ in range(50):
+            try:
+                if call("GET", "/api/health")[0] == 200:
+                    break
+            except Exception:
+                time.sleep(0.1)
+        s, b = verify("RemoteUser")
+        check("remote: account read from the game server", s == 200 and b == {"registered": True, "valid": True}, b)
+        check("remote: copy kept locally", os.path.exists(copy))
+        with open(remote, "w") as f:
+            json.dump([{"username": "remoteuser", "password": stored, "gameType": 0},
+                       {"username": "newplayer", "password": stored, "gameType": 0}], f)
+        s, b = verify("NewPlayer")
+        check("remote: a player who just registered is seen straight away", b == {"registered": True, "valid": True}, b)
+        os.remove(remote)
+        s, b = verify("NewPlayer")
+        check("remote: game server unreachable -> last copy still works", b == {"registered": True, "valid": True}, b)
+        s, b = call("POST", "/api/skin?model=default", png(64, 64), auth("newplayer", "hunter22"))
+        check("remote: skin upload works on the last copy", s == 200 and b.get("ok") is True, b)
+    finally:
+        BASE = saved
+        proc.terminate()
+        proc.wait(timeout=5)
 
 
 if __name__ == "__main__":

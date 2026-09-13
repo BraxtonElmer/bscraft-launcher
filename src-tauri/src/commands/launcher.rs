@@ -2,7 +2,7 @@
 // commands/launcher.rs — Game launch, log streaming, process control
 // ============================================================
 
-use crate::commands::install::{find_java_exe, get_mc_dir, hidden_command};
+use crate::commands::install::{get_mc_dir, hidden_command, java_for_pack};
 use crate::commands::settings::load_config_internal;
 use crate::constants::{GAME_SERVER_ADDRESS, GAME_SERVER_NAME, LAUNCHER_NAME, LAUNCHER_VERSION, OLD_GAME_SERVER_ADDRESSES};
 use crate::state::AppState;
@@ -68,7 +68,7 @@ pub async fn launch_game(
         .clone();
 
     let mc_dir = get_mc_dir()?;
-    let java_exe = find_java_exe().ok_or("Java runtime not found")?;
+    let java_exe = java_for_pack()?;
 
     if config.prefer_dgpu {
         if let Err(err) = set_high_performance_gpu_preference(&java_exe) {

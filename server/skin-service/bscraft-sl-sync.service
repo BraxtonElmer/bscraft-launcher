@@ -1,9 +1,0 @@
-[Unit]
-Description=Copy SimpleLogin accounts from the BSCraft game server for the skin service
-After=network-online.target
-
-[Service]
-Type=oneshot
-User=ubuntu
-Group=ubuntu
-ExecStart=/home/ubuntu/bscraft-skins/pull_sl_entries.sh

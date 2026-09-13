@@ -61,7 +61,9 @@ export function createMocks() {
   const files = []
   for (let i = 0; i < 209; i++) files.push({ path: `mods/mod-${i}.jar`, url: '', sha256: '', size: 3_400_000 + (i % 7) * 100_000 })
   for (let i = 0; i < 372; i++) files.push({ path: `config/mod-${i}/settings.toml`, url: '', sha256: '', size: 1200 })
-  const manifest = { modpack_version: '1.0.1', minecraft_version: '1.20.1', forge_version: '47.4.10', java_version: 17, files }
+  // ?java=21 makes the pack ask for another Java than the one installed (17), like a manifest bump
+  const manifest = { modpack_version: '1.0.1', minecraft_version: '1.20.1', forge_version: '47.4.10', java_version: Number(params.get('java') || 17), files }
+  let installedJava = 17
 
   async function download(stage, file, detail, total, ms) {
     const steps = 20
@@ -103,15 +105,16 @@ export function createMocks() {
       for (let i = 1; i <= 30; i++) { await sleep(120); emit('launcher-update-progress', { downloaded: i * 400_000, total: 12_000_000, percent: i / 30 * 100 }) }
       throw new Error('Update installation failed: signature verification failed (mock)')
     },
-    get_install_status: async () => { await sleep(250); return { jre_installed: installed, minecraft_installed: installed, forge_installed: installed, jre_path: null } },
+    get_install_status: async ({ javaVersion } = {}) => { await sleep(250); return { jre_installed: installed && (javaVersion == null || javaVersion === installedJava), minecraft_installed: installed, forge_installed: installed, jre_path: null } },
     fetch_manifest: async () => {
       await sleep(400)
       if (scenario === 'offline') throw new Error('error sending request for url (https://bscraft.zukashix.com/modpack/manifest.json)')
       return manifest
     },
-    install_jre: async () => {
-      emit('install-progress', { stage: 'jre', detail: 'Downloading Java 17 JRE…', percent: 5, files_done: 0, files_total: 1 })
-      await download('jre', 'OpenJDK17U-jre_x64_windows_hotspot_17.0.12_7.zip', 'Downloading Java 17 JRE', 44_000_000, 2600)
+    install_jre: async ({ javaVersion }) => {
+      emit('install-progress', { stage: 'jre', detail: `Downloading Java ${javaVersion}…`, percent: 5, files_done: 0, files_total: 1 })
+      await download('jre', `OpenJDK${javaVersion}U-jre_x64_windows_hotspot.zip`, `Downloading Java ${javaVersion}`, 44_000_000, 2600)
+      installedJava = javaVersion
       emit('install-progress', { stage: 'jre', detail: 'Extracting Java runtime…', percent: 90, files_done: 0, files_total: 1 })
       await sleep(600)
     },
