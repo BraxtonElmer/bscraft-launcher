@@ -98,6 +98,8 @@ button:focus-visible, [role='switch']:focus-visible, a:focus-visible {
 }
 
 .stage.scene-hover { cursor: pointer; }
+.stage.scene-grab { cursor: grab; }
+.stage.scene-grabbing, .stage.scene-grabbing * { cursor: grabbing !important; user-select: none; }
 
 .pixel-scene.dimmed {
   filter: blur(7px) brightness(0.4) saturate(0.85);

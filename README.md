@@ -15,7 +15,7 @@ pack are in [`pack-overrides/`](pack-overrides/README.md).
 
 | Page | |
 |---|---|
-| **Play** | Pixel-art landscape (follows the time of day). Everyone on the BSCraft server hangs out in it, drawn from their own skin with a name tag: round a campfire in the evening, fishing, chasing a chicken, wandering about. Click one and they wave. Install, modpack and launcher updates with progress, then Play. The ▴ beside Play picks where the game starts: Minecraft's main menu (default) or straight into the BSCraft server. BSCraft is always in the in-game server list. Asks for a server password before the first launch. |
+| **Play** | Pixel-art landscape (follows the time of day). Everyone on the BSCraft server hangs out in it, drawn from their own skin with a name tag, doing things together by time of day: toasting marshmallows at the campfire, fishing at the pond, watching the sunset, stargazing, picnics, dancing round a jukebox, tag, chasing a chicken, picking flowers for each other, hugs and high-fives. Click someone and they wave; drag them to pick them up and throw them (ragdoll physics, splashes in the pond). Overdo it and they get a gravestone until an angel comes for them. Install, modpack and launcher updates with progress, then Play. The ▴ beside Play picks where the game starts: Minecraft's main menu (default) or straight into the BSCraft server. BSCraft is always in the in-game server list. Asks for a server password before the first launch. |
 | **Profile** | Name (with a live free / yours / taken check), server password, a rotatable 3D preview (skinview3d), and a wardrobe: skin with classic/slim arms, cape, elytra design, "copy a look" from any BSCraft player or Minecraft account. Also Minecraft's Skin Customization switches and main hand, written into `options.txt`. |
 | **Console** | Live game log with filters, search, copy, and Stop. |
 | **Settings** | Memory, preferred GPU, where the game starts, console, background, performance mode, check for updates, verify and repair files. |
@@ -67,7 +67,9 @@ Query parameters pick the situation:
 
 `tools/ui-preview/scene.html?t=night&q=s%3Dfresh` opens the preview with a fixed
 time of day. In dev builds `__party` in the console is the players' scene state;
-`__party.timer = 0` moves them on to the next activity.
+`__party.timer = 0` moves them on to the next activity. In the preview,
+`__players = [...]` changes who's online and `__freezeStatus = true` stops the
+mock server answering.
 
 **Try a modpack change before publishing it:** dev builds read the manifest
 from `BSCRAFT_MANIFEST_URL` when it's set (release builds ignore it):
@@ -95,8 +97,10 @@ suite, run on the server: `python3 server/skin-service/test_skin_service.py`.
 src/                      React frontend
   App.tsx                 shell: nav rail, stage, pages, modals, toasts
   pages/                  Home (Play), Profile (+ profile/), Console, Settings
-  components/             PixelScene + sceneLife (landscape, mobs) + scenePlayers
-                          (who's online), SkinViewer3D,
+  components/             PixelScene + sceneLife (landscape, mobs), scenePlayers
+                          (who's online: activities, drag and throw), playerRig
+                          (skin to posed body), playerRagdoll, sceneProps (pond,
+                          campfire, picnic, jukebox, grave, angel), SkinViewer3D,
                           PlayerHead, PasswordForm, ui controls, icons
   hooks/                  useLauncher (install/update/launch flows), useOperation
                           (progress), useGameSession, useAccount, useSkin, useConfig,

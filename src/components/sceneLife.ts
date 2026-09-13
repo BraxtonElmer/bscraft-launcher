@@ -41,6 +41,8 @@ export interface LifeEnv {
   PAD: number
   /** Ground surface y for every x of the front layer */
   groundTop: number[]
+  /** Water mobs won't walk into (the players' pond), [left, right) */
+  water?: [number, number]
   /** Applies this time of day's lighting to a creature or item colour */
   shade: (hex: string) => string
   birdColor: string
@@ -871,7 +873,11 @@ function stepMob(life: Life, m: Mob, dt: number, cursor: ScenePointer | null) {
   if (m.state === 'walk') {
     const nx = m.x + m.dir * def.speed * speedMul * dt
     const ahead = groundUnder(env, nx, w)
-    if (ahead < m.feet - 0.5) {
+    const wet = (x: number) => !!env.water && x < env.water[1] && x + w > env.water[0]
+    if (wet(nx) && !wet(m.x)) {
+      // The pond's edge: turn back like at a wall
+      m.dir = m.dir === 1 ? -1 : 1
+    } else if (ahead < m.feet - 0.5) {
       if (m.feet - ahead > MAX_STEP) {
         if (m.mode === 'leave') m.mode = 'roam'
         m.dir = m.dir === 1 ? -1 : 1

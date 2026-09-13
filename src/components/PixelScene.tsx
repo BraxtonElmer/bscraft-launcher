@@ -16,9 +16,10 @@ import {
   type Life, type LifeConfig, type ScenePointer,
 } from './sceneLife'
 import {
-  createParty, drawParty, figureAt, pokeParty, retargetParty, stepParty, syncParty,
+  createParty, draggingParty, drawParty, figureAt, partyEvent, pressParty, releaseParty, retargetParty, stepParty, syncParty,
   type OnlinePlayer, type Party, type PartyLight,
 } from './scenePlayers'
+import { pondSpot } from './sceneProps'
 
 export type Scenery = 'auto' | 'dawn' | 'day' | 'dusk' | 'night'
 export type SceneTime = Exclude<Scenery, 'auto'>
@@ -429,11 +430,14 @@ function buildScene(W: number, H: number, time: SceneTime): Scene {
       }))
     : []
 
+  // Players' pond: mobs walk round it rather than across the water
+  const pond = pondSpot(groundTop, W, PAD)
+
   return {
     W, H, pal, sky, far, mid, front,
     title: buildTitle(W, H, pal, horizon, tint, farTop),
     life: createLife({
-      W, H, PAD, groundTop,
+      W, H, PAD, groundTop, water: [pond.x0, pond.x1],
       // Creatures are lit a little brighter than the terrain so they still read at night
       shade: hex => css(mix(toRgb(hex).map(v => v * Math.min(1, pal.light + 0.25)) as RGB, tint, pal.tintAmt * 0.7)),
       birdColor: css(mix(toRgb('#1f2433'), tint, Math.min(pal.tintAmt * 1.5, 0.6))),
@@ -448,6 +452,8 @@ function buildScene(W: number, H: number, time: SceneTime): Scene {
       tint: pal.tint,
       tintAmt: pal.tintAmt * 0.7,
       night: time === 'night' || time === 'dusk',
+      time,
+      sunX: pal.bodyPos[0],
     },
   }
 }
@@ -559,7 +565,7 @@ function drawFrame(
 // ── Component ────────────────────────────────────────────────
 
 const PIXEL = 4
-const FRAME_MS = 1000 / 30
+const FRAME_MS = 1000 / 60 - 1
 
 interface Props {
   time: SceneTime
@@ -633,12 +639,11 @@ export function PixelScene({ time, paused, title = false, players = NO_PLAYERS, 
       overlay.height = H * 2
     }
     const octx = overlay.getContext('2d')!
-    const night = scene.playerLight.night
     if (!partyRef.current) {
-      partyRef.current = createParty(scene.life.env, night)
+      partyRef.current = createParty(scene.life.env, scene.playerLight)
       syncParty(partyRef.current, onlineRef.current)
     } else if (partyRef.current.env !== scene.life.env) {
-      retargetParty(partyRef.current, scene.life.env, night)
+      retargetParty(partyRef.current, scene.life.env, scene.playerLight)
     }
     const party = partyRef.current
     // Handy from devtools: `__party.timer = 0` moves everyone on to the next activity
@@ -657,46 +662,91 @@ export function PixelScene({ time, paused, title = false, players = NO_PLAYERS, 
       return
     }
 
-    // Birds and mobs react to the cursor: hovering a mob shows a pointer, clicking pets it
+    // Birds, mobs and players react to the cursor: a pointer over a mob (click to interact),
+    // an open hand over a player (click to wave, drag to pick them up and throw them)
     const stage = canvas.parentElement
-    let hovering = false
-    const setHover = (on: boolean) => {
-      if (on === hovering) return
-      hovering = on
-      stage?.classList.toggle('scene-hover', on)
+    let cursorClass = ''
+    const setCursor = (c: '' | 'scene-hover' | 'scene-grab' | 'scene-grabbing') => {
+      if (c === cursorClass || !stage) return
+      if (cursorClass) stage.classList.remove(cursorClass)
+      if (c) stage.classList.add(c)
+      cursorClass = c
     }
     const cursor = (): ScenePointer | null => (p.inside ? { x: p.cx, y: p.cy } : null)
+    const toCanvas = (e: PointerEvent | MouseEvent) => {
+      const r = canvas.getBoundingClientRect()
+      return { x: ((e.clientX - r.left) / r.width) * canvas.width, y: ((e.clientY - r.top) / r.height) * canvas.height }
+    }
+    let pressing = false
     const onDown = (e: PointerEvent) => {
       if (e.button !== 0) return
       const target = e.target as Element | null
       if (target?.closest('button, a, input, select, textarea, label, .dock, .callout, .titlebar, [class*="modal"], [class*="toast"]')) return
       const r = canvas.getBoundingClientRect()
       if (e.clientX < r.left || e.clientX >= r.right || e.clientY < r.top || e.clientY >= r.bottom) return
-      const hit = { x: ((e.clientX - r.left) / r.width) * canvas.width, y: ((e.clientY - r.top) / r.height) * canvas.height }
-      if (!pokeParty(party, hit, p.x, p.y)) pokeLife(scene.life, hit, p.x, p.y)
+      const hit = toCanvas(e)
+      if (pressParty(party, hit, p.x, p.y)) {
+        // Keeps the page from selecting text while someone is dragged about
+        e.preventDefault()
+        pressing = true
+        return
+      }
+      pokeLife(scene.life, hit, p.x, p.y)
+    }
+    const onDrag = (e: PointerEvent) => {
+      if (!pressing) return
+      const c = toCanvas(e)
+      p.cx = c.x
+      p.cy = c.y
+    }
+    const onUp = () => {
+      if (!pressing) return
+      pressing = false
+      releaseParty(party)
     }
     window.addEventListener('pointerdown', onDown)
+    window.addEventListener('pointermove', onDrag)
+    window.addEventListener('pointerup', onUp)
+    window.addEventListener('pointercancel', onUp)
+    window.addEventListener('blur', onUp)
 
     let raf = 0
+    let shooting = !!scene.shooting
     const loop = (now: number) => {
       raf = requestAnimationFrame(loop)
       if (now - last < FRAME_MS || document.hidden) return
       const dt = Math.min((now - last) / 1000, 0.1)
       last = now
-      p.x += (p.tx - p.x) * 0.06
-      p.y += (p.ty - p.y) * 0.06
+      // Parallax eases the same at any frame rate
+      const ease = 1 - Math.pow(0.94, dt * 30)
+      p.x += (p.tx - p.x) * ease
+      p.y += (p.ty - p.y) * ease
       const at = cursor()
       stepLife(scene.life, dt, at, p.x, p.y)
-      stepParty(party, dt)
+      stepParty(party, dt, pressing ? { x: p.cx, y: p.cy } : at, p.x, p.y)
       draw(now, dt)
-      setHover(!!at && (figureAt(party, at, p.x, p.y) || !!mobAt(scene.life, at, p.x, p.y)))
+      // A shooting star: anyone stargazing points it out
+      if (!!scene.shooting !== shooting) {
+        shooting = !!scene.shooting
+        if (shooting) partyEvent(party, 'star')
+      }
+      setCursor(
+        draggingParty(party) ? 'scene-grabbing'
+        : at && figureAt(party, at, p.x, p.y) ? 'scene-grab'
+        : at && mobAt(scene.life, at, p.x, p.y) ? 'scene-hover' : '',
+      )
     }
     draw(last, 0)
     raf = requestAnimationFrame(loop)
     return () => {
       cancelAnimationFrame(raf)
       window.removeEventListener('pointerdown', onDown)
-      setHover(false)
+      window.removeEventListener('pointermove', onDrag)
+      window.removeEventListener('pointerup', onUp)
+      window.removeEventListener('pointercancel', onUp)
+      window.removeEventListener('blur', onUp)
+      if (pressing) releaseParty(party)
+      setCursor('')
     }
   }, [time, paused, title])
 
