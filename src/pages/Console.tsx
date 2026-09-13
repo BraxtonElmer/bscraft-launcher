@@ -19,11 +19,16 @@ export function ConsolePage({ game }: Props) {
   const [copied, setCopied] = useState(false)
   const bodyRef = useRef<HTMLDivElement>(null)
 
+  // Count log records, not lines: a stack trace under an error is part of that error,
+  // and a block of untimed error lines (e.g. a JVM crash banner) counts once
   const counts = useMemo(() => {
     let warn = 0, error = 0
+    let prev: LogEntry | null = null
     for (const l of game.lines) {
-      if (l.level === 'warn') warn++
-      else if (l.level === 'error') error++
+      const starts = !!l.time || !prev || prev.level !== l.level
+      if (starts && l.level === 'warn') warn++
+      else if (starts && l.level === 'error') error++
+      prev = l
     }
     return { warn, error }
   }, [game.lines])
@@ -121,7 +126,7 @@ export function ConsolePage({ game }: Props) {
         {game.running && (
           <button
             id="btn-kill-minecraft"
-            className={`btn sm ${confirmStop ? 'danger' : 'ghost danger-text'}`}
+            className={`btn sm stop-btn ${confirmStop ? 'danger' : 'ghost danger-text'}`}
             onClick={handleStop}
             title="Force-stop Minecraft (unsaved progress is lost)"
           >

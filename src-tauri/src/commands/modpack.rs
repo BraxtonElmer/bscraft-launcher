@@ -20,6 +20,11 @@ pub struct ModpackManifest {
     pub forge_version: String,
     pub java_version: u8,
     pub files: Vec<ManifestFile>,
+    /// Files installed only when missing and the player's from then on, like the pack's
+    /// default options.txt. A separate list, so launchers that predate it ignore it
+    /// instead of overwriting players' settings on every update.
+    #[serde(default)]
+    pub initial_files: Vec<ManifestFile>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -125,6 +130,23 @@ fn load_manifest_cache() -> Option<ModpackManifest> {
     serde_json::from_str(&raw).ok()
 }
 
+/// The manifest of the last completed sync: what the pack put on this PC. The cache above
+/// can't serve, since it already holds the newer manifest by the time an update runs.
+fn installed_manifest_path() -> Result<std::path::PathBuf, String> {
+    crate::commands::settings::get_data_dir().map(|d| d.join("installed_manifest.json"))
+}
+
+fn load_installed_manifest() -> Option<ModpackManifest> {
+    let raw = std::fs::read_to_string(installed_manifest_path().ok()?).ok()?;
+    serde_json::from_str(&raw).ok()
+}
+
+fn save_installed_manifest(manifest: &ModpackManifest) {
+    if let (Ok(path), Ok(json)) = (installed_manifest_path(), serde_json::to_string(manifest)) {
+        std::fs::write(path, json).ok();
+    }
+}
+
 /// Enables or disables Performance Mode by moving flagged modpack files
 /// to/from a backup folder.  Works offline once the manifest has been cached.
 #[tauri::command]
@@ -186,6 +208,7 @@ pub async fn apply_performance_mode(enabled: bool) -> Result<String, String> {
 #[tauri::command]
 pub async fn sync_modpack(app: tauri::AppHandle, remove_deleted: bool) -> Result<SyncResult, String> {
     let mc_dir = get_mc_dir()?;
+    let previous = load_installed_manifest();
     let manifest = fetch_manifest().await?;
 
     let client = reqwest::Client::builder()
@@ -244,12 +267,23 @@ pub async fn sync_modpack(app: tauri::AppHandle, remove_deleted: bool) -> Result
         }
     }
 
-    // Optional: remove files present locally but not in manifest
+    // Pack defaults (e.g. options.txt) go in only once; after that they're the player's
+    for mf in &manifest.initial_files {
+        let local_path = mc_dir.join(&mf.path);
+        if let Err(e) = install_initial_file(&client, mf, &local_path).await {
+            errors.push(format!("Failed to install {}: {}", mf.path, e));
+        } else if !local_path.exists() {
+            errors.push(format!("Failed to install {}", mf.path));
+        }
+    }
+
+    // Optional: remove files the pack no longer ships
     let files_removed = if remove_deleted {
-        remove_unlisted_files(&mc_dir, &manifest.files)
+        remove_stale_files(&mc_dir, &manifest, previous.as_ref())
     } else {
         0
     };
+    save_installed_manifest(&manifest);
 
     // Update config with new modpack version
     let mut config = load_config_internal()?;
@@ -481,27 +515,64 @@ pub fn sha256_file(path: &Path) -> Result<String, String> {
     Ok(hex::encode(hasher.finalize()))
 }
 
-/// Removes files inside mc_dir/mods, mc_dir/config, etc. that are not in the manifest.
-/// Returns the count of removed files.
-fn remove_unlisted_files(mc_dir: &Path, manifest_files: &[ManifestFile]) -> u32 {
-    let manifest_paths: std::collections::HashSet<_> =
-        manifest_files.iter().map(|f| f.path.as_str()).collect();
+/// Installs a pack default when it's missing. An options.txt the launcher wrote before the
+/// game was installed (only skin settings) is replaced by the pack's, keeping those settings.
+async fn install_initial_file(client: &reqwest::Client, mf: &ManifestFile, local_path: &Path) -> Result<(), String> {
+    let stub = match std::fs::read_to_string(local_path) {
+        Ok(text) if mf.path == "options.txt" && crate::commands::account::is_skin_prefs_stub(&text) => Some(text),
+        Ok(_) => return Ok(()),
+        Err(_) if local_path.exists() => return Ok(()),
+        Err(_) => None,
+    };
+    download_file_quiet(client, &mf.url, local_path).await?;
+    if let Some(stub) = stub {
+        let prefs = crate::commands::account::parse_skin_prefs(&stub);
+        let pack = std::fs::read_to_string(local_path).map_err(|e| e.to_string())?;
+        let merged = crate::commands::account::apply_skin_prefs(Some(&pack), &prefs);
+        std::fs::write(local_path, merged).map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
 
-    // Only scan directories managed by the modpack
-    let managed_dirs = ["mods", "config", "resourcepacks", "shaderpacks"];
+/// A manifest path that stays inside the game folder
+fn safe_relative(path: &str) -> bool {
+    !path.is_empty()
+        && !path.starts_with('/')
+        && !path.contains(':')
+        && path.split(['/', '\\']).all(|part| part != ".." && !part.is_empty())
+}
+
+/// Removes files the pack no longer ships. Returns how many were removed.
+///
+/// mods/ belongs to the pack: any file there it doesn't list goes, because an extra or
+/// outdated mod can stop you joining. Everywhere else only files the pack installed
+/// before and has since dropped are removed, so configs that mods write while running
+/// and resource or shader packs players add themselves are left alone.
+fn remove_stale_files(mc_dir: &Path, manifest: &ModpackManifest, previous: Option<&ModpackManifest>) -> u32 {
+    let current: std::collections::HashSet<&str> = manifest
+        .files
+        .iter()
+        .chain(manifest.initial_files.iter())
+        .map(|f| f.path.as_str())
+        .collect();
     let mut removed = 0u32;
 
-    for dir in &managed_dirs {
-        let dir_path = mc_dir.join(dir);
-        if !dir_path.exists() {
-            continue;
+    if let Ok(entries) = walkdir_flat(&mc_dir.join("mods"), mc_dir) {
+        for (rel, abs) in entries {
+            if !current.contains(rel.as_str()) && std::fs::remove_file(&abs).is_ok() {
+                removed += 1;
+            }
         }
-        if let Ok(entries) = walkdir_flat(&dir_path, mc_dir) {
-            for (rel, abs) in entries {
-                if !manifest_paths.contains(rel.as_str()) {
-                    std::fs::remove_file(&abs).ok();
-                    removed += 1;
-                }
+    }
+
+    if let Some(previous) = previous {
+        for f in &previous.files {
+            if current.contains(f.path.as_str()) || f.path.starts_with("mods/") || !safe_relative(&f.path) {
+                continue;
+            }
+            let abs = mc_dir.join(&f.path);
+            if abs.is_file() && std::fs::remove_file(&abs).is_ok() {
+                removed += 1;
             }
         }
     }
@@ -535,4 +606,18 @@ fn collect_files(
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::safe_relative;
+
+    #[test]
+    fn manifest_paths_must_stay_inside_the_game_folder() {
+        assert!(safe_relative("config/openloader/resources/bscraft-fixes/pack.mcmeta"));
+        assert!(!safe_relative("../outside.txt"));
+        assert!(!safe_relative("config/../../outside.txt"));
+        assert!(!safe_relative("C:/Windows/x.dll"));
+        assert!(!safe_relative("/etc/passwd"));
+    }
 }

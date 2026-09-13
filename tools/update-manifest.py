@@ -38,12 +38,21 @@ import sys
 from pathlib import Path
 from typing import Optional
 
+# The Windows console's code page can't print the ✓/✗ marks below
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 CONFIG_FILE = Path(__file__).parent / "config.ini"
 
 # Root-level files that belong to each player, not the pack. The launcher
 # re-downloads any listed file whose hash differs, so shipping these would
-# reset everyone's settings on every update.
-SKIP_ROOT_FILES = {"options.txt", "servers.dat", "usercache.json"}
+# reset everyone's settings on every update. (servers.dat is kept up to date
+# by the launcher itself, with BSCraft always listed.)
+SKIP_ROOT_FILES = {"servers.dat", "usercache.json"}
+
+# Pack defaults the launcher installs only when a player doesn't have the file
+# yet (manifest "initial_files"; launchers before 1.1.0 ignore that list).
+INITIAL_ROOT_FILES = {"options.txt"}
 
 # ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -99,7 +108,7 @@ def scan_modpack_dir(modpack_dir: Path, base_url: str) -> list[dict]:
             continue
         if rel.endswith(".log") or rel.endswith(".tmp"):
             continue
-        if rel in SKIP_ROOT_FILES:
+        if rel in SKIP_ROOT_FILES or rel in INITIAL_ROOT_FILES:
             continue
 
         digest = sha256_file(abs_path)
@@ -257,6 +266,15 @@ def main():
         print(f"  Kept Performance Mode flag on {sum(1 for f in new_files if f.get('performance'))} file(s)")
     print()
 
+    initial_files = [
+        {"path": rel, "url": f"{base_url}/{rel}", "sha256": sha256_file(modpack_dir / rel), "size": (modpack_dir / rel).stat().st_size}
+        for rel in sorted(INITIAL_ROOT_FILES) if (modpack_dir / rel).is_file()
+    ]
+    old_initial = {f["path"]: f["sha256"] for f in (existing.get("initial_files", []) if existing else [])}
+    initial_changed = [f for f in initial_files if old_initial.get(f["path"]) != f["sha256"]]
+    for f in initial_changed:
+        print(f"  [i] {f['path']}  (pack default for new players)")
+
     # Diff
     added, removed, changed, unchanged = diff_files(existing_files, new_files)
 
@@ -288,7 +306,7 @@ def main():
     print()
 
     # Confirm
-    if not args.yes and (added or removed or changed):
+    if not args.yes and (added or removed or changed or initial_changed):
         answer = input("Write manifest.json? (y/n): ").strip().lower()
         if answer != "y":
             print("Aborted.")
@@ -301,15 +319,16 @@ def main():
         "forge_version": args.forge_version,
         "java_version": args.java_version,
         "files": new_files,
+        "initial_files": initial_files,
     }
     out_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     print(f"✓  Written: {out_path}  ({len(new_files)} files)")
 
     # Upload
     if args.upload:
-        changed_paths = [f["path"] for f in added + changed]
+        changed_paths = [f["path"] for f in added + changed + initial_changed]
         upload_via_rsync(modpack_dir, out_path, changed_paths, ini)
-    elif added or removed or changed:
+    elif added or removed or changed or initial_changed:
         print()
         print("Tip: run with --upload to sync changed files to your server.")
 

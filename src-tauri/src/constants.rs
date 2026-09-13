@@ -41,6 +41,12 @@ pub const MINECRAFT_RESOURCES_URL: &str =
 
 /// Full URL to the modpack manifest JSON on your server.
 pub fn modpack_manifest_url() -> String {
+    // Dev builds can try an unpublished manifest, e.g.
+    // BSCRAFT_MANIFEST_URL=http://127.0.0.1:8765/manifest.json npm run tauri dev
+    #[cfg(debug_assertions)]
+    if let Ok(url) = std::env::var("BSCRAFT_MANIFEST_URL") {
+        return url;
+    }
     format!("{}/modpack/manifest.json", SERVER_BASE_URL)
 }
 

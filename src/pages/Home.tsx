@@ -67,6 +67,19 @@ export function HomePage({ launcher, config, operation, startedAt, onNavigate, o
           </div>
         )}
 
+        {launcherUpdate && !operation && (
+          <div className="callout">
+            <div className="callout-icon"><SparklesIcon size={18} /></div>
+            <div className="callout-text">
+              <strong>Launcher v{launcherUpdate.latest_version} is ready</strong>
+              <span className="callout-notes">
+                {launcherUpdate.notes?.trim()
+                  || `You have v${launcherUpdate.current_version}. Press Update: it downloads, installs and restarts the launcher.`}
+              </span>
+            </div>
+          </div>
+        )}
+
         {modpackUpdate && !operation && !launcherUpdate && (
           <div className="callout">
             <div className="callout-icon"><DownloadIcon size={18} /></div>
@@ -325,7 +338,7 @@ function DockRunning({ username, startedAt, onConsole, onStop }: {
           <TerminalIcon size={15} /> Console
         </button>
         <button
-          className={`btn sm ${confirm ? 'danger' : 'ghost danger-text'}`}
+          className={`btn sm stop-btn ${confirm ? 'danger' : 'ghost danger-text'}`}
           onClick={() => { if (confirm) { setConfirm(false); onStop() } else setConfirm(true) }}
           title="Force-stop Minecraft (unsaved progress is lost)"
         >

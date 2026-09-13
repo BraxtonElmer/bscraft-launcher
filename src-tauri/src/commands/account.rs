@@ -418,7 +418,7 @@ fn part_keys(p: &mut SkinPrefs) -> [(&'static str, &mut bool); 7] {
     ]
 }
 
-fn parse_skin_prefs(text: &str) -> SkinPrefs {
+pub(crate) fn parse_skin_prefs(text: &str) -> SkinPrefs {
     let mut prefs = SkinPrefs::default();
     for line in text.lines() {
         let Some((key, value)) = line.trim_end_matches('\r').split_once(':') else { continue };
@@ -436,7 +436,7 @@ fn parse_skin_prefs(text: &str) -> SkinPrefs {
 }
 
 /// Rewrites only the skin lines of options.txt, keeping everything else as it was
-fn apply_skin_prefs(text: Option<&str>, prefs: &SkinPrefs) -> String {
+pub(crate) fn apply_skin_prefs(text: Option<&str>, prefs: &SkinPrefs) -> String {
     let mut prefs = prefs.clone();
     let hand = format!("\"{}\"", if prefs.main_hand == "left" { "left" } else { "right" });
     let mut wanted: Vec<(String, String)> = part_keys(&mut prefs)
@@ -472,6 +472,15 @@ fn apply_skin_prefs(text: Option<&str>, prefs: &SkinPrefs) -> String {
     let mut result = out.join(newline);
     result.push_str(newline);
     result
+}
+
+/// True for an options.txt the launcher wrote before the game was installed: it only
+/// holds the data version and the skin lines, so the pack's defaults should still apply.
+pub(crate) fn is_skin_prefs_stub(text: &str) -> bool {
+    text.lines().map(|l| l.trim_end_matches('\r')).filter(|l| !l.is_empty()).all(|l| {
+        let key = l.split_once(':').map(|(k, _)| k).unwrap_or(l);
+        key == "version" || key == "mainHand" || key.starts_with("modelPart_")
+    })
 }
 
 #[tauri::command]
@@ -519,6 +528,13 @@ mod tests {
         assert!(out.contains("modelPart_left_sleeve:false\r\n"));
         assert!(out.ends_with("\r\n") && !out.contains("\r\n\r\n"));
         assert_eq!(parse_skin_prefs(&out), prefs);
+    }
+
+    #[test]
+    fn recognises_launcher_written_stub() {
+        use super::is_skin_prefs_stub;
+        assert!(is_skin_prefs_stub(&apply_skin_prefs(None, &SkinPrefs::default())));
+        assert!(!is_skin_prefs_stub("version:3465\r\nfov:0.5\r\nmodelPart_hat:true\r\n"));
     }
 
     #[test]

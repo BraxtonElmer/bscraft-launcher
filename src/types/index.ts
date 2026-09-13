@@ -26,6 +26,8 @@ export interface ModpackManifest {
   forge_version: string;
   java_version: number;
   files: ManifestFile[];
+  /** Installed only when missing (e.g. the pack's default options.txt) */
+  initial_files?: ManifestFile[];
 }
 
 export interface ManifestFile {
