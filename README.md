@@ -91,6 +91,34 @@ executables can be blocked ("An Application Control policy has blocked this
 file"); `npm run tauri dev` usually still works. The skin service has its own
 suite, run on the server: `python3 server/skin-service/test_skin_service.py`.
 
+## Releasing the launcher
+
+Players' launchers update themselves from `launcher/version.json` on the server,
+and only accept an installer signed with the updater key whose public half is in
+`src-tauri/tauri.conf.json`. The private key (`bscraft-private.key`) and its
+password (`bscraft-private.key.password.txt`) sit in the repo folder, gitignored.
+Keep a private backup of both: without them no installed launcher can be updated.
+
+1. Bump the version in `package.json`, `src-tauri/tauri.conf.json` and
+   `src-tauri/Cargo.toml`.
+2. `npm run tauri build`. The installer players need is
+   `src-tauri/target/release/bundle/nsis/BSCraft Launcher_<version>_x64-setup.exe`.
+3. Sign it (writes a `.sig` next to it):
+   ```bash
+   npx tauri signer sign --private-key-path bscraft-private.key \
+     --password "$(cat bscraft-private.key.password.txt)" "<installer>"
+   ```
+4. Upload the installer to `/var/www/bscraft/launcher/` as
+   `bsclauncher-<version>-setup.exe`, and as `bsclauncher-setup.exe` (the fixed
+   link for new players).
+5. Then replace `version.json` there: `version`, short `notes` (shown on the Play
+   screen), `pub_date` as `YYYY-MM-DDTHH:MM:SSZ`, and under
+   `platforms.windows-x86_64` the `url` of the versioned installer and the
+   contents of the `.sig` file as `signature`.
+
+The installer isn't code-signed, so Windows SmartScreen warns on first install
+("More info → Run anyway"); updates installed by the launcher itself don't.
+
 ## Project layout
 
 ```
