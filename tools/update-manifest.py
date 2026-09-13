@@ -54,6 +54,11 @@ SKIP_ROOT_FILES = {"servers.dat", "usercache.json"}
 # yet (manifest "initial_files"; launchers before 1.1.0 ignore that list).
 INITIAL_ROOT_FILES = {"options.txt"}
 
+# Files the launcher's Performance Mode switches off, matched by path prefix so
+# the flag survives version bumps. Flags already on the manifest are kept too;
+# add more with --performance.
+PERFORMANCE_PREFIXES = ["mods/BetterAnimationsCollection-"]
+
 # ── Helpers ────────────────────────────────────────────────────────────────
 
 def sha256_file(path: Path) -> str:
@@ -219,6 +224,8 @@ def main():
                         help="Upload changed files + manifest via rsync after generation")
     parser.add_argument("--yes",            action="store_true",
                         help="Skip confirmation prompts")
+    parser.add_argument("--performance",    action="append", default=[], metavar="PATH_PREFIX",
+                        help="Mark files starting with this path for Performance Mode (repeatable)")
 
     args = parser.parse_args()
 
@@ -257,13 +264,16 @@ def main():
     new_files = scan_modpack_dir(modpack_dir, base_url)
     print(f"  Found {len(new_files)} files")
 
-    # Keep launcher-only flags (Performance Mode) that were set on the existing manifest
+    # Performance Mode flags: the known ones, any given on the command line, and any already set
     perf_paths = {f["path"] for f in existing_files if f.get("performance")}
+    perf_prefixes = PERFORMANCE_PREFIXES + args.performance
     for f in new_files:
-        if f["path"] in perf_paths:
+        if f["path"] in perf_paths or any(f["path"].startswith(p) for p in perf_prefixes):
             f["performance"] = True
-    if perf_paths:
-        print(f"  Kept Performance Mode flag on {sum(1 for f in new_files if f.get('performance'))} file(s)")
+    perf_now = [f["path"] for f in new_files if f.get("performance")]
+    for rel in perf_now:
+        print(f"  [p] {rel}  (off in Performance Mode)")
+    perf_changed = set(perf_now) != perf_paths
     print()
 
     initial_files = [
@@ -306,7 +316,7 @@ def main():
     print()
 
     # Confirm
-    if not args.yes and (added or removed or changed or initial_changed):
+    if not args.yes and (added or removed or changed or initial_changed or perf_changed):
         answer = input("Write manifest.json? (y/n): ").strip().lower()
         if answer != "y":
             print("Aborted.")
@@ -328,7 +338,7 @@ def main():
     if args.upload:
         changed_paths = [f["path"] for f in added + changed + initial_changed]
         upload_via_rsync(modpack_dir, out_path, changed_paths, ini)
-    elif added or removed or changed or initial_changed:
+    elif added or removed or changed or initial_changed or perf_changed:
         print()
         print("Tip: run with --upload to sync changed files to your server.")
 
