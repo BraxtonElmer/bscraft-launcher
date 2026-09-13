@@ -15,7 +15,7 @@ pack are in [`pack-overrides/`](pack-overrides/README.md).
 
 | Page | |
 |---|---|
-| **Play** | Pixel-art landscape (follows the time of day). A live player count for the BSCraft server; hovering it lists who's in game. Install, modpack and launcher updates with progress, then Play. The ▴ beside Play picks where the game starts: straight into the BSCraft server (default) or Minecraft's main menu. BSCraft is always in the in-game server list. Asks for a server password before the first launch. |
+| **Play** | Pixel-art landscape (follows the time of day). The bottom bar shows how many players are on the BSCraft server; hovering it lists who's in game (in a Minecraft-style tooltip). Install, modpack and launcher updates with progress, then Play. The ▴ beside Play picks where the game starts: Minecraft's main menu (default) or straight into the BSCraft server. BSCraft is always in the in-game server list. Asks for a server password before the first launch. |
 | **Profile** | Name (with a live free / yours / taken check), server password, a rotatable 3D preview (skinview3d), and a wardrobe: skin with classic/slim arms, cape, elytra design, "copy a look" from any BSCraft player or Minecraft account. Also Minecraft's Skin Customization switches and main hand, written into `options.txt`. |
 | **Console** | Live game log with filters, search, copy, and Stop. |
 | **Settings** | Memory, preferred GPU, where the game starts, console, background, performance mode, check for updates, verify and repair files. |

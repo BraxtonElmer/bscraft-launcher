@@ -365,7 +365,7 @@ button:focus-visible, [role='switch']:focus-visible, a:focus-visible {
   height: 92px;
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   padding: 0 14px 0 16px;
   border-radius: 20px;
   background: var(--glass);
@@ -418,7 +418,7 @@ button:focus-visible, [role='switch']:focus-visible, a:focus-visible {
 .overline .spinner { border-color: rgba(167, 139, 250, 0.25); border-top-color: var(--brand); border-width: 1.5px; }
 
 .username-input {
-  width: 150px;
+  width: 128px;
   height: 30px;
   padding: 0 2px;
   background: transparent;
@@ -512,7 +512,7 @@ button:focus-visible, [role='switch']:focus-visible, a:focus-visible {
   --btn-glow: rgba(240, 98, 185, 0.5);
 
   position: relative;
-  width: 206px;
+  width: 196px;
   height: 64px;
   flex-shrink: 0;
   display: flex;
@@ -573,7 +573,7 @@ button:focus-visible, [role='switch']:focus-visible, a:focus-visible {
 
 /* Play split into PLAY + ▴ (where the game starts) */
 .play-group { position: relative; display: flex; flex-shrink: 0; }
-.play-group.split > .play-btn { width: 168px; border-radius: 14px 0 0 14px; }
+.play-group.split > .play-btn { width: 158px; border-radius: 14px 0 0 14px; }
 .start-menu-wrap { position: relative; display: flex; }
 .play-btn.caret {
   width: 38px;
@@ -624,53 +624,37 @@ button:focus-visible, [role='switch']:focus-visible, a:focus-visible {
 .start-option-text strong { font-size: 13px; font-weight: 800; }
 .start-option-text span { font-size: 11.5px; line-height: 1.35; color: var(--text-3); }
 
-/* Live player count, top-left of the Play screen */
-.home-top { position: absolute; top: 44px; left: 20px; z-index: 5; }
-.server-pill-wrap { position: relative; }
-.server-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  height: 30px;
-  padding: 0 13px 0 11px;
-  border-radius: 999px;
-  border: 1px solid var(--line-2);
-  background: rgba(12, 8, 26, 0.6);
-  backdrop-filter: blur(10px);
-  font: 700 12px var(--font);
-  color: var(--text);
-  white-space: nowrap;
-  cursor: default;
-}
-.server-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-3); flex-shrink: 0; }
-.server-pill.live .server-dot { background: var(--go); box-shadow: 0 0 8px var(--go); animation: pulse 1.8s ease-in-out infinite; }
-.server-pill.quiet .server-dot { background: var(--ok); }
-.server-pill.down .server-dot { background: var(--danger); }
-.server-pill.idle { color: var(--text-2); }
-.server-card {
+/* Live player count in the dock; hover shows a Minecraft-style tooltip */
+.dock-online { position: relative; outline: none; cursor: default; }
+.online-value { display: flex; align-items: center; gap: 7px; height: 32px; font-size: 14px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.online-dot { width: 8px; height: 8px; border-radius: 2px; background: var(--text-3); flex-shrink: 0; }
+.online-dot.live { background: var(--go); box-shadow: 0 0 8px var(--go); animation: pulse 1.8s ease-in-out infinite; }
+.online-dot.quiet { background: var(--ok); }
+.online-dot.down { background: var(--danger); }
+.dock-online:focus-visible .online-value { text-decoration: underline; text-underline-offset: 4px; }
+/* Like hovering an item in game: near-black purple box with the purple gradient frame */
+.mc-tooltip {
   position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  width: 250px;
-  padding: 12px;
-  border-radius: 14px;
-  background: rgba(20, 14, 36, 0.96);
-  border: 1px solid var(--line-2);
-  box-shadow: 0 18px 40px -12px rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(16px);
-  animation: rise 160ms var(--ease) both;
+  bottom: calc(100% + 18px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 7px 9px 8px;
+  background: rgba(16, 0, 16, 0.94);
+  border: 2px solid transparent;
+  border-image: linear-gradient(180deg, rgba(80, 0, 255, 0.75), rgba(40, 0, 127, 0.75)) 1;
+  outline: 2px solid rgba(16, 0, 16, 0.94);
+  white-space: nowrap;
+  image-rendering: pixelated;
+  pointer-events: none;
 }
-.server-card-head { display: flex; flex-direction: column; gap: 1px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
-.server-card-head strong { font-size: 13.5px; font-weight: 800; }
-.server-card-head span { font-size: 11.5px; color: var(--text-3); font-variant-numeric: tabular-nums; }
-.server-empty { padding-top: 10px; font-size: 12px; color: var(--text-2); }
-.server-players { list-style: none; display: flex; flex-direction: column; gap: 2px; max-height: 236px; overflow-y: auto; padding-top: 8px; }
-.server-player { display: flex; align-items: center; gap: 9px; padding: 4px 4px; border-radius: 8px; font-size: 12.5px; font-weight: 700; }
-.server-player .player-head { border-radius: 5px; flex-shrink: 0; }
-.server-player-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.server-you { padding: 1px 6px; border-radius: 99px; background: var(--brand-dim); color: var(--brand-hi); font-size: 10.5px; font-weight: 800; }
-.server-ingame { width: 7px; height: 7px; border-radius: 50%; background: var(--go); flex-shrink: 0; }
-.server-more { padding: 6px 4px 0; font-size: 11.5px; color: var(--text-3); }
+.mc-tooltip svg { display: block; }
+.mc-players { list-style: none; display: flex; flex-direction: column; gap: 5px; margin-top: 2px; }
+.mc-players li { display: flex; align-items: center; gap: 6px; }
+.mc-players .player-head { border-radius: 0; flex-shrink: 0; }
 
 .play-sub { font-size: 11.5px; font-weight: 700; opacity: 0.88; letter-spacing: 0.01em; }
 

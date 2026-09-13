@@ -4,16 +4,16 @@ import { PlayerHead } from '../components/PlayerHead'
 import { PasswordForm } from '../components/PasswordForm'
 import { ProgressBar, Segmented, Spinner, describeOperation } from '../components/ui'
 import {
-  AlertIcon, CheckIcon, ChevronUpIcon, DownloadIcon, GaugeIcon, HomeIcon, KeyIcon, MemoryIcon,
+  AlertIcon, CheckIcon, ChevronUpIcon, DownloadIcon, HomeIcon, KeyIcon, MemoryIcon,
   RefreshIcon, ServerIcon, SparklesIcon, StopIcon, TerminalIcon,
 } from '../components/Icons'
-import { ServerPill } from '../components/ServerPill'
+import { OnlineField } from '../components/OnlineField'
 import { useServerStatus } from '../hooks/useServerStatus'
 import { formatBytes, formatRam, sanitizeUsername, usernameProblem } from '../lib/format'
 import { usePublishedSkin } from '../hooks/useSkin'
 import type { AccountApi } from '../hooks/useAccount'
 import type { LauncherApi } from '../hooks/useLauncher'
-import type { ActiveOperation, AppConfig, Page } from '../types'
+import type { ActiveOperation, AppConfig, Page, ServerStatus } from '../types'
 
 interface Props {
   launcher: LauncherApi
@@ -56,10 +56,6 @@ export function HomePage({ launcher, config, operation, startedAt, onNavigate, o
 
       {/* The BSCRAFT title itself is drawn into the landscape by PixelScene */}
       <h1 className="sr-only">BSCraft</h1>
-
-      <div className="home-top">
-        <ServerPill status={server.status} me={config.username || launcher.username} />
-      </div>
 
       <section className="hero">
 
@@ -123,7 +119,7 @@ export function HomePage({ launcher, config, operation, startedAt, onNavigate, o
             onStop={onStopGame}
           />
         ) : (
-          <DockControls launcher={launcher} config={config} onNavigate={onNavigate} onPlay={play} />
+          <DockControls launcher={launcher} config={config} onNavigate={onNavigate} onPlay={play} server={server.status} />
         )}
         <PlayButton
           launcher={launcher}
@@ -186,8 +182,9 @@ function PasswordPrompt({ username, onSave, onSkip, onClose }: {
 
 // ── Dock: idle controls ──────────────────────────────────────
 
-function DockControls({ launcher, config, onNavigate, onPlay }: {
+function DockControls({ launcher, config, onNavigate, onPlay, server }: {
   launcher: LauncherApi; config: AppConfig; onNavigate: (p: Page) => void; onPlay: () => void
+  server: ServerStatus | null
 }) {
   const { username, setUsername, usernameNudge, busy, perfBusy } = launcher
   const { skin } = usePublishedSkin(username)
@@ -247,8 +244,8 @@ function DockControls({ launcher, config, onNavigate, onPlay }: {
           onChange={v => launcher.setPerformanceMode(v === 'performance')}
           disabled={busy}
           options={[
-            { value: 'quality', label: 'Quality', icon: <SparklesIcon size={13} />, title: 'All mods active' },
-            { value: 'performance', label: 'Performance', icon: <GaugeIcon size={13} />, title: 'Visual mods are removed for better FPS' },
+            { value: 'quality', label: 'Quality', title: 'All mods active' },
+            { value: 'performance', label: 'Performance', title: 'Visual mods are removed for better FPS' },
           ]}
         />
       </div>
@@ -262,6 +259,10 @@ function DockControls({ launcher, config, onNavigate, onPlay }: {
           {formatRam(config.ram_mb)}
         </button>
       </div>
+
+      <div className="dock-sep" />
+
+      <OnlineField status={server} me={config.username || username} />
 
       <div className="dock-spacer" />
     </>

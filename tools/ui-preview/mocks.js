@@ -17,7 +17,7 @@ export function createMocks() {
       console_enabled: false,
       prefer_dgpu: true,
       performance_mode: false,
-      auto_join: true,
+      auto_join: false,
       installed_modpack_version: installed ? (scenario === 'update' ? '1.0.0' : '1.0.1') : null,
       installed_mc_version: installed ? '1.20.1' : null,
       installed_forge_version: installed ? '47.4.10' : null,
