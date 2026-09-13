@@ -65,6 +65,7 @@ pub fn run() {
             commands::account::import_look,
             commands::account::get_skin_prefs,
             commands::account::set_skin_prefs,
+            commands::server::server_status,
             // Game control
             commands::launcher::launch_game,
             commands::launcher::kill_game,

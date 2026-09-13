@@ -570,6 +570,108 @@ button:focus-visible, [role='switch']:focus-visible, a:focus-visible {
 .play-btn.live  { --btn-bg: linear-gradient(180deg, rgba(34, 197, 94, 0.36), rgba(21, 128, 61, 0.3)); --btn-ring: rgba(74, 222, 128, 0.45); --btn-glow: rgba(34, 197, 94, 0.2); }
 
 .play-label { display: flex; align-items: center; gap: 10px; }
+
+/* Play split into PLAY + ▴ (where the game starts) */
+.play-group { position: relative; display: flex; flex-shrink: 0; }
+.play-group.split > .play-btn { width: 168px; border-radius: 14px 0 0 14px; }
+.start-menu-wrap { position: relative; display: flex; }
+.play-btn.caret {
+  width: 38px;
+  border-radius: 0 14px 14px 0;
+  box-shadow:
+    inset 1px 0 0 rgba(0, 0, 0, 0.22),
+    inset 0 2px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -4px 0 rgba(0, 0, 0, 0.25),
+    0 0 0 1px var(--btn-ring),
+    0 12px 30px -8px var(--btn-glow);
+}
+.play-btn.caret[aria-expanded='true'] svg { transform: rotate(180deg); }
+.play-btn.caret svg { transition: transform 150ms var(--ease); }
+.start-menu {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 12px);
+  z-index: 20;
+  width: 272px;
+  padding: 8px;
+  border-radius: 14px;
+  background: rgba(20, 14, 36, 0.96);
+  border: 1px solid var(--line-2);
+  box-shadow: 0 20px 44px -12px rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(16px);
+  animation: rise 160ms var(--ease) both;
+}
+.start-menu-title { padding: 4px 8px 8px; font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3); }
+.start-option {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background 120ms, border-color 120ms;
+}
+.start-option:hover { background: var(--fill-2); }
+.start-option.active { background: rgba(240, 98, 185, 0.12); border-color: rgba(240, 98, 185, 0.4); }
+.start-option > svg { flex-shrink: 0; color: #f9a8d4; }
+.start-option-icon { display: grid; place-items: center; flex-shrink: 0; width: 34px; height: 34px; border-radius: 10px; background: var(--fill-1); color: var(--text-2); }
+.start-option.active .start-option-icon { color: #f9a8d4; background: rgba(240, 98, 185, 0.14); }
+.start-option-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.start-option-text strong { font-size: 13px; font-weight: 800; }
+.start-option-text span { font-size: 11.5px; line-height: 1.35; color: var(--text-3); }
+
+/* Live player count, top-left of the Play screen */
+.home-top { position: absolute; top: 44px; left: 20px; z-index: 5; }
+.server-pill-wrap { position: relative; }
+.server-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 30px;
+  padding: 0 13px 0 11px;
+  border-radius: 999px;
+  border: 1px solid var(--line-2);
+  background: rgba(12, 8, 26, 0.6);
+  backdrop-filter: blur(10px);
+  font: 700 12px var(--font);
+  color: var(--text);
+  white-space: nowrap;
+  cursor: default;
+}
+.server-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-3); flex-shrink: 0; }
+.server-pill.live .server-dot { background: var(--go); box-shadow: 0 0 8px var(--go); animation: pulse 1.8s ease-in-out infinite; }
+.server-pill.quiet .server-dot { background: var(--ok); }
+.server-pill.down .server-dot { background: var(--danger); }
+.server-pill.idle { color: var(--text-2); }
+.server-card {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  width: 250px;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(20, 14, 36, 0.96);
+  border: 1px solid var(--line-2);
+  box-shadow: 0 18px 40px -12px rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(16px);
+  animation: rise 160ms var(--ease) both;
+}
+.server-card-head { display: flex; flex-direction: column; gap: 1px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+.server-card-head strong { font-size: 13.5px; font-weight: 800; }
+.server-card-head span { font-size: 11.5px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+.server-empty { padding-top: 10px; font-size: 12px; color: var(--text-2); }
+.server-players { list-style: none; display: flex; flex-direction: column; gap: 2px; max-height: 236px; overflow-y: auto; padding-top: 8px; }
+.server-player { display: flex; align-items: center; gap: 9px; padding: 4px 4px; border-radius: 8px; font-size: 12.5px; font-weight: 700; }
+.server-player .player-head { border-radius: 5px; flex-shrink: 0; }
+.server-player-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.server-you { padding: 1px 6px; border-radius: 99px; background: var(--brand-dim); color: var(--brand-hi); font-size: 10.5px; font-weight: 800; }
+.server-ingame { width: 7px; height: 7px; border-radius: 50%; background: var(--go); flex-shrink: 0; }
+.server-more { padding: 6px 4px 0; font-size: 11.5px; color: var(--text-3); }
+
 .play-sub { font-size: 11.5px; font-weight: 700; opacity: 0.88; letter-spacing: 0.01em; }
 
 /* ── Controls ──────────────────────────────────────────────── */

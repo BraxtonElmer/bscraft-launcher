@@ -4,9 +4,11 @@ import { PlayerHead } from '../components/PlayerHead'
 import { PasswordForm } from '../components/PasswordForm'
 import { ProgressBar, Segmented, Spinner, describeOperation } from '../components/ui'
 import {
-  AlertIcon, DownloadIcon, GaugeIcon, KeyIcon, MemoryIcon,
-  RefreshIcon, SparklesIcon, StopIcon, TerminalIcon,
+  AlertIcon, CheckIcon, ChevronUpIcon, DownloadIcon, GaugeIcon, HomeIcon, KeyIcon, MemoryIcon,
+  RefreshIcon, ServerIcon, SparklesIcon, StopIcon, TerminalIcon,
 } from '../components/Icons'
+import { ServerPill } from '../components/ServerPill'
+import { useServerStatus } from '../hooks/useServerStatus'
 import { formatBytes, formatRam, sanitizeUsername, usernameProblem } from '../lib/format'
 import { usePublishedSkin } from '../hooks/useSkin'
 import type { AccountApi } from '../hooks/useAccount'
@@ -21,14 +23,17 @@ interface Props {
   onNavigate: (page: Page) => void
   onStopGame: () => void
   account: AccountApi
+  /** Saves where the game starts: the BSCraft server (true) or the main menu */
+  onStartIn: (autoJoin: boolean) => void
 }
 
 // Asked once per session; skipping leaves it to SimpleLogin's in-game prompt
 let passwordPromptSkipped = false
 
-export function HomePage({ launcher, config, operation, startedAt, onNavigate, onStopGame, account }: Props) {
+export function HomePage({ launcher, config, operation, startedAt, onNavigate, onStopGame, account, onStartIn }: Props) {
   const { status, manifest, launcherUpdate, modpackUpdate, running } = launcher
   const [askPassword, setAskPassword] = useState(false)
+  const server = useServerStatus(true)
 
   const mcVersion = config.installed_mc_version ?? manifest?.minecraft_version
 
@@ -51,6 +56,10 @@ export function HomePage({ launcher, config, operation, startedAt, onNavigate, o
 
       {/* The BSCRAFT title itself is drawn into the landscape by PixelScene */}
       <h1 className="sr-only">BSCraft</h1>
+
+      <div className="home-top">
+        <ServerPill status={server.status} me={config.username || launcher.username} />
+      </div>
 
       <section className="hero">
 
@@ -116,7 +125,14 @@ export function HomePage({ launcher, config, operation, startedAt, onNavigate, o
         ) : (
           <DockControls launcher={launcher} config={config} onNavigate={onNavigate} onPlay={play} />
         )}
-        <PlayButton launcher={launcher} operation={operation} mcVersion={mcVersion} onPlay={play} />
+        <PlayButton
+          launcher={launcher}
+          operation={operation}
+          mcVersion={mcVersion}
+          autoJoin={config.auto_join}
+          onPlay={play}
+          onStartIn={onStartIn}
+        />
       </div>
 
       <div className="credit">Made by Akariyu and Zukashi</div>
@@ -351,8 +367,9 @@ function DockRunning({ username, startedAt, onConsole, onStop }: {
 
 // ── Play button ──────────────────────────────────────────────
 
-function PlayButton({ launcher, operation, mcVersion, onPlay }: {
-  launcher: LauncherApi; operation: ActiveOperation | null; mcVersion?: string; onPlay: () => void
+function PlayButton({ launcher, operation, mcVersion, autoJoin, onPlay, onStartIn }: {
+  launcher: LauncherApi; operation: ActiveOperation | null; mcVersion?: string
+  autoJoin: boolean; onPlay: () => void; onStartIn: (autoJoin: boolean) => void
 }) {
   const { status, installed, launcherUpdate, running, manifest, perfBusy, busy } = launcher
 
@@ -384,14 +401,86 @@ function PlayButton({ launcher, operation, mcVersion, onPlay }: {
   }
 
   const disabled = running || busy || perfBusy
+  // Where the game starts can be picked whenever Play would launch it
+  const canChoose = label === 'PLAY' && !disabled
+  if (canChoose) sub = `${mcVersion ? `${mcVersion} · ` : ''}${autoJoin ? 'Joins BSCraft' : 'Main menu'}`
 
   return (
-    <button id="btn-play" className={`play-btn ${tone}`} onClick={onPlay} disabled={disabled}>
-      <span className="play-label">
-        {spinner && <Spinner size={16} />}
-        <PixelText text={label} scale={3} color="#ffffff" shadow="rgba(0, 0, 0, 0.28)" />
-      </span>
-      {sub && <span className="play-sub">{sub}</span>}
-    </button>
+    <div className={`play-group${canChoose ? ' split' : ''}`}>
+      <button id="btn-play" className={`play-btn ${tone}`} onClick={onPlay} disabled={disabled}>
+        <span className="play-label">
+          {spinner && <Spinner size={16} />}
+          <PixelText text={label} scale={3} color="#ffffff" shadow="rgba(0, 0, 0, 0.28)" />
+        </span>
+        {sub && <span className="play-sub">{sub}</span>}
+      </button>
+      {canChoose && <StartMenu tone={tone} autoJoin={autoJoin} onChange={onStartIn} />}
+    </div>
+  )
+}
+
+/** The ▾ beside Play: start in the BSCraft server or at Minecraft's main menu */
+function StartMenu({ tone, autoJoin, onChange }: { tone: string; autoJoin: boolean; onChange: (autoJoin: boolean) => void }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const onDown = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) setOpen(false) }
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
+    window.addEventListener('mousedown', onDown)
+    window.addEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('mousedown', onDown)
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [open])
+
+  const pick = (join: boolean) => {
+    setOpen(false)
+    if (join !== autoJoin) onChange(join)
+  }
+
+  const options = [
+    { join: true, icon: <ServerIcon size={17} />, title: 'Join BSCraft', desc: 'Connects to the server as soon as the game loads' },
+    { join: false, icon: <HomeIcon size={17} />, title: 'Main menu', desc: "Starts at Minecraft's title screen" },
+  ]
+
+  return (
+    <div className="start-menu-wrap" ref={ref}>
+      <button
+        type="button"
+        className={`play-btn caret ${tone}`}
+        onClick={() => setOpen(o => !o)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label="Where the game starts"
+        title="Where the game starts"
+      >
+        <ChevronUpIcon size={18} />
+      </button>
+      {open && (
+        <div className="start-menu" role="menu" aria-label="Start the game in">
+          <div className="start-menu-title">Start the game in</div>
+          {options.map(o => (
+            <button
+              key={o.title}
+              type="button"
+              role="menuitemradio"
+              aria-checked={o.join === autoJoin}
+              className={`start-option${o.join === autoJoin ? ' active' : ''}`}
+              onClick={() => pick(o.join)}
+            >
+              <span className="start-option-icon">{o.icon}</span>
+              <span className="start-option-text">
+                <strong>{o.title}</strong>
+                <span>{o.desc}</span>
+              </span>
+              {o.join === autoJoin && <CheckIcon size={15} />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }

@@ -177,6 +177,17 @@ export interface SkinPrefs {
   main_hand: 'left' | 'right';
 }
 
+/** Mirrors commands::server::ServerStatus — the game server's live status */
+export interface ServerStatus {
+  online: boolean;
+  players_online: number;
+  players_max: number;
+  /** Names the server shares: at most 12, without players who hide themselves */
+  players: string[];
+  latency_ms: number;
+  version: string;
+}
+
 /** Drives the play button label and enabled state (game running is tracked separately) */
 export type LaunchStatus =
   | 'init'       // First load, nothing checked yet

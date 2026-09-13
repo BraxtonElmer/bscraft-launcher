@@ -144,14 +144,19 @@ export function SettingsPage({ launcher, config, persist, operation, launcherVer
           <section className="card">
             <CardHead icon={<SlidersIcon size={18} />} tone="pink" title="Launcher" desc="How the launcher looks and behaves" />
             <SettingRow
-              title="Join BSCraft on launch"
-              desc="Play goes straight into the server. Turn off to start at the title screen."
+              title="Start the game in"
+              desc="Where Play takes you. Also on the ▴ beside the Play button."
             >
-              <Toggle
-                id="toggle-autojoin"
-                label="Join BSCraft on launch"
-                checked={config.auto_join}
-                onChange={v => persist({ auto_join: v })}
+              <Segmented<'server' | 'menu'>
+                id="start-in"
+                size="sm"
+                label="Start the game in"
+                value={config.auto_join ? 'server' : 'menu'}
+                onChange={v => persist({ auto_join: v === 'server' })}
+                options={[
+                  { value: 'server', label: 'Server' },
+                  { value: 'menu', label: 'Main menu' },
+                ]}
               />
             </SettingRow>
             <SettingRow

@@ -192,6 +192,17 @@ export function createMocks() {
     set_skin_prefs: async ({ prefs }) => { await sleep(80); state.prefsWrites = (state.prefsWrites || 0) + 1; console.log('set_skin_prefs', new Error().stack); state.prefs = { ...prefs }; return { ...state.prefs } },
     'plugin:opener|open_url': ({ url }) => { console.log('open_url', url) },
     get_game_status: () => ({ running: state.running }),
+    // Live server status: ?srv=down|empty|busy (default: 3 players, including the mock user)
+    server_status: async () => {
+      await sleep(350)
+      const srv = params.get('srv')
+      if (srv === 'down') return { online: false, players_online: 0, players_max: 0, players: [], latency_ms: 0, version: '' }
+      const names = srv === 'empty' ? [] : srv === 'busy'
+        ? ['Akariyu', 'Blaze_Runner', 'Crafty', 'Dewdrop', 'Ember', 'Frostbyte', 'Gravel', 'Hazel', 'Ivy_', 'Jade', 'Kiln', 'Raxtray']
+        : ['Akariyu', 'Raxtray', 'Zukashi']
+      const online = srv === 'busy' ? 15 : names.length
+      return { online: true, players_online: online, players_max: 20, players: names, latency_ms: 42, version: '1.20.1' }
+    },
     get_log_lines: () => [],
     exit_app: () => { console.log('exit_app') },
   }

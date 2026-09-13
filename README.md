@@ -15,10 +15,10 @@ pack are in [`pack-overrides/`](pack-overrides/README.md).
 
 | Page | |
 |---|---|
-| **Play** | Pixel-art landscape (follows the time of day). Install, modpack and launcher updates with progress, then Play. With *Join BSCraft on launch* (on by default) the game connects straight to the server; BSCraft is always in the in-game server list too. Asks for a server password before the first launch. |
+| **Play** | Pixel-art landscape (follows the time of day). A live player count for the BSCraft server; hovering it lists who's in game. Install, modpack and launcher updates with progress, then Play. The ▴ beside Play picks where the game starts: straight into the BSCraft server (default) or Minecraft's main menu. BSCraft is always in the in-game server list. Asks for a server password before the first launch. |
 | **Profile** | Name (with a live free / yours / taken check), server password, a rotatable 3D preview (skinview3d), and a wardrobe: skin with classic/slim arms, cape, elytra design, "copy a look" from any BSCraft player or Minecraft account. Also Minecraft's Skin Customization switches and main hand, written into `options.txt`. |
 | **Console** | Live game log with filters, search, copy, and Stop. |
-| **Settings** | Memory, preferred GPU, auto-join, console, background, performance mode, check for updates, verify and repair files. |
+| **Settings** | Memory, preferred GPU, where the game starts, console, background, performance mode, check for updates, verify and repair files. |
 
 ## How it fits together
 
@@ -31,6 +31,9 @@ pack are in [`pack-overrides/`](pack-overrides/README.md).
   `https://bscraft.zukashix.com/skins/`, where the skin service publishes what
   players upload from Profile. Minecraft paints the elytra from the cape texture,
   so an elytra design is stored in the cape's wing area.
+- **Player count:** the launcher asks the game server for its status the way the
+  multiplayer screen does (Server List Ping). Minecraft shares up to 12 names and
+  hides players who turned off "Allow Server Listings"; the rest show as "+N more".
 - **Launcher updates:** the Tauri updater reads
   `https://bscraft.zukashix.com/launcher/version.json`; the Play screen shows its
   `notes` and the Play button turns into Update.
@@ -58,6 +61,7 @@ Query parameters pick the situation:
 | `s=installed\|fresh\|update\|offline\|launcherupdate` | Install state (default `installed`) |
 | `acct=new\|registered\|mismatch`, `nopw=1` | Server account state; mock password is `hunter22` |
 | `speed=2` | Run mock downloads faster |
+| `srv=down\|empty\|busy` | Server status (default: 3 players online) |
 
 `tools/ui-preview/scene.html?t=night&q=s%3Dfresh` opens the preview with a fixed
 time of day.
@@ -99,6 +103,7 @@ src-tauri/src/
   commands/launcher.rs    launch arguments, log streaming, exit tracking
   commands/account.rs     password file, skin service, Mojang import, options.txt
   commands/settings.rs    config.json, RAM and GPU detection
+  commands/server.rs      live server status (player count and names)
   commands/update.rs      launcher self-update
   servers_dat.rs          keeps BSCraft in the game's server list (NBT)
 tools/

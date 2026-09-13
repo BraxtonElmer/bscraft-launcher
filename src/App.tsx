@@ -111,6 +111,7 @@ export default function App() {
               onNavigate={setPage}
               onStopGame={game.kill}
               account={account}
+              onStartIn={autoJoin => { cfg.persist({ auto_join: autoJoin }) }}
             />
           ) : page === 'profile' ? (
             <ProfilePage

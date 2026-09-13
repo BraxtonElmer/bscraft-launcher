@@ -268,3 +268,21 @@ export const TrashIcon = (p: IconProps) => (
     <path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13" />
   </Icon>
 )
+
+export const ChevronUpIcon = (p: IconProps) => (
+  <Icon {...p}><path d="M6 15l6-6 6 6" /></Icon>
+)
+
+export const ServerIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <rect x="3.5" y="4" width="17" height="7" rx="2" />
+    <rect x="3.5" y="13" width="17" height="7" rx="2" />
+    <path d="M7.5 7.5h.01M7.5 16.5h.01M11 7.5h5M11 16.5h5" />
+  </Icon>
+)
+
+export const HomeIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M4 10.5L12 4l8 6.5V20h-5.5v-6h-5v6H4v-9.5z" />
+  </Icon>
+)
