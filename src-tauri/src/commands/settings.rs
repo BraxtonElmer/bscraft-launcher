@@ -130,12 +130,31 @@ fn get_gpus_windows() -> Result<Vec<GpuInfo>, String> {
 // through, and the memory it takes away from Windows gets swapped to disk. Both show
 // up as hitches, the "too much RAM is laggy" everyone notices.
 
-/// Below this the heap is barely above what the pack holds: constant clean-ups, then crashes
-const PACK_MIN_MB: u32 = 6 * 1024;
-/// Room for big bases, busy areas and joining the server, with nothing wasted
-const PACK_BEST_MB: u32 = 8 * 1024;
-/// Past this the pack can't use it, and clean-ups get longer
-const PACK_MAX_USEFUL_MB: u32 = 10 * 1024;
+// What big packs of this size tell players (checked 2026-09-14): at least 6 GB (Enigmatica,
+// FTB, DawnCraft), 8 GB on a 16 GB PC (Enigmatica: "max 8" there), 8-12 on bigger PCs
+// (DawnCraft, All the Mods), and no more than 10-12 (FTB, All the Mods).
+
+/// What the pack needs; the manifest's optional `memory` block can change it without a launcher release
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq)]
+pub struct PackMemory {
+    /// Below this the heap is barely above what the pack holds: constant clean-ups, then crashes
+    pub min_mb: u32,
+    /// Room for big bases, busy areas and joining the server, with nothing wasted
+    pub recommended_mb: u32,
+    /// The same on PCs with plenty of memory (24 GB or more): more room for Distant Horizons
+    pub recommended_large_mb: u32,
+    /// Past this the pack can't use it, and clean-ups get longer
+    pub max_useful_mb: u32,
+}
+
+impl Default for PackMemory {
+    fn default() -> Self {
+        PackMemory { min_mb: 6 * 1024, recommended_mb: 8 * 1024, recommended_large_mb: 10 * 1024, max_useful_mb: 12 * 1024 }
+    }
+}
+
+/// PCs with at least this much memory get `recommended_large_mb` (24 GB ones report a bit under)
+const LARGE_PC_MB: u32 = 23 * 1024;
 /// Kept for everything but the heap: Windows and what people keep open alongside
 /// (a browser, Discord), plus the game's own memory outside the heap
 const RESERVE_MB: u32 = 7 * 1024;
@@ -164,12 +183,13 @@ fn whole_gb(mb: u32) -> u32 {
     mb / 1024 * 1024
 }
 
-pub fn plan_for(total_mb: u32, integrated_gpu: bool) -> MemoryPlan {
+pub fn plan_for(total_mb: u32, integrated_gpu: bool, pack: PackMemory) -> MemoryPlan {
     let gpu = if integrated_gpu { INTEGRATED_GPU_MB } else { 0 };
     let room = whole_gb(total_mb.saturating_sub(RESERVE_MB + gpu));
-    let recommended_mb = room.clamp(4 * 1024, PACK_BEST_MB);
+    let best = if total_mb >= LARGE_PC_MB { pack.recommended_large_mb } else { pack.recommended_mb };
+    let recommended_mb = room.clamp(4 * 1024, best.max(4 * 1024));
     let safe_max_mb = whole_gb(total_mb.saturating_sub(HARD_RESERVE_MB + gpu / 2)).max(recommended_mb);
-    MemoryPlan { total_mb, integrated_gpu, recommended_mb, min_mb: PACK_MIN_MB, max_useful_mb: PACK_MAX_USEFUL_MB, safe_max_mb }
+    MemoryPlan { total_mb, integrated_gpu, recommended_mb, min_mb: pack.min_mb, max_useful_mb: pack.max_useful_mb, safe_max_mb }
 }
 
 /// A graphics card with its own memory, going by its name
@@ -181,10 +201,30 @@ fn is_dedicated_gpu(name: &str) -> bool {
         || n.split(|c: char| !c.is_ascii_alphanumeric()).any(|w| w.len() == 4 && w.starts_with('a') && w[1..].chars().all(|c| c.is_ascii_digit())) && n.contains("arc")
 }
 
-/// This PC's plan, worked out once (RAM and graphics cards don't change while it runs)
+/// The pack's memory needs, from the last manifest (or the built-in ones), kept in memory
+static PACK: std::sync::RwLock<Option<PackMemory>> = std::sync::RwLock::new(None);
+
+/// A new manifest arrived; its `memory` block (if any) applies from now on
+pub fn set_pack_memory(pack: Option<PackMemory>) {
+    if let Ok(mut p) = PACK.write() {
+        *p = Some(pack.unwrap_or_default());
+    }
+}
+
+fn pack_memory() -> PackMemory {
+    if let Some(p) = PACK.read().ok().and_then(|p| *p) {
+        return p;
+    }
+    let p = crate::commands::modpack::cached_pack_memory().unwrap_or_default();
+    set_pack_memory(Some(p));
+    p
+}
+
+/// This PC's plan: RAM and graphics cards are looked at once (they don't change while it
+/// runs), the pack's needs each time (a modpack update can change them)
 pub fn memory_plan() -> MemoryPlan {
-    static PLAN: std::sync::OnceLock<MemoryPlan> = std::sync::OnceLock::new();
-    *PLAN.get_or_init(|| {
+    static PC: std::sync::OnceLock<(u32, bool)> = std::sync::OnceLock::new();
+    let (total_mb, integrated) = *PC.get_or_init(|| {
         let mut sys = System::new();
         sys.refresh_memory();
         let total_mb = (sys.total_memory() / 1024 / 1024) as u32;
@@ -195,8 +235,9 @@ pub fn memory_plan() -> MemoryPlan {
             .and_then(Result::ok)
             .map(|gpus| !gpus.iter().any(|g| is_dedicated_gpu(&g.name)))
             .unwrap_or(true);
-        plan_for(total_mb, integrated)
-    })
+        (total_mb, integrated)
+    });
+    plan_for(total_mb, integrated, pack_memory())
 }
 
 // ── Path helpers ───────────────────────────────────────────────────────────
@@ -315,28 +356,42 @@ pub async fn write_error_report(context: String, message: String) -> Result<Stri
 
 #[cfg(test)]
 mod tests {
-    use super::{is_dedicated_gpu, plan_for};
+    use super::{is_dedicated_gpu, plan_for, PackMemory};
 
     const GB: u32 = 1024;
 
     #[test]
     fn plans_memory_for_common_pcs() {
+        let pack = PackMemory::default();
         // (installed, integrated graphics) -> recommended
         for (total, integrated, want) in [
             (16_062, true, 7 * GB),   // this laptop: 15.7 GB, Intel Iris Xe
             (16_300, false, 8 * GB),  // 16 GB with a graphics card
-            (32_600, false, 8 * GB),  // more RAM doesn't mean more for the game
-            (65_000, true, 8 * GB),
+            (24_400, false, 10 * GB), // plenty: room for Distant Horizons
+            (32_600, false, 10 * GB),
+            (65_000, true, 10 * GB),  // but no more than the pack can use
             (12_000, true, 4 * GB),   // short on memory: the least that runs
             (8_000, true, 4 * GB),
         ] {
-            let p = plan_for(total, integrated);
+            let p = plan_for(total, integrated, pack);
             assert_eq!(p.recommended_mb, want, "{total} MB, integrated {integrated}");
             assert!(p.safe_max_mb >= p.recommended_mb);
             assert!(p.recommended_mb <= p.max_useful_mb);
         }
-        assert_eq!(plan_for(16_062, true).safe_max_mb, 9 * GB);
-        assert_eq!(plan_for(32_600, false).safe_max_mb, 26 * GB);
+        assert_eq!(plan_for(16_062, true, pack).safe_max_mb, 9 * GB);
+        assert_eq!(plan_for(32_600, false, pack).safe_max_mb, 26 * GB);
+    }
+
+    #[test]
+    fn a_heavier_pack_can_ask_for_more() {
+        let heavy = PackMemory { min_mb: 7 * GB, recommended_mb: 9 * GB, recommended_large_mb: 12 * GB, max_useful_mb: 14 * GB };
+        assert_eq!(plan_for(20_000, false, heavy).recommended_mb, 9 * GB);
+        assert_eq!(plan_for(32_600, false, heavy).recommended_mb, 12 * GB);
+        // Still never more than the PC can spare
+        assert_eq!(plan_for(16_300, false, heavy).recommended_mb, 8 * GB);
+        assert_eq!(plan_for(16_062, true, heavy).recommended_mb, 7 * GB);
+        let p = plan_for(32_600, false, heavy);
+        assert_eq!((p.min_mb, p.max_useful_mb), (7 * GB, 14 * GB));
     }
 
     #[test]

@@ -79,9 +79,10 @@ export function createMocks() {
     const integrated = pc.endsWith('i')
     const gb = mb => Math.floor(mb / 1024) * 1024
     const gpu = integrated ? 1536 : 0
-    const recommended = Math.min(8192, Math.max(4096, gb(Math.max(0, totalMb - 7168 - gpu))))
+    const best = totalMb >= 23 * 1024 ? 10240 : 8192
+    const recommended = Math.min(best, Math.max(4096, gb(Math.max(0, totalMb - 7168 - gpu))))
     const safeMax = Math.max(recommended, gb(Math.max(0, totalMb - 5632 - gpu / 2)))
-    return { total_mb: totalMb, integrated_gpu: integrated, recommended_mb: recommended, min_mb: 6144, max_useful_mb: 10240, safe_max_mb: safeMax }
+    return { total_mb: totalMb, integrated_gpu: integrated, recommended_mb: recommended, min_mb: 6144, max_useful_mb: 12288, safe_max_mb: safeMax }
   })()
   const storage = { game: 1_100_000_000, java: 140_000_000, modpack: 1_950_000_000, worlds: 380_000_000, caches: 260_000_000 }
 

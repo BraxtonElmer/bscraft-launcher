@@ -233,6 +233,10 @@ def main():
                         help="Skip confirmation prompts")
     parser.add_argument("--performance",    action="append", default=[], metavar="PATH_PREFIX",
                         help="Mark files starting with this path for Performance Mode (repeatable)")
+    parser.add_argument("--memory",         default=ini.get("memory"), metavar="MIN,REC,REC_BIG,MAX",
+                        help="How much memory the pack needs, in GB: least, recommended, recommended on "
+                             "PCs with 24 GB+, most that helps (e.g. 6,8,10,12). Kept from the old "
+                             "manifest when not given; without it the launcher's built-in numbers apply")
 
     args = parser.parse_args()
 
@@ -329,6 +333,17 @@ def main():
             print("Aborted.")
             sys.exit(0)
 
+    # Memory the pack needs (the launcher's Auto memory reads it)
+    memory = existing.get("memory") if existing else None
+    if args.memory:
+        try:
+            gb = [float(x) for x in args.memory.split(",")]
+            assert len(gb) == 4 and gb[0] <= gb[1] <= gb[2] <= gb[3]
+        except (ValueError, AssertionError):
+            sys.exit("✗  --memory wants four GB values, smallest first: least,recommended,recommended_big,most (e.g. 6,8,10,12)")
+        memory = dict(zip(["min_mb", "recommended_mb", "recommended_large_mb", "max_useful_mb"], [int(g * 1024) for g in gb]))
+        print(f"Memory: {args.memory} GB (least, recommended, on 24 GB+ PCs, most that helps)")
+
     # Write manifest
     manifest = {
         "modpack_version": new_version,
@@ -338,6 +353,8 @@ def main():
         "files": new_files,
         "initial_files": initial_files,
     }
+    if memory:
+        manifest["memory"] = memory
     out_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     print(f"✓  Written: {out_path}  ({len(new_files)} files)")
 

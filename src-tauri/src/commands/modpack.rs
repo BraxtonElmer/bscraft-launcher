@@ -25,6 +25,9 @@ pub struct ModpackManifest {
     /// instead of overwriting players' settings on every update.
     #[serde(default)]
     pub initial_files: Vec<ManifestFile>,
+    /// How much memory the pack needs (see settings::PackMemory); absent means the built-in numbers
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub memory: Option<crate::commands::settings::PackMemory>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -107,6 +110,7 @@ pub async fn fetch_manifest() -> Result<ModpackManifest, String> {
     // list now, is tidied away from players who already have it)
     manifest.files.retain(|f| !is_os_clutter(&f.path));
     manifest.initial_files.retain(|f| !is_os_clutter(&f.path));
+    crate::commands::settings::set_pack_memory(manifest.memory);
 
     // Cache manifest on disk so apply_performance_mode works offline
     save_manifest_cache(&manifest);
@@ -144,6 +148,11 @@ fn load_manifest_cache() -> Option<ModpackManifest> {
     let path = get_manifest_cache_path().ok()?;
     let raw = std::fs::read_to_string(path).ok()?;
     serde_json::from_str(&raw).ok()
+}
+
+/// The pack's memory needs, from the last manifest fetched (None if it doesn't say)
+pub(crate) fn cached_pack_memory() -> Option<crate::commands::settings::PackMemory> {
+    load_manifest_cache().and_then(|m| m.memory)
 }
 
 /// The Java version the modpack runs on, from the last manifest fetched
@@ -683,7 +692,19 @@ fn collect_files(
 
 #[cfg(test)]
 mod tests {
-    use super::{is_os_clutter, safe_relative};
+    use super::{is_os_clutter, safe_relative, ModpackManifest};
+
+    #[test]
+    fn reads_the_packs_memory_needs_when_given() {
+        let base = r#""modpack_version":"4.0.3","minecraft_version":"1.20.1","forge_version":"47.4.10","java_version":17,"files":[]"#;
+        let old: ModpackManifest = serde_json::from_str(&format!("{{{base}}}")).unwrap();
+        assert!(old.memory.is_none());
+        let new: ModpackManifest = serde_json::from_str(&format!(
+            r#"{{{base},"memory":{{"min_mb":6144,"recommended_mb":8192,"recommended_large_mb":10240,"max_useful_mb":12288}}}}"#
+        ))
+        .unwrap();
+        assert_eq!(new.memory, Some(crate::commands::settings::PackMemory::default()));
+    }
 
     #[test]
     fn folder_clutter_is_left_out() {

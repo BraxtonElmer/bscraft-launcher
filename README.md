@@ -193,10 +193,13 @@ never during an update.
 
 Settings › Memory is on Auto unless the player picks an amount. Auto gives the
 game the most that helps and that the PC can spare (`settings::plan_for`):
-at most 8 GB, keeping 7 GB for Windows, the apps people keep open and the game's
+at most 8 GB (10 GB on PCs with 24 GB or more, for Distant Horizons and busy
+servers), keeping 7 GB for Windows, the apps people keep open and the game's
 own memory outside the heap, plus 1.5 GB more on integrated graphics. That's
-7 GB on a 16 GB laptop with Intel graphics, 8 GB on 16 GB with a graphics card
-or anything bigger, and 4 GB (with advice to use Performance mode) on 8–12 GB.
+7 GB on a 16 GB laptop with Intel graphics, 8 GB on 16 GB with a graphics card,
+10 GB on 32 GB, and 4 GB (with advice to use Performance mode) on 8–12 GB.
+Other big packs say much the same: at least 6 GB, 8 on a 16 GB PC, 8–12 on
+bigger ones, and never more than 10–12.
 
 It comes from measuring pack 4.0.3 with Java's GC log (singleplayer, sprinting
 through new terrain): the heap holds about 4 GB once in a world, peaking near

@@ -28,3 +28,7 @@ forge_version = 47.3.0
 
 # Minimum Java version required (17 for MC 1.17+)
 java_version = 17
+
+# Memory the pack needs, in GB: least, recommended, recommended on PCs with 24 GB+,
+# most that helps. The launcher's Auto memory uses it; leave it out for the built-in 6,8,10,12
+# memory = 6,8,10,12
