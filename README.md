@@ -226,7 +226,7 @@ configs that mods write and resource or shader packs players add stay.
 ## Releasing a launcher update
 
 1. Set the same version in `package.json`, `src-tauri/Cargo.toml` and
-   `src-tauri/tauri.conf.json` (currently **1.1.0**).
+   `src-tauri/tauri.conf.json`.
 2. Build and sign with the updater key (`bscraft-private.key`, never committed):
    ```powershell
    $env:TAURI_SIGNING_PRIVATE_KEY = Get-Content bscraft-private.key -Raw
