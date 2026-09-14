@@ -9,6 +9,7 @@ import {
 } from '../../components/Icons'
 import { copyText } from '../../lib/clipboard'
 import { sanitizeUsername, usernameProblem } from '../../lib/format'
+import { device } from '../../lib/platform'
 import type { AccountApi } from '../../hooks/useAccount'
 import type { Skin } from '../../lib/skin'
 import type { ServerAccount } from '../../types'
@@ -153,7 +154,7 @@ function NameEditor({ current, account, onCancel, onSave }: {
         <p className="name-note">
           {caseOnly
             ? 'Only the capitals change. Save your skin again afterwards so the new spelling picks it up.'
-            : <>Your password stays the same on this PC. Skins, capes and in-game progress belong to each name, so <b>{current}</b>'s stay with {current}.</>}
+            : <>Your password stays the same on this {device}. Skins, capes and in-game progress belong to each name, so <b>{current}</b>'s stay with {current}.</>}
         </p>
       )}
       {account.passwordSet === false && !current && (
@@ -213,7 +214,7 @@ function PasswordSection({ username, account }: { username: string; account: Acc
         <>
           <p className="account-copy">
             {editing
-              ? 'Enter the password to use on this PC. It has to match the one the server has for your name.'
+              ? `Enter the password to use on this ${device}. It has to match the one the server has for your name.`
               : 'Your name is claimed with this password the first time you join the server, so nobody else can use it.'}
           </p>
           <PasswordForm

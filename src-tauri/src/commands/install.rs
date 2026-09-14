@@ -4,6 +4,7 @@
 
 use crate::commands::settings::{get_data_dir, load_config_internal, save_config_internal};
 use crate::constants::*;
+use crate::platform;
 use futures_util::StreamExt;
 use serde::Serialize;
 use std::io::{BufWriter, Write};
@@ -68,10 +69,26 @@ pub fn hidden_command(program: &Path) -> tokio::process::Command {
 // holding the extracted Adoptium JRE (e.g. jdk-21.0.4+7-jre/). Launchers before 1.1.2
 // extracted Java 17 straight into runtime/, and that copy still counts as Java 17.
 
-/// Major version of the Java runtime at `home`, read from its `release` file
+/// Major version of the Java runtime at `home`, read from its `release` file. On macOS a
+/// runtime for the other kind of CPU doesn't count (e.g. an Intel Mac's, brought over to
+/// Apple silicon by Migration Assistant), so the right one gets installed.
 fn java_major(home: &Path) -> Option<u8> {
     let release = std::fs::read_to_string(home.join("release")).ok()?;
+    if cfg!(target_os = "macos") && !runs_on_this_cpu(&release) {
+        return None;
+    }
     parse_java_major(&release)
+}
+
+/// Whether a `release` file's OS_ARCH matches this build (a file without one is trusted)
+fn runs_on_this_cpu(release: &str) -> bool {
+    let Some(line) = release.lines().find(|l| l.starts_with("OS_ARCH=")) else { return true };
+    let arch = line["OS_ARCH=".len()..].trim().trim_matches('"');
+    match arch {
+        "aarch64" | "arm64" => cfg!(target_arch = "aarch64"),
+        "x86_64" | "amd64" | "x64" => cfg!(target_arch = "x86_64"),
+        _ => true,
+    }
 }
 
 fn parse_java_major(release: &str) -> Option<u8> {
@@ -105,6 +122,8 @@ fn installed_javas() -> Vec<(u8, PathBuf)> {
     }
     homes
         .into_iter()
+        // macOS runtimes are bundles: the Java home is jdk-…-jre/Contents/Home
+        .flat_map(|home| [home.join("Contents").join("Home"), home])
         .filter(|home| java_binary(home).exists())
         .filter_map(|home| java_major(&home).map(|major| (major, java_binary(&home))))
         .collect()
@@ -113,6 +132,13 @@ fn installed_javas() -> Vec<(u8, PathBuf)> {
 /// The launcher's Java runtime of this major version, if installed
 pub fn find_java(major: u8) -> Option<PathBuf> {
     installed_javas().into_iter().find(|(m, _)| *m == major).map(|(_, p)| p)
+}
+
+/// The top-level folder in runtime/ that holds this java executable
+fn runtime_folder_of(runtime_dir: &Path, exe: &Path) -> Option<PathBuf> {
+    let first = exe.strip_prefix(runtime_dir).ok()?.components().next()?;
+    let folder = runtime_dir.join(first);
+    (folder != exe).then_some(folder)
 }
 
 /// The Java the modpack runs on: the version its manifest asks for (the newest
@@ -206,12 +232,8 @@ pub async fn install_jre(app: tauri::AppHandle, java_version: u8) -> Result<(), 
 
     if find_java(java_version).is_none() {
         let client = build_client()?;
-        // Adoptium's binary endpoint redirects to the latest release's archive:
-        // /v3/binary/latest/{version}/{release_type}/{os}/{arch}/{image_type}/{jvm}/{heap}/{vendor}
-        let download_url = format!(
-            "https://api.adoptium.net/v3/binary/latest/{}/ga/windows/x64/jre/hotspot/normal/eclipse",
-            java_version
-        );
+        // Adoptium's binary endpoint redirects to the latest release's archive for this OS and CPU
+        let download_url = platform::adoptium_jre_url(java_version);
         let label = format!("Downloading Java {}", java_version);
         emit_install(&app, "jre", &format!("{}…", label), 5.0, 0, 1);
 
@@ -221,11 +243,20 @@ pub async fn install_jre(app: tauri::AppHandle, java_version: u8) -> Result<(), 
             std::fs::remove_dir_all(&home).map_err(|e| format!("Couldn't clear {:?}: {}", home, e))?;
         }
         std::fs::create_dir_all(&home).map_err(|e| e.to_string())?;
-        let archive = runtime_dir.join(format!("java-{}.zip", java_version));
+        let ext = if platform::JAVA_ARCHIVE_IS_ZIP { "zip" } else { "tar.gz" };
+        let archive = runtime_dir.join(format!("java-{}.{}", java_version, ext));
         download_file(&app, &client, &download_url, &archive, "jre", &label, 0).await?;
 
         emit_install(&app, "jre", "Extracting Java runtime…", 90.0, 0, 1);
-        let extracted = extract_zip(&archive, &home);
+        let extracted = if platform::JAVA_ARCHIVE_IS_ZIP {
+            extract_zip(&archive, &home)
+        } else {
+            let (archive, home) = (archive.clone(), home.clone());
+            tokio::task::spawn_blocking(move || extract_tar_gz(&archive, &home))
+                .await
+                .map_err(|e| e.to_string())
+                .and_then(|r| r)
+        };
         std::fs::remove_file(&archive).ok();
         extracted?;
         if find_java(java_version).is_none() {
@@ -238,13 +269,9 @@ pub async fn install_jre(app: tauri::AppHandle, java_version: u8) -> Result<(), 
         if major == java_version {
             continue;
         }
-        // exe is <home>/bin/java.exe; remove <home>, or its java-<major> folder when it has one
-        let Some(home) = exe.parent().and_then(|bin| bin.parent()) else { continue };
-        let target = match home.parent() {
-            Some(parent) if parent != runtime_dir && parent.starts_with(&runtime_dir) => parent.to_path_buf(),
-            _ => home.to_path_buf(),
-        };
-        if target.starts_with(&runtime_dir) && target != runtime_dir {
+        // Remove the folder in runtime/ it came in: java-<major>/, or the runtime itself when
+        // an old launcher extracted it straight into runtime/
+        if let Some(target) = runtime_folder_of(&runtime_dir, &exe) {
             std::fs::remove_dir_all(&target).ok();
         }
     }
@@ -588,6 +615,9 @@ pub async fn download_file(
 
 /// Downloads a file silently (no events) — used during modpack sync where
 /// `sync-progress` events already provide overall progress feedback.
+///
+/// Writes to `<file>.part` and only then replaces `dest`, so a failed download (a 404, a
+/// dropped connection) never leaves a broken file behind or wipes the copy that was there.
 pub async fn download_file_quiet(
     client: &reqwest::Client,
     url: &str,
@@ -607,8 +637,23 @@ pub async fn download_file_quiet(
         return Err(format!("HTTP {} for {}", response.status(), url));
     }
 
-    let file = std::fs::File::create(dest)
-        .map_err(|e| format!("Cannot create {:?}: {}", dest, e))?;
+    let mut part_name = dest.file_name().unwrap_or_default().to_os_string();
+    part_name.push(".part");
+    let part = dest.with_file_name(part_name);
+    let written = write_stream(response, &part).await;
+    if written.is_err() {
+        std::fs::remove_file(&part).ok();
+        return written;
+    }
+    std::fs::rename(&part, dest).map_err(|e| {
+        std::fs::remove_file(&part).ok();
+        format!("Cannot replace {:?}: {}", dest, e)
+    })
+}
+
+async fn write_stream(response: reqwest::Response, path: &Path) -> Result<(), String> {
+    let file = std::fs::File::create(path)
+        .map_err(|e| format!("Cannot create {:?}: {}", path, e))?;
     let mut writer = BufWriter::with_capacity(512 * 1024, file);
     let mut stream = response.bytes_stream();
 
@@ -616,13 +661,12 @@ pub async fn download_file_quiet(
         let chunk = chunk.map_err(|e| format!("Stream error: {}", e))?;
         writer
             .write_all(&chunk)
-            .map_err(|e| format!("Write error for {:?}: {}", dest, e))?;
+            .map_err(|e| format!("Write error for {:?}: {}", path, e))?;
     }
 
     writer
         .flush()
-        .map_err(|e| format!("Flush error for {:?}: {}", dest, e))?;
-    Ok(())
+        .map_err(|e| format!("Flush error for {:?}: {}", path, e))
 }
 
 /// Downloads Minecraft library JARs (respecting OS rules) and extracts native classifiers.
@@ -673,11 +717,11 @@ async fn download_libraries(
             }
         }
 
-        // Native classifier (e.g. natives-windows)
-        let native_key = lib["natives"]["windows"]
+        // Native classifier of older version JSONs (e.g. natives-windows, natives-osx)
+        let native_key = lib["natives"][platform::MOJANG_OS]
             .as_str()
-            .unwrap_or("natives-windows")
-            .replace("${arch}", "64");
+            .map(|k| k.replace("${arch}", "64"))
+            .unwrap_or_default();
         if let Some(classifiers) = lib["downloads"]["classifiers"].as_object() {
             if let Some(native) = classifiers.get(&native_key) {
                 let url = native["url"].as_str().unwrap_or("");
@@ -770,7 +814,7 @@ async fn download_assets(
     let client_arc = Arc::new(client.clone());
     let app_arc = Arc::new(app.clone());
 
-    futures_util::stream::iter(missing)
+    let failures = futures_util::stream::iter(missing)
         .map(|hash| {
             let mc_dir = mc_dir_arc.clone();
             let client = client_arc.clone();
@@ -781,14 +825,7 @@ async fn download_assets(
                 let url = format!("{}/{}/{}", MINECRAFT_RESOURCES_URL, prefix, hash);
                 let dest = mc_dir.join("assets").join("objects").join(prefix).join(&hash);
 
-                if let Some(parent) = dest.parent() {
-                    std::fs::create_dir_all(parent).ok();
-                }
-                if let Ok(resp) = client.get(&url).send().await {
-                    if let Ok(bytes) = resp.bytes().await {
-                        std::fs::write(&dest, &bytes).ok();
-                    }
-                }
+                let result = download_file_quiet(&client, &url, &dest).await;
 
                 let d = done.fetch_add(1, Ordering::SeqCst) + 1;
                 app.emit(
@@ -802,43 +839,40 @@ async fn download_assets(
                     },
                 )
                 .ok();
+                result.err()
             }
         })
         .buffer_unordered(8)
+        .filter_map(|failure| async move { failure })
         .collect::<Vec<_>>()
         .await;
 
+    // The game crashes or plays without sounds and textures when assets are missing
+    if let Some(first) = failures.first() {
+        return Err(format!(
+            "Couldn't download {} of Minecraft's game assets, so it can't start yet ({}). Check your internet connection and press Play to try again.",
+            failures.len(),
+            first
+        ));
+    }
     Ok(())
 }
 
 // ── Archive helpers ────────────────────────────────────────────────────────
 
-/// Returns true if this library should be downloaded on Windows.
+/// Returns true if this library is meant for this OS and CPU (its Mojang rules).
 fn should_download_library(lib: &serde_json::Value) -> bool {
-    let rules = match lib["rules"].as_array() {
-        Some(r) => r,
-        None => return true, // No rules = always download
-    };
+    platform::rules_allow(&lib["rules"])
+}
 
-    // Default to deny if rules exist but are empty
-    let mut allowed = false;
-
-    for rule in rules {
-        let action = rule["action"].as_str().unwrap_or("allow");
-        let os = &rule["os"];
-
-        if os.is_null() {
-            // Applies to all OSes
-            allowed = action == "allow";
-        } else if let Some(os_name) = os["name"].as_str() {
-            if os_name == "windows" {
-                allowed = action == "allow";
-            }
-            // Rules for other OSes don't change our decision
-        }
-    }
-
-    allowed
+/// Extracts a .tar.gz (Adoptium's macOS and Linux runtimes) keeping file modes and symlinks,
+/// so `java` stays executable.
+pub fn extract_tar_gz(archive_path: &Path, dest_dir: &Path) -> Result<(), String> {
+    let file = std::fs::File::open(archive_path).map_err(|e| e.to_string())?;
+    let mut archive = tar::Archive::new(flate2::read::GzDecoder::new(std::io::BufReader::new(file)));
+    archive.set_preserve_permissions(true);
+    archive.set_preserve_mtime(true);
+    archive.unpack(dest_dir).map_err(|e| format!("Couldn't extract {:?}: {}", archive_path, e))
 }
 
 /// Extracts all entries from a ZIP archive to dest_dir.
@@ -896,7 +930,37 @@ fn extract_zip_filtered(zip_path: &Path, dest_dir: &Path, exclude: &[&str]) -> R
 
 #[cfg(test)]
 mod tests {
-    use super::parse_java_major;
+    use super::{parse_java_major, runs_on_this_cpu, runtime_folder_of};
+    use std::path::Path;
+
+    #[test]
+    fn only_counts_java_for_this_cpu() {
+        let arm = "JAVA_VERSION=\"21.0.12.1\"\nOS_ARCH=\"aarch64\"\nOS_NAME=\"Darwin\"\n";
+        let intel = "JAVA_VERSION=\"21.0.12.1\"\nOS_ARCH=\"x86_64\"\nOS_NAME=\"Darwin\"\n";
+        assert_eq!(runs_on_this_cpu(arm), cfg!(target_arch = "aarch64"));
+        assert_eq!(runs_on_this_cpu(intel), cfg!(target_arch = "x86_64"));
+        assert!(runs_on_this_cpu("JAVA_VERSION=\"17.0.12\"\n"));
+    }
+
+    #[test]
+    fn finds_the_runtime_folder_to_remove() {
+        let rt = Path::new("/data/minecraft/runtime");
+        // Launcher 1.1.2+ on Windows and macOS
+        assert_eq!(
+            runtime_folder_of(rt, Path::new("/data/minecraft/runtime/java-17/jdk-17.0.12+7-jre/bin/java.exe")).unwrap(),
+            rt.join("java-17")
+        );
+        assert_eq!(
+            runtime_folder_of(rt, Path::new("/data/minecraft/runtime/java-21/jdk-21.0.12.1+1-jre/Contents/Home/bin/java")).unwrap(),
+            rt.join("java-21")
+        );
+        // Extracted straight into runtime/ by launchers before 1.1.2
+        assert_eq!(
+            runtime_folder_of(rt, Path::new("/data/minecraft/runtime/jdk-17.0.12+7-jre/bin/java.exe")).unwrap(),
+            rt.join("jdk-17.0.12+7-jre")
+        );
+        assert!(runtime_folder_of(rt, Path::new("/elsewhere/bin/java")).is_none());
+    }
 
     #[test]
     fn reads_java_major_from_release_file() {

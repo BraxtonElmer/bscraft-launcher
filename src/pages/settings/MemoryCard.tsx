@@ -2,6 +2,7 @@ import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { AlertIcon, CheckIcon, InfoIcon, MemoryIcon } from '../../components/Icons'
 import { formatRam } from '../../lib/format'
+import { device, osName } from '../../lib/platform'
 import type { AppConfig, MemoryPlan } from '../../types'
 
 const GB = 1024
@@ -17,9 +18,9 @@ interface Props {
 type Tone = 'ok' | 'info' | 'warn' | 'danger'
 
 /**
- * How much memory the game gets. Automatic picks the most that helps on this PC (see
+ * How much memory the game gets. Automatic picks the most that helps on this computer (see
  * settings::memory_plan in Rust, from measuring the pack); a manual amount gets told
- * plainly when it's too little, more than the pack can use, or more than Windows can spare.
+ * plainly when it's too little, more than the pack can use, or more than the OS can spare.
  */
 export function MemoryCard({ config, persist, head }: Props) {
   const [plan, setPlan] = useState<MemoryPlan | null>(null)
@@ -69,7 +70,7 @@ export function MemoryCard({ config, persist, head }: Props) {
       />
 
       <div className="ram-presets">
-        <button className={`preset auto${auto ? ' active' : ''}`} onClick={useAuto} title="The most that helps on this PC, worked out from how much BSCraft really uses">
+        <button className={`preset auto${auto ? ' active' : ''}`} onClick={useAuto} title={`The most that helps on this ${device}, worked out from how much BSCraft really uses`}>
           <MemoryIcon size={12} /> Auto{plan ? ` · ${formatRam(plan.recommended_mb)}` : ''}
         </button>
         {presets.map(mb => (
@@ -95,8 +96,8 @@ export function adviseMemory(ram: number, plan: MemoryPlan, auto: boolean): { to
   if (ram > plan.safe_max_mb) {
     return {
       tone: 'danger',
-      text: `That leaves Windows too little: it'll swap to disk and the game will stutter, or crash. ${
-        plan.safe_max_mb > plan.recommended_mb ? `Up to ${formatRam(plan.safe_max_mb)} is safe on this PC; ${best} is best.` : `${best} is the most that's safe here.`}`,
+      text: `That leaves ${osName} too little: it'll swap to disk and the game will stutter, or crash. ${
+        plan.safe_max_mb > plan.recommended_mb ? `Up to ${formatRam(plan.safe_max_mb)} is safe on this ${device}; ${best} is best.` : `${best} is the most that's safe here.`}`,
     }
   }
   if (ram > plan.max_useful_mb) {
@@ -109,23 +110,23 @@ export function adviseMemory(ram: number, plan: MemoryPlan, auto: boolean): { to
     return {
       tone: 'warn',
       text: tight
-        ? `Too little for this modpack, but this PC can't spare much more. ${best} is the most that's safe.`
+        ? `Too little for this modpack, but this ${device} can't spare much more. ${best} is the most that's safe.`
         : `Too little for this modpack: expect stutters and out-of-memory crashes. ${best} is best here.`,
     }
   }
   if (tight) {
     return {
       tone: 'info',
-      text: `This PC is short on memory for BSCraft, so it gets ${best}. Performance mode helps a lot, and close other apps while you play.`,
+      text: `This ${device} is short on memory for BSCraft, so it gets ${best}. Performance mode helps a lot, and close other apps while you play.`,
     }
   }
   if (auto) {
     return {
       tone: 'ok',
-      text: `Best for this PC. BSCraft holds about 4 GB once you're in a world; the rest is room for busy areas. More wouldn't make it faster.`,
+      text: `Best for this ${device}. BSCraft holds about 4 GB once you're in a world; the rest is room for busy areas. More wouldn't make it faster.`,
     }
   }
   return ram === plan.recommended_mb
-    ? { tone: 'ok', text: 'Best for this PC.' }
-    : { tone: 'ok', text: `Works well. ${best} is best for this PC; Auto keeps it right if you change hardware.` }
+    ? { tone: 'ok', text: `Best for this ${device}.` }
+    : { tone: 'ok', text: `Works well. ${best} is best for this ${device}; Auto keeps it right if you change hardware.` }
 }

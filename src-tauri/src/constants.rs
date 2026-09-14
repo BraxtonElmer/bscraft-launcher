@@ -20,9 +20,9 @@ pub const OLD_GAME_SERVER_ADDRESSES: &[&str] = &["bscraft.zukashix.com"];
 
 // ── External service URLs ──────────────────────────────────────────────────
 
-/// Adoptium (Eclipse Temurin) API — returns JRE download metadata.
-/// Targets Java 17 JRE for Windows x64 (required for Minecraft 1.17+).
-/// Adoptium direct binary download — kept for reference; active code uses the /binary/latest endpoint.
+/// Adoptium (Eclipse Temurin) API — returns JRE download metadata (Java 17, Windows x64).
+/// Kept for reference; the launcher downloads through platform::adoptium_jre_url, which picks
+/// the Java version from the manifest and the OS and CPU from the build.
 #[allow(dead_code)]
 pub const ADOPTIUM_API_URL: &str =
     "https://api.adoptium.net/v3/assets/latest/17/jre?os=windows&architecture=x64&image_type=jre";

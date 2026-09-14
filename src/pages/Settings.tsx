@@ -7,6 +7,7 @@ import {
 } from '../components/Icons'
 import { MemoryCard } from './settings/MemoryCard'
 import { StorageCard } from './settings/StorageCard'
+import { device, isMac } from '../lib/platform'
 import type { Scenery } from '../components/PixelScene'
 import type { LauncherApi } from '../hooks/useLauncher'
 import type { ActiveOperation, AppConfig, GpuInfo, OperationKind, TaskResult } from '../types'
@@ -52,17 +53,21 @@ export function SettingsPage({ launcher, config, persist, operation, launcherVer
           {/* ── Graphics ───────────────────────────── */}
           <section className="card">
             <CardHead icon={<ChipIcon size={18} />} tone="green" title="Graphics" desc="GPU used to run the game" />
-            <SettingRow
-              title="Prefer dedicated GPU"
-              desc="Ask Windows to run Minecraft on the high-performance graphics card."
-            >
-              <Toggle
-                id="toggle-dgpu"
-                label="Prefer dedicated GPU"
-                checked={config.prefer_dgpu}
-                onChange={v => persist({ prefer_dgpu: v })}
-              />
-            </SettingRow>
+            {isMac ? (
+              <p className="setting-desc gpu-note">macOS runs Minecraft on the fastest graphics on its own.</p>
+            ) : (
+              <SettingRow
+                title="Prefer dedicated GPU"
+                desc="Ask Windows to run Minecraft on the high-performance graphics card."
+              >
+                <Toggle
+                  id="toggle-dgpu"
+                  label="Prefer dedicated GPU"
+                  checked={config.prefer_dgpu}
+                  onChange={v => persist({ prefer_dgpu: v })}
+                />
+              </SettingRow>
+            )}
             <div className="gpu-list">
               {gpus === null ? (
                 <div className="gpu muted"><Spinner size={12} /> Detecting graphics cards…</div>
@@ -184,7 +189,7 @@ export function SettingsPage({ launcher, config, persist, operation, launcherVer
           {/* ── Storage ────────────────────────────── */}
           <StorageCard
             gameRunning={launcher.running}
-            head={<CardHead icon={<DatabaseIcon size={18} />} tone="green" title="Storage" desc="What BSCraft keeps on this PC" />}
+            head={<CardHead icon={<DatabaseIcon size={18} />} tone="green" title="Storage" desc={`What BSCraft keeps on this ${device}`} />}
           />
 
           {/* ── About ──────────────────────────────── */}
@@ -216,6 +221,7 @@ function vendorOf(g: GpuInfo): { key: string; label: string } {
   if (/nvidia|geforce|rtx|gtx/i.test(s)) return { key: 'nvidia', label: 'NVIDIA' }
   if (/amd|advanced micro|radeon|\bati\b/i.test(s)) return { key: 'amd', label: 'AMD' }
   if (/intel/i.test(s)) return { key: 'intel', label: 'Intel' }
+  if (/apple/i.test(s)) return { key: 'apple', label: 'Apple' }
   return { key: 'other', label: g.vendor || 'GPU' }
 }
 

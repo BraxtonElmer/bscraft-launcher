@@ -45,14 +45,31 @@ pub async fn check_launcher_update(app: tauri::AppHandle) -> Result<UpdateCheckR
             latest_version: update.version.clone(),
             notes: update.body.clone(),
         }),
-        Ok(None) => Ok(UpdateCheckResult {
-            has_update: false,
-            current_version: current.clone(),
-            latest_version: current,
-            notes: None,
-        }),
+        Ok(None) => Ok(no_update(current)),
+        // version.json has no build for this platform (e.g. a Windows-only release): nothing to
+        // install here. The plugin checks this before comparing versions, so without it every
+        // check on a Mac would fail whenever the release doesn't include macOS.
+        Err(tauri_plugin_updater::Error::TargetNotFound(_) | tauri_plugin_updater::Error::TargetsNotFound(_)) => {
+            Ok(no_update(current))
+        }
         Err(e) => Err(format!("Update check failed: {}", e)),
     }
+}
+
+fn no_update(current: String) -> UpdateCheckResult {
+    UpdateCheckResult { has_update: false, current_version: current.clone(), latest_version: current, notes: None }
+}
+
+/// macOS replaces the whole app, which it can't do while the app runs straight from the disk
+/// image or from the read-only copy macOS makes of an app that was never moved (App Translocation)
+#[cfg(target_os = "macos")]
+fn check_app_can_update() -> Result<(), String> {
+    let exe = std::env::current_exe().map_err(|e| e.to_string())?;
+    let path = exe.to_string_lossy();
+    if path.starts_with("/Volumes/") || path.contains("/AppTranslocation/") {
+        return Err("Move BSCraft Launcher to your Applications folder, open it from there, then update.".into());
+    }
+    Ok(())
 }
 
 /// Downloads the new launcher version (emitting progress events), checks its
@@ -66,6 +83,9 @@ pub async fn check_launcher_update(app: tauri::AppHandle) -> Result<UpdateCheckR
 /// launcher stays open, instead of closing with nothing taking its place.
 #[tauri::command]
 pub async fn apply_launcher_update(app: tauri::AppHandle) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    check_app_can_update()?;
+
     let updater = app
         .updater_builder()
         .build()
@@ -116,6 +136,8 @@ pub async fn apply_launcher_update(app: tauri::AppHandle) -> Result<(), String> 
     }
     #[cfg(not(windows))]
     {
+        // macOS: the signed .app.tar.gz replaces the app in place (asking for an administrator
+        // password if its folder needs one), then the new version starts
         update
             .install(bytes)
             .map_err(|e| format!("Update installation failed: {}", e))?;
