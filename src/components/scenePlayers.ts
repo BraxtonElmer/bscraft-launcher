@@ -27,11 +27,12 @@ import {
   type Ragdoll, type RagWorld,
 } from './playerRagdoll'
 import {
-  bedAt, catchFish, createPond, drawBeam, drawBubble, drawBucket, drawFire, drawGrave, drawAngel, drawJukebox,
+  bedAt, catchFish, createPond, drawBeam, drawBucket, drawFire, drawGrave, drawAngel, drawJukebox,
   drawPicnic, drawPondBack, drawPondFront, drawReeds, drawRows, flatSpot, groundAt, hillSpot, inPond, lit, lure,
   pondSpot, splash, stepPond, surfaceAt,
   type Fire, type Icon, type Jukebox, type Light, type Picnic, type Pond,
 } from './sceneProps'
+import { drawSpeech, nameTag, speechSize } from './sceneLabels'
 import type { LifeEnv, ScenePointer } from './sceneLife'
 
 export type { OnlinePlayer } from './playerRig'
@@ -50,6 +51,10 @@ type Gesture =
 type Mode = 'free' | 'held' | 'ragdoll' | 'down' | 'getup' | 'swim' | 'dead' | 'rising'
 type ItemKind = 'rod' | 'stick' | 'fish' | 'boot' | 'book' | 'flower' | 'apple' | 'cookie' | 'cake' | 'melon' | 'chicken'
 type DanceMove = 'bounce' | 'arms' | 'sway' | 'spin' | 'crouch' | 'jump'
+
+/** A body pose relative to the feet, with angles as if facing right */
+interface Pose { hx: number; hy: number; body: number; head: number; armN: number; armF: number; legN: number; legF: number }
+const POSE_KEYS = ['hx', 'hy', 'body', 'head', 'armN', 'armF', 'legN', 'legF'] as const
 
 interface Item { kind: ItemKind; color?: string; toast?: number; burning?: number }
 interface Spot { x: number; dir: 1 | -1; stance: Stance; fisher?: boolean }
@@ -74,6 +79,7 @@ interface React { kind: 'look' | 'wave' | 'mourn' | 'cheer' | 'hot' | 'shake'; t
 
 interface Figure {
   key: string
+  name: string
   skin: OnlinePlayer['skin']
   rig: Rig
   /** Feet position */
@@ -88,6 +94,15 @@ interface Figure {
   from: View
   want: Want
   skel: Skel
+  /** The pose springs: current pose, its velocities, and the skeleton they last produced */
+  pose: Pose | null
+  poseV: Pose
+  poseOut: Skel | null
+  /** Ground height under the feet, smoothed over steps in the terrain */
+  feet: number
+  /** The stance being shown, and how long since it changed */
+  stance: Stance
+  stanceT: number
   phase: number
   mode: Mode
   modeT: number
@@ -106,6 +121,18 @@ interface Figure {
   blink: number
   jump: number
   jumpV: number
+  /** Crouching to jump: time left, and the take-off speed */
+  hopT: number
+  hopV: number
+  /** Smoothed acceleration, for leaning into starts and stops */
+  acc: number
+  lastVx: number
+  /** Idle head turns, and a nod when they say something */
+  glance: number
+  glanceT: number
+  nod: number
+  nodDir: number
+  /** >0 squashed (landing, crouching), <0 stretched (taking off) */
   squash: number
   hurt: number
   dizzy: number
@@ -123,7 +150,7 @@ interface Figure {
   /** Last drawn head top and bounds, for name tags, bubbles and clicks */
   head: XY
   box: { x0: number; y0: number; x1: number; y1: number }
-  tag: { x: number; y: number; lift: number; ready: boolean }
+  tag: { x: number; y: number; lift: number; slot: number; ready: boolean }
 }
 
 interface Particle {
@@ -269,16 +296,17 @@ function newFigure(party: Party, key: string, p: OnlinePlayer, x: number, dir: 1
   const feet = feetY(party, x)
   const skel: Skel = { x, y: feet - 12, body: 0, head: 0, armN: 0, armF: 0, legN: 0, legF: 0 }
   return {
-    key, skin: p.skin, rig: buildRig(p),
+    key, name: p.name ?? '', skin: p.skin, rig: buildRig(p),
     x, vx: 0, dest: null, fast: false, dir, front: false, flip: 0, from: { dir, front: false },
     want: { stance: 'stand', gesture: 'none', dir: 0, front: false },
-    skel, phase: 0, mode: 'free', modeT: 0, rag: null, spot: null,
+    skel, pose: null, poseV: zeroPose(), poseOut: null, feet, stance: 'stand', stanceT: 1, phase: 0, mode: 'free', modeT: 0, rag: null, spot: null,
     sub: '', subT: 0, subDur: 0, item: null, fishing: null, pair: null, react: null, bubble: null,
-    faceCam: false, faceT: rand(1, 4), blink: rand(1, 4), jump: 0, jumpV: 0, squash: 0,
+    faceCam: false, faceT: rand(1, 4), blink: rand(1, 4), jump: 0, jumpV: 0, hopT: 0, hopV: 0,
+    acc: 0, lastVx: 0, glance: 0, glanceT: rand(1, 4), nod: 1, nodDir: 1, squash: 0,
     hurt: 0, dizzy: 0, red: 0, halo: 0, wet: 0, lastHit: 0, immune: 0, danceMove: 'bounce', bucket: 0,
     leaving: false, hidden: false, rise: 0, t: rand(0, 10),
     head: { x, y: feet - 32 }, box: { x0: x - 5, y0: feet - 32, x1: x + 5, y1: feet },
-    tag: { x, y: feet - 40, lift: 0, ready: false },
+    tag: { x, y: feet - 40, lift: 0, slot: 0, ready: false },
   }
 }
 
@@ -433,6 +461,9 @@ function snapTo(party: Party, f: Figure, spot: Spot) {
 
 function say(f: Figure, icon: Icon, life = 1.7) {
   f.bubble = { icon, age: 0, life }
+  // A little nod as they say it; surprise perks the head up instead
+  f.nod = 0
+  f.nodDir = icon === 'excl' || icon === 'quest' || icon === 'star' ? -1 : 1
 }
 
 function emit(party: Party, kind: Particle['kind'], x: number, y: number, n = 1, color = '') {
@@ -473,8 +504,16 @@ function hold(f: Figure, stance: Stance, gesture: Gesture = 'none', dir: 1 | -1 
   f.want = { stance, gesture, dir, front }
 }
 
-function hop(f: Figure, v = 115) {
-  if (f.jump === 0 && f.jumpV === 0) f.jumpV = -v
+/** Jumps, after a quick crouch unless `windup` is 0 (e.g. to land on the beat) */
+function hop(f: Figure, v = 115, windup = 0.09) {
+  if (f.jump !== 0 || f.jumpV !== 0 || f.hopT > 0) return
+  if (windup > 0) {
+    f.hopT = windup
+    f.hopV = v
+  } else {
+    f.jumpV = -v
+    f.squash = -0.4
+  }
 }
 
 function setSub(f: Figure, sub: string, dur: number) {
@@ -559,8 +598,9 @@ function stepFigure(party: Party, f: Figure, dt: number) {
   f.red = Math.max(0, f.red - dt)
   f.halo = Math.max(0, f.halo - dt)
   f.immune = Math.max(0, f.immune - dt)
-  f.squash = Math.max(0, f.squash - dt * 5)
+  f.squash = f.squash > 0 ? Math.max(0, f.squash - dt * 5) : Math.min(0, f.squash + dt * 3.5)
   f.flip = Math.max(0, f.flip - dt)
+  f.nod += dt
   if (f.mode !== 'held') f.hurt = Math.max(0, f.hurt - dt * 0.1)
   if (f.bubble) {
     f.bubble.age += dt
@@ -573,6 +613,7 @@ function stepFigure(party: Party, f: Figure, dt: number) {
     if (Math.random() < dt * 3) party.particles.push({ x: f.x + rand(-3, 3), y: f.skel.y - rand(0, 14), vx: 0, vy: 10, life: 0.7, max: 0.7, kind: 'drop', color: '', g: 200 })
   }
 
+  if (f.mode !== 'free' && f.mode !== 'getup') f.hopT = 0
   switch (f.mode) {
     case 'held':
     case 'ragdoll':
@@ -603,8 +644,20 @@ function stepFigure(party: Party, f: Figure, dt: number) {
   }
   move(party, f, dt)
   settleView(f)
+  if (dt > 0) {
+    f.acc += ((f.vx - f.lastVx) / dt - f.acc) * (1 - Math.exp(-8 * dt))
+    f.lastVx = f.vx
+  }
 
-  // Jumps, with a little squash on landing
+  // Jumps: crouch, stretch on take-off, squash on landing
+  if (f.hopT > 0) {
+    f.hopT -= dt
+    f.squash = Math.max(f.squash, 0.45)
+    if (f.hopT <= 0) {
+      f.jumpV = -f.hopV
+      f.squash = -0.5
+    }
+  }
   if (f.jump < 0 || f.jumpV !== 0) {
     f.jumpV += GRAVITY * dt
     f.jump += f.jumpV * dt
@@ -622,9 +675,76 @@ function stepFigure(party: Party, f: Figure, dt: number) {
     f.faceT = rand(1.5, 5)
     f.faceCam = !f.faceCam && Math.random() < 0.55
   }
+  // ...or glance about
+  f.glanceT -= dt
+  if (f.glanceT <= 0) {
+    f.glanceT = rand(1.2, 4.5)
+    f.glance = Math.random() < 0.45 ? 0 : rand(-0.22, 0.14)
+  }
 
-  const k = f.mode === 'getup' ? 6 : Math.abs(f.vx) > 2 ? 22 : 13
-  f.skel = blendSkel(f.skel, targetSkel(party, f), 1 - Math.exp(-k * dt), 1 - Math.exp(-40 * dt))
+  stepPose(party, f, dt)
+}
+
+const zeroPose = (): Pose => ({ hx: 0, hy: 0, body: 0, head: 0, armN: 0, armF: 0, legN: 0, legF: 0 })
+const FAST_GESTURES: Gesture[] = ['wave', 'cheer', 'shake', 'flail', 'eat', 'dance']
+/** How quickly each part follows: the head a touch behind the body, the legs ahead so feet stay put */
+const JOINT_PACE: Record<keyof Pose, number> = { hx: 1.2, hy: 1.2, body: 1, head: 0.72, armN: 0.86, armF: 0.82, legN: 1.15, legF: 1.15 }
+
+/**
+ * Moves the body towards its wanted pose on springs, so it eases in, overshoots a hair
+ * and settles, with the head and arms trailing the body a little.
+ */
+function stepPose(party: Party, f: Figure, dt: number) {
+  const want = targetPose(party, f)
+  const ground = feetY(party, f.x)
+  if (!f.pose || f.poseOut !== f.skel) {
+    // Something else posed them (a ragdoll, a snap into place): carry on from there
+    f.feet = ground
+    f.pose = {
+      hx: (f.skel.x - f.x) * f.dir, hy: f.skel.y - ground - f.jump,
+      body: f.skel.body, head: f.skel.head, armN: f.skel.armN, armF: f.skel.armF, legN: f.skel.legN, legF: f.skel.legF,
+    }
+    f.poseV = zeroPose()
+  }
+  const cur = f.pose, vel = f.poseV
+  f.feet += (ground - f.feet) * (1 - Math.exp(-30 * dt))
+
+  const moving = Math.abs(f.vx) > 2
+  // Sitting down, lying back and getting up take a moment rather than snapping
+  const stance = moving ? 'stand' : f.want.stance
+  if (stance !== f.stance) {
+    f.stance = stance
+    f.stanceT = 0
+  }
+  f.stanceT += dt
+  const [pace, damp] =
+    f.mode === 'getup' ? [8, 1]
+    : f.stanceT < 0.45 ? [11, 0.85]
+    : FAST_GESTURES.includes(f.want.gesture) && !moving ? [30, 0.75]
+    : moving ? [24, 0.8]
+    : [15, 0.62]
+  const n = Math.min(12, Math.ceil(dt * 120))
+  const h = dt / Math.max(1, n)
+  for (let i = 0; i < n; i++) {
+    for (const k of POSE_KEYS) {
+      const w = pace * JOINT_PACE[k]
+      const err = k === 'hx' || k === 'hy' ? want[k] - cur[k] : wrapAngle(want[k] - cur[k])
+      vel[k] += (w * w * err - 2 * damp * w * vel[k]) * h
+      cur[k] += vel[k] * h
+    }
+  }
+  f.skel = f.poseOut = poseSkel(f, cur, f.feet)
+}
+
+const wrapAngle = (a: number) => a - Math.round(a / (Math.PI * 2)) * Math.PI * 2
+
+function poseSkel(f: Figure, P: Pose, feet: number): Skel {
+  // Rising from the grave, ghostly
+  const rise = f.mode === 'rising' ? f.rise * 34 : 0
+  return {
+    x: f.x + P.hx * f.dir, y: feet + P.hy + f.jump + rise,
+    body: P.body, head: P.head, armN: P.armN, armF: P.armF, legN: P.legN, legF: P.legF,
+  }
 }
 
 function move(party: Party, f: Figure, dt: number) {
@@ -1017,7 +1137,7 @@ function danceThink(party: Party, f: Figure, spot: Spot) {
       stance = (beats * 2) % 2 < 1 ? 'crouch' : 'stand'
       break
     case 'jump':
-      if (beat % 2 === 0 && beats % 1 < 0.1) hop(f, 100)
+      if (beat % 2 === 0 && beats % 1 < 0.1) hop(f, 100, 0)
       break
   }
   hold(f, stance, 'dance', dir, front)
@@ -1379,6 +1499,7 @@ function grab(party: Party, pr: Press, c: XY) {
   f.mode = 'held'
   f.modeT = 0
   f.jump = f.jumpV = 0
+  f.hopT = 0
   f.vx = 0
   f.dest = null
   f.fishing = null
@@ -1446,7 +1567,8 @@ function stepRagdollFigure(party: Party, f: Figure, dt: number) {
       return
     }
   }
-  if (f.mode === 'ragdoll' && r.still > 0.45) {
+  // Settled, or wedged against a step in the ground where it never quite stops twitching
+  if (f.mode === 'ragdoll' && (r.still > 0.45 || f.modeT > 4)) {
     f.mode = 'down'
     f.modeT = 0
   }
@@ -1681,12 +1803,16 @@ function stepButterflies(party: Party, dt: number) {
 
 /** Where every part of the body wants to be this frame, from stance, gesture and movement */
 function targetSkel(party: Party, f: Figure): Skel {
+  return poseSkel(f, targetPose(party, f), feetY(party, f.x))
+}
+
+function targetPose(party: Party, f: Figure): Pose {
   const w = f.want
   const t = f.t
   const speed = Math.abs(f.vx)
   const moving = speed > 2
   const stance: Stance = moving ? 'stand' : w.stance
-  const P = { hx: 0, hy: -12, body: 0, head: 0, armN: 0, armF: 0, legN: 0, legF: 0 }
+  const P: Pose = { hx: 0, hy: -12, body: 0, head: 0, armN: 0, armF: 0, legN: 0, legF: 0 }
   switch (stance) {
     case 'sit':
       Object.assign(P, { hy: -2, body: -0.04, armN: 0.55, armF: 0.45, legN: Math.PI / 2 - 0.04, legF: Math.PI / 2 - 0.1 })
@@ -1711,6 +1837,15 @@ function targetSkel(party: Party, f: Figure): Skel {
       P.armF = s * amp * 0.9 - breathe
       P.legN = s * amp
       P.legF = -s * amp
+      if (moving) {
+        // A bob of the head with each step, and leaning into starts and stops
+        P.head += Math.sin(f.phase * 2) * 0.035
+        P.body += clamp(f.acc * f.dir * 0.0025, -0.14, 0.14)
+      } else {
+        // Shifting their weight about
+        P.body += Math.sin(t * 0.8 + f.x * 0.3) * 0.025
+        P.armN += Math.sin(t * 0.8 + f.x * 0.3) * 0.03
+      }
       if (f.dizzy > 0.5 && !moving) {
         P.body = Math.sin(t * 3) * 0.08 * Math.min(1, f.dizzy / 2)
         P.head = Math.sin(t * 3 + 1) * 0.15 * Math.min(1, f.dizzy / 2)
@@ -1741,16 +1876,28 @@ function targetSkel(party: Party, f: Figure): Skel {
     case 'dance': dance(party, f, P, stance); break
   }
 
-  // Rising from the grave, ghostly
-  const rise = f.mode === 'rising' ? f.rise * 34 : 0
-  const feet = feetY(party, f.x)
-  return {
-    x: f.x + P.hx * f.dir, y: feet + P.hy + f.jump + rise,
-    body: P.body, head: P.head, armN: P.armN, armF: P.armF, legN: P.legN, legF: P.legF,
+  if (g === 'none' && !moving && (stance === 'stand' || stance === 'sit')) P.head += f.glance
+  // Getting ready to jump: arms back, leaning in; then arms up and legs tucked in the air
+  if (g === 'none' || g === 'wave' || g === 'cheer') {
+    if (f.hopT > 0) {
+      P.armN = P.armF = -0.55
+      P.body += 0.14
+      P.head -= 0.08
+    } else if (f.jump < -1) {
+      const up = f.jumpV < 0
+      if (g === 'none') {
+        P.armN = up ? 2.3 : 1.5
+        P.armF = up ? 2.0 : 1.2
+      }
+      P.legN = up ? 0.4 : 0.15
+      P.legF = up ? -0.35 : -0.1
+    }
   }
+  if (f.nod < 0.45) P.head += Math.sin((f.nod / 0.45) * Math.PI) * 0.2 * f.nodDir
+  return P
 }
 
-function dance(party: Party, f: Figure, P: { hx: number; hy: number; body: number; head: number; armN: number; armF: number; legN: number; legF: number }, stance: Stance) {
+function dance(party: Party, f: Figure, P: Pose, stance: Stance) {
   const beats = party.beat * BPM / 60
   const frac = beats % 1
   const kick = Math.pow(1 - frac, 3)
@@ -1841,7 +1988,6 @@ export function drawParty(ctx: CanvasRenderingContext2D, party: Party, now: numb
   }
 
   drawParticles(ctx, party, offX, offY, light)
-  drawTags(ctx, party, offX, offY)
 }
 
 function drawFigure(ctx: CanvasRenderingContext2D, party: Party, f: Figure, offX: number, offY: number, light: PartyLight) {
@@ -2100,9 +2246,21 @@ function drawParticles(ctx: CanvasRenderingContext2D, party: Party, offX: number
   ctx.globalAlpha = 1
 }
 
-function drawTags(ctx: CanvasRenderingContext2D, party: Party, offX: number, offY: number) {
-  // Name tags over everything, stacked when they'd overlap; bubbles beside the head
+/**
+ * Name tags and speech bubbles, on their own full-resolution canvas: `scale` is its device
+ * pixels per players-layer pixel, `unit` the device pixels per label art pixel.
+ */
+export function drawPartyLabels(ctx: CanvasRenderingContext2D, party: Party, px: number, py: number, scale: number, unit: number, dt: number) {
+  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
+  ctx.imageSmoothingEnabled = false
+  const offX = (Math.round(px * 10) - party.env.PAD) * 2
+  const offY = Math.round((py + 1) * 2) * 2
+  const follow = 1 - Math.exp(-22 * dt), settle = 1 - Math.exp(-16 * dt)
+  const gap = Math.round(2.5 * scale), pad = unit
+  // Tags (with any bubble just above) stack when they'd overlap, placed left to right so
+  // the stacking stays steady; bubbles are drawn last so no tag covers one
   const placed: { x: number; y: number; w: number; h: number }[] = []
+  const speech: { icon: Icon; x: number; y: number; age: number; life: number }[] = []
   const order = [...party.figures].sort((a, b) => a.tag.x - b.tag.x)
   for (const f of order) {
     const grave = f.hidden ? party.graves.find(g => g.f === f) : null
@@ -2110,28 +2268,45 @@ function drawTags(ctx: CanvasRenderingContext2D, party: Party, offX: number, off
     // Tags ease after the head so a tumbling player doesn't shake theirs about
     const hx = grave ? grave.x : f.mode === 'free' || f.mode === 'rising' ? f.skel.x : f.head.x
     const hy = grave ? feetY(party, grave.x) - 11 * grave.rise : Math.min(f.head.y, f.skel.y - 18)
-    if (!f.tag.ready) { f.tag.x = hx; f.tag.y = hy; f.tag.ready = true }
-    f.tag.x += (hx - f.tag.x) * 0.35
-    f.tag.y += (hy - f.tag.y) * 0.35
-    const tag = f.rig.tag
-    if (!tag) continue
-    const x = Math.round(f.tag.x + offX - tag.width / 2)
-    const base = Math.round(f.tag.y) + offY - tag.height - 3
-    const hits = (y: number) => placed.some(r => x < r.x + r.w + 2 && x + tag.width > r.x - 2 && y < r.y + r.h + 1 && y + tag.height > r.y - 1)
+    if (!f.tag.ready || dt === 0) { f.tag.x = hx; f.tag.y = hy; f.tag.ready = true }
+    f.tag.x += (hx - f.tag.x) * follow
+    f.tag.y += (hy - f.tag.y) * follow
+    const tag = f.name ? nameTag(f.name, unit) : null
+    const cx = (f.tag.x + offX) * scale
+    const bottom = (f.tag.y + offY) * scale - gap
+    const b = f.bubble && !f.hidden ? f.bubble : null
+    const x = Math.round(cx)
+    const base = Math.round(bottom) - (tag ? tag.height : 0)
+    const rects: { x: number; y: number; w: number; h: number }[] = []
+    if (tag) rects.push({ x: x - Math.floor(tag.width / 2), y: base, w: tag.width, h: tag.height })
+    if (b) {
+      const s = speechSize(b.icon, unit)
+      rects.push({ x: x - Math.floor(s.w / 2), y: base - unit - s.h, w: s.w, h: s.h })
+    }
+    if (!rects.length) continue
+    // Dropping to a lower slot needs a little extra room, so a head bobbing by a pixel
+    // doesn't flick the tag up and down
+    const hits = (lift: number) => {
+      const m = lift < f.tag.slot ? pad * 2 : 0
+      return rects.some(q => placed.some(r =>
+        q.x < r.x + r.w + pad * 2 + m && q.x + q.w > r.x - pad * 2 - m && q.y - lift < r.y + r.h + pad + m && q.y - lift + q.h > r.y - pad - m))
+    }
+    const step = (tag ? tag.height : 4 * unit) + pad
     let lift = 0
-    while (lift < 80 && hits(base - lift)) lift += tag.height + 1
-    placed.push({ x, y: base - lift, w: tag.width, h: tag.height })
-    f.tag.lift += (lift - f.tag.lift) * 0.3
-    ctx.globalAlpha = f.mode === 'rising' ? 1 - f.rise * 0.6 : 1
-    ctx.drawImage(tag, x, base - Math.round(f.tag.lift))
-    ctx.globalAlpha = 1
+    while (lift < 80 * scale && hits(lift)) lift += step
+    f.tag.slot = lift
+    for (const q of rects) placed.push({ ...q, y: q.y - lift })
+    f.tag.lift += (lift - f.tag.lift) * settle
+    const top = base - Math.round(f.tag.lift)
+    if (tag) {
+      ctx.globalAlpha = f.mode === 'rising' ? 1 - f.rise * 0.6 : 1
+      ctx.drawImage(tag, rects[0].x, top)
+      ctx.globalAlpha = 1
+    }
+    // Bubbles float just above the tag, pointing down at it
+    if (b) speech.push({ icon: b.icon, x, y: top - unit, age: b.age, life: b.life })
   }
-  for (const f of party.figures) {
-    if (!f.bubble || f.hidden) continue
-    const b = f.bubble
-    const fade = Math.min(1, (b.life - b.age) / 0.25)
-    drawBubble(ctx, b.icon, Math.round(f.head.x + f.dir * 7) + offX, Math.round(f.head.y + 2) + offY, Math.min(1, b.age / 0.18), fade)
-  }
+  for (const s of speech) drawSpeech(ctx, s.icon, s.x, s.y, unit, s.age, s.life)
 }
 
 /** A crisp one-pixel line (Bresenham), since stroked paths come out anti-aliased */

@@ -672,44 +672,6 @@ export function drawBeam(ctx: CanvasRenderingContext2D, x: number, bottom: numbe
   ctx.globalCompositeOperation = 'source-over'
 }
 
-// ── Speech bubbles ───────────────────────────────────────────
+// ── Speech bubbles (drawn by sceneLabels) ───────────────────
 
 export type Icon = 'heart' | 'note' | 'excl' | 'quest' | 'zzz' | 'dots' | 'star' | 'tear' | 'fish' | 'sun'
-
-const ICONS: Record<Icon, { rows: string[]; colors: Record<string, string> }> = {
-  heart: { rows: ['.##.##.', '#######', '#######', '.#####.', '..###..', '...#...'], colors: { '#': '#ff4d6d' } },
-  note: { rows: ['...###', '...#.#', '...#.#', '.###.#', '####..', '.##...'], colors: { '#': '#6a4cff' } },
-  excl: { rows: ['..##...', '..##...', '..##...', '..##...', '.......', '..##...'], colors: { '#': '#ff5a3a' } },
-  quest: { rows: ['.####.', '##..##', '...##.', '..##..', '......', '..##..'], colors: { '#': '#3a8dff' } },
-  zzz: { rows: ['####...', '..#....', '.#.###.', '####.#.', '....#..', '....###'], colors: { '#': '#6b7aa8' } },
-  dots: { rows: ['.......', '.......', '.......', '#.#.#..', '.......', '.......'], colors: { '#': '#4b4f5c' } },
-  star: { rows: ['...#...', '..###..', '#######', '.#####.', '.##.##.', '#.....#'], colors: { '#': '#ffc93a' } },
-  tear: { rows: ['...#...', '..###..', '.#####.', '.#####.', '..###..', '.......'], colors: { '#': '#4aa3ff' } },
-  fish: { rows: ['.......', '#..###.', '######k', '#..###.', '.......', '.......'], colors: { '#': '#e8842a', k: '#1d1d24' } },
-  sun: { rows: ['#..#..#', '..###..', '#######', '..###..', '#..#..#', '.......'], colors: { '#': '#ffb020' } },
-}
-
-/** A speech bubble with an icon; `pop` (0..1) is how far it has popped in */
-export function drawBubble(ctx: CanvasRenderingContext2D, icon: Icon, x: number, y: number, pop: number, alpha: number) {
-  const s = pop < 1 ? Math.max(0.3, 1 + Math.sin(pop * Math.PI) * 0.25 - (1 - pop) * 0.4) : 1
-  const w = Math.round(11 * s), h = Math.round(9 * s)
-  if (w < 3) return
-  ctx.globalAlpha = alpha
-  const bx = x - Math.round(w / 2), by = y - h
-  ctx.fillStyle = '#2b2440'
-  ctx.fillRect(bx + 1, by, w - 2, h)
-  ctx.fillRect(bx, by + 1, w, h - 2)
-  ctx.fillStyle = '#ffffff'
-  ctx.fillRect(bx + 1, by + 1, w - 2, h - 2)
-  // Tail pointing down at the speaker
-  ctx.fillStyle = '#2b2440'
-  ctx.fillRect(bx + 2, by + h, 2, 1)
-  ctx.fillRect(bx + 2, by + h + 1, 1, 1)
-  ctx.fillStyle = '#ffffff'
-  ctx.fillRect(bx + 3, by + h - 1, 1, 1)
-  if (s >= 0.95) {
-    const ic = ICONS[icon]
-    drawRows(ctx, ic.rows, ic.colors, bx + 2, by + 2)
-  }
-  ctx.globalAlpha = 1
-}

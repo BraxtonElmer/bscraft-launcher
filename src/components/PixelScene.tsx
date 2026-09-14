@@ -16,9 +16,10 @@ import {
   type Life, type LifeConfig, type ScenePointer,
 } from './sceneLife'
 import {
-  createParty, draggingParty, drawParty, figureAt, partyEvent, pressParty, releaseParty, retargetParty, stepParty, syncParty,
+  createParty, draggingParty, drawParty, drawPartyLabels, figureAt, partyEvent, pressParty, releaseParty, retargetParty, stepParty, syncParty,
   type OnlinePlayer, type Party, type PartyLight,
 } from './scenePlayers'
+import { labelUnit } from './sceneLabels'
 import { pondSpot } from './sceneProps'
 
 export type Scenery = 'auto' | 'dawn' | 'day' | 'dusk' | 'night'
@@ -583,6 +584,8 @@ export function PixelScene({ time, paused, title = false, players = NO_PLAYERS, 
   const canvasRef = useRef<HTMLCanvasElement>(null)
   // Players are drawn at twice the scene's resolution, so a skin pixel is one pixel here
   const playersRef = useRef<HTMLCanvasElement>(null)
+  // Name tags and bubbles are drawn at the display's full resolution, so they can be small and crisp
+  const labelsRef = useRef<HTMLCanvasElement>(null)
   const sceneRef = useRef<{ time: SceneTime; scene: Scene } | null>(null)
   const partyRef = useRef<Party | null>(null)
   const onlineRef = useRef(players)
@@ -639,6 +642,15 @@ export function PixelScene({ time, paused, title = false, players = NO_PLAYERS, 
       overlay.height = H * 2
     }
     const octx = overlay.getContext('2d')!
+    const labels = labelsRef.current!
+    const dpr = window.devicePixelRatio || 1
+    const LW = Math.round(canvas.clientWidth * dpr) || W * 2, LH = Math.round(canvas.clientHeight * dpr) || H * 2
+    if (labels.width !== LW || labels.height !== LH) {
+      labels.width = LW
+      labels.height = LH
+    }
+    const lctx = labels.getContext('2d')!
+    const unit = labelUnit(dpr)
     if (!partyRef.current) {
       partyRef.current = createParty(scene.life.env, scene.playerLight)
       syncParty(partyRef.current, onlineRef.current)
@@ -655,6 +667,7 @@ export function PixelScene({ time, paused, title = false, players = NO_PLAYERS, 
     const draw = (now: number, dt: number) => {
       drawFrame(ctx, scene, now, dt, p.x, p.y, title)
       drawParty(octx, party, now, p.x, p.y, scene.playerLight)
+      drawPartyLabels(lctx, party, p.x, p.y, LW / overlay.width, unit, dt)
     }
 
     if (paused || reduced) {
@@ -754,6 +767,7 @@ export function PixelScene({ time, paused, title = false, players = NO_PLAYERS, 
     <>
       <canvas ref={canvasRef} className={`pixel-scene ${className ?? ''}`} aria-hidden />
       <canvas ref={playersRef} className={`pixel-scene ${className ?? ''}`} aria-hidden />
+      <canvas ref={labelsRef} className={`pixel-scene ${className ?? ''}`} aria-hidden />
     </>
   )
 }

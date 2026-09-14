@@ -9,7 +9,6 @@
 // Units are overlay pixels: one skin pixel each.
 // ============================================================
 
-import { layoutPixelText } from './PixelText'
 
 export interface OnlinePlayer {
   /** Empty for players the server doesn't name (they hid themselves from listings) */
@@ -34,7 +33,6 @@ export interface Rig {
   /** Inner faces, shaded, seen past the body on the far side */
   armRIn: Part; armLIn: Part; legRIn: Part; legLIn: Part
   armW: number
-  tag: HTMLCanvasElement | null
 }
 
 /**
@@ -135,7 +133,6 @@ export function buildRig(p: OnlinePlayer): Rig {
           legLIn: face([16, 52], [0, 52], 4, 12, false, IN),
         }),
     armW: aw,
-    tag: p.name ? nameTag(p.name) : null,
   }
 }
 
@@ -151,18 +148,6 @@ function readPixels(g: CanvasRenderingContext2D, w: number, h: number): Part['pi
   } catch {
     return null // a skin served without CORS: fall back to the canvas's own (softer) rotation
   }
-}
-
-/** Minecraft-style name tag: white pixel text on a see-through dark plate */
-function nameTag(name: string): HTMLCanvasElement {
-  const { runs, width } = layoutPixelText(name)
-  const rows = Math.max(7, ...runs.map(r => r.y + 1))
-  const [c, g] = makeCanvas(width + 4, rows + 2)
-  g.fillStyle = 'rgba(0,0,0,0.3)'
-  g.fillRect(0, 0, c.width, c.height)
-  g.fillStyle = '#ffffff'
-  for (const r of runs) g.fillRect(r.x + 2, r.y + 1, r.w, 1)
-  return c
 }
 
 // ── Geometry ─────────────────────────────────────────────────

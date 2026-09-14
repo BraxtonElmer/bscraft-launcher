@@ -5,6 +5,19 @@ const speed = Number(params.get('speed') || 1)
 
 const sleep = ms => new Promise(r => setTimeout(r, ms / speed))
 
+// ?bubbles=1 keeps a speech bubble over every player in the Play screen (each icon in turn),
+// for looking at the bubble art
+if (params.get('bubbles')) {
+  const icons = ['heart', 'note', 'excl', 'quest', 'zzz', 'dots', 'star', 'tear', 'fish', 'sun']
+  setInterval(() => {
+    const party = window.__party
+    if (!party) return
+    party.figures.forEach((f, i) => {
+      if (!f.bubble || f.bubble.life < 50) f.bubble = { icon: icons[i % icons.length], age: 0, life: 1e6 }
+    })
+  }, 200)
+}
+
 export function createMocks() {
   const listeners = new Map()
   const emit = (event, payload) => (listeners.get(event) || []).slice().forEach(fn => fn({ event, payload }))
