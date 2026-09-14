@@ -75,7 +75,13 @@ interface Fishing {
 
 interface Pair { kind: 'hug' | 'highfive' | 'crouch' | 'wave'; a: Figure; b: Figure; t: number; met: boolean }
 
-interface React { kind: 'look' | 'wave' | 'mourn' | 'cheer' | 'hot' | 'shake'; t: number; x: number }
+interface React {
+  kind: 'look' | 'wave' | 'mourn' | 'cheer' | 'hot' | 'shake'
+  t: number
+  x: number
+  /** Mourning: whose grave */
+  of?: Figure
+}
 
 interface Figure {
   key: string
@@ -290,7 +296,7 @@ export function partyEvent(party: Party, event: 'star') {
 }
 
 const live = (party: Party) => party.figures.filter(f => !f.leaving)
-const free = (party: Party) => party.figures.filter(f => !f.leaving && f.mode === 'free')
+const free = (party: Party) => party.figures.filter(f => !f.leaving && !f.hidden && f.mode === 'free')
 
 function newFigure(party: Party, key: string, p: OnlinePlayer, x: number, dir: 1 | -1): Figure {
   const feet = feetY(party, x)
@@ -832,6 +838,10 @@ function reactThink(party: Party, f: Figure, dt: number) {
       hold(f, 'stand', 'wave', 0, true)
       break
     case 'mourn':
+      if (!party.graves.some(g => g.f === r.of)) {
+        f.react = null
+        return
+      }
       if (Math.abs(r.x - f.x) > 1) goTo(f, r.x)
       else hold(f, 'stand', 'mourn', 0)
       r.t = 1 // lasts until the grave says otherwise
@@ -1468,6 +1478,11 @@ function stepPress(party: Party, dt: number) {
   const f = pr.f
   if (!c || f.leaving || f.mode === 'dead' || f.hidden) {
     party.press = null
+    if (f.mode === 'held' && f.rag) {
+      f.rag.pin = -1
+      f.mode = 'ragdoll'
+      f.modeT = 0
+    }
     return
   }
   pr.samples.push({ x: c.x, y: c.y, t: party.t })
@@ -1509,7 +1524,7 @@ function grab(party: Party, pr: Press, c: XY) {
   f.react = null
   say(f, 'excl', 1.2)
   for (const o of free(party)) {
-    if (Math.abs(o.x - f.x) < 80 && Math.random() < 0.7) {
+    if (Math.abs(o.x - f.x) < 80 && o.react?.kind !== 'mourn' && Math.random() < 0.7) {
       o.react = { kind: 'look', t: rand(1.2, 2.2), x: f.x }
       if (Math.random() < 0.4) say(o, Math.random() < 0.5 ? 'excl' : 'quest')
     }
@@ -1552,7 +1567,11 @@ function landed(party: Party, f: Figure, i: number, speed: number, x: number, y:
 
 function stepRagdollFigure(party: Party, f: Figure, dt: number) {
   const r = f.rag
-  if (!r) { f.mode = 'free'; return }
+  if (!r) {
+    // Under their gravestone: the grave brings them back
+    if (f.mode !== 'dead') f.mode = 'free'
+    return
+  }
   stepRagdoll(r, dt, ragWorld(party, f))
   f.skel = skelFromRagdoll(r, f.dir)
   f.x = r.pts[HIP].x
@@ -1646,12 +1665,32 @@ function die(party: Party, f: Figure) {
   party.graves.push({ f, x: f.x, phase: 'ko', t: 0, rise: 0, glow: 0, beam: 0, angelY: 0, arms: 0, alpha: 0 })
 }
 
+/** Everyone mourning `dead` stops: cheering if they came back, quietly if they left */
+function endMourning(party: Party, dead: Figure, back: boolean) {
+  for (const o of party.figures) {
+    if (o.react?.kind !== 'mourn' || o.react.of !== dead) continue
+    if (back) {
+      o.react = { kind: 'cheer', t: 2.2, x: o.x }
+      say(o, pick(['heart', 'note', 'star']))
+    } else {
+      o.react = null
+    }
+  }
+}
+
 function stepGraves(party: Party, dt: number) {
   for (const g of party.graves) {
     g.t += dt
     const f = g.f
     if (f.leaving && g.phase !== 'depart') {
+      // Logged off while down: gone in a puff, grave and all
+      const x = f.rag ? f.rag.pts[HIP].x : g.x
+      emit(party, 'smoke', x, feetY(party, x) - 4, 6)
+      if (g.phase !== 'ko') emit(party, 'dust', g.x, feetY(party, g.x), 6, '#7a5a3e')
+      endMourning(party, f, false)
+      if (party.press?.f === f) party.press = null
       party.graves = party.graves.filter(q => q !== g)
+      party.figures = party.figures.filter(q => q !== f)
       continue
     }
     const base = feetY(party, g.x)
@@ -1673,14 +1712,14 @@ function stepGraves(party: Party, dt: number) {
           const mourners = free(party).sort((a, b) => Math.abs(a.x - g.x) - Math.abs(b.x - g.x)).slice(0, 4)
           mourners.forEach((o, k) => {
             const side = o.x < g.x ? -1 : 1
-            o.react = { kind: 'mourn', t: 1, x: clamp(g.x + side * (15 + Math.floor(k / 2) * 12), party.lo, party.hi) }
+            o.react = { kind: 'mourn', t: 1, x: clamp(g.x + side * (15 + Math.floor(k / 2) * 12), party.lo, party.hi), of: f }
             o.pair = null
           })
         }
         break
       case 'grave':
         g.rise = Math.min(1, g.t / 0.7)
-        for (const o of party.figures) if (o.react?.kind === 'mourn' && Math.random() < dt * 0.25) say(o, pick(['tear', 'dots']))
+        for (const o of party.figures) if (o.react?.kind === 'mourn' && o.react.of === f && Math.random() < dt * 0.25) say(o, pick(['tear', 'dots']))
         if (g.t > 4.5) { g.phase = 'angel'; g.t = 0 }
         break
       case 'angel': {
@@ -1689,7 +1728,7 @@ function stepGraves(party: Party, dt: number) {
         const top = -party.offY - 40
         g.angelY = top + (base - 34 - top) * easeOut(g.t / 3.2)
         if (Math.random() < dt * 8) emit(party, 'spark', g.x + rand(-8, 8), g.angelY - rand(4, 20), 1)
-        if (g.t > 0.5 && g.t - dt <= 0.5) for (const o of party.figures) if (o.react?.kind === 'mourn') say(o, 'excl', 1.4)
+        if (g.t > 0.5 && g.t - dt <= 0.5) for (const o of party.figures) if (o.react?.kind === 'mourn' && o.react.of === f) say(o, 'excl', 1.4)
         if (g.t > 3.6) { g.phase = 'raise'; g.t = 0 }
         break
       }
@@ -1719,17 +1758,24 @@ function stepGraves(party: Party, dt: number) {
         break
       case 'depart':
         g.arms = Math.max(0, 1 - g.t)
-        f.rise = Math.max(0, 1 - g.t / 1.8)
-        if (f.mode === 'rising' && f.rise <= 0) {
-          f.mode = 'free'
-          f.front = true
-          f.react = { kind: 'cheer', t: 2.6, x: f.x }
-          say(f, 'heart', 2)
-          emit(party, 'heart', f.x, base - 30, 4)
-          for (const o of party.figures) {
-            if (o.react?.kind === 'mourn') { o.react = { kind: 'cheer', t: 2.2, x: o.x }; say(o, pick(['heart', 'note', 'star'])) }
+        if (f.mode === 'rising') {
+          f.rise = Math.max(0, 1 - g.t / 1.8)
+          if (f.rise <= 0) {
+            f.mode = 'free'
+            f.front = true
+            f.react = { kind: 'cheer', t: 2.6, x: f.x }
+            say(f, 'heart', 2)
+            emit(party, 'heart', f.x, base - 30, 4)
+            endMourning(party, f, true)
           }
         }
+        // Once they're up, the gravestone crumbles back into the ground
+        if (g.t >= 1.2 && g.t - dt < 1.2) {
+          emit(party, 'dust', g.x, base, 8, '#8f94a3')
+          emit(party, 'spark', g.x, base - 6, 5)
+        }
+        g.rise = 1 - clamp((g.t - 1.2) / 0.7, 0, 1)
+        g.glow = Math.max(0, 1 - g.t / 0.8)
         if (g.t > 1.6) {
           g.angelY -= dt * (20 + (g.t - 1.6) * 40)
           g.alpha = Math.max(0, 1 - (g.t - 2.4) / 1.6)
@@ -1759,7 +1805,7 @@ function stepFlyers(party: Party, dt: number) {
         say(f, fl.kind === 'fish' ? 'heart' : fl.kind === 'boot' ? 'quest' : 'star')
         if (fl.kind === 'book') emit(party, 'spark', f.x, f.skel.y - 30, 8, '#d9b8ff')
         for (const o of free(party)) {
-          if (o !== f && o.spot && !o.spot.fisher && Math.random() < 0.7) o.react = { kind: 'cheer', t: 1.4, x: o.x }
+          if (o !== f && o.spot && !o.spot.fisher && o.react?.kind !== 'mourn' && Math.random() < 0.7) o.react = { kind: 'cheer', t: 1.4, x: o.x }
         }
       }
     }
@@ -1956,7 +2002,7 @@ export function drawParty(ctx: CanvasRenderingContext2D, party: Party, now: numb
     if (f.bucket > 0 && f.spot?.fisher) drawBucket(ctx, f.spot.x - f.spot.dir * 9 + offX, feetY(party, f.spot.x - f.spot.dir * 9) + offY, f.bucket, light)
   }
   for (const g of party.graves) {
-    if (g.phase !== 'ko') drawGrave(ctx, g.x + offX, feetY(party, g.x) + offY, g.rise, g.glow * (g.phase === 'raise' ? 1 : 0), light)
+    if (g.phase !== 'ko') drawGrave(ctx, g.x + offX, feetY(party, g.x) + offY, g.rise, g.phase === 'raise' || g.phase === 'depart' ? g.glow : 0, light)
   }
 
   // People: back to front by x, anyone in the air on top
@@ -2263,7 +2309,7 @@ export function drawPartyLabels(ctx: CanvasRenderingContext2D, party: Party, px:
   const speech: { icon: Icon; x: number; y: number; age: number; life: number }[] = []
   const order = [...party.figures].sort((a, b) => a.tag.x - b.tag.x)
   for (const f of order) {
-    const grave = f.hidden ? party.graves.find(g => g.f === f) : null
+    const grave = f.hidden ? party.graves.find(g => g.f === f && g.phase !== 'depart') : null
     if (f.hidden && !grave) continue
     // Tags ease after the head so a tumbling player doesn't shake theirs about
     const hx = grave ? grave.x : f.mode === 'free' || f.mode === 'rising' ? f.skel.x : f.head.x
