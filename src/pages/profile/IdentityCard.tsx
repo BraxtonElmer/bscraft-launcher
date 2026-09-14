@@ -112,12 +112,14 @@ function NameEditor({ current, account, onCancel, onSave }: {
   } else if (availability.state === 'error') {
     status = <Line tone="warn" icon={<AlertIcon size={14} />}>Couldn't check this name with the server.</Line>
   } else if (availability.state === 'done') {
-    const { registered, valid } = availability.result
+    const { registered, valid, claim } = availability.result
     status = registered && valid
       ? <Line tone="ok" icon={<CheckIcon size={14} />}>This name is already yours. Your saved password matches it.</Line>
       : registered
         ? <Line tone="danger" icon={<XCircleIcon size={14} />}>Someone already registered <b>{name}</b> with a different password. You won't be able to join with it.</Line>
-        : <Line tone="ok" icon={<CheckIcon size={14} />}><b>{name}</b> is free. It becomes yours the first time you join with it.</Line>
+        : claim === 'someone'
+          ? <Line tone="warn" icon={<AlertIcon size={14} />}><b>{name}</b> is still free, but someone has saved a look for it. Whoever joins with it first gets it.</Line>
+          : <Line tone="ok" icon={<CheckIcon size={14} />}><b>{name}</b> is free. It becomes yours the first time you join with it.</Line>
   }
 
   return (
@@ -263,7 +265,7 @@ function ServerStatus({ username, registered, valid, checking, error, onRetry }:
 }) {
   let tone = 'info'
   let icon: ReactNode = <InfoIcon size={14} />
-  let text: ReactNode = 'Not registered yet. Join the server once and this password claims your name. Just joined? The server saves new names every few minutes.'
+  let text: ReactNode = 'Not registered yet. Join the server once and this password claims your name. You can save your look already; it shows from your first join.'
   if (checking) {
     icon = <Spinner size={12} />
     text = 'Checking with the server…'

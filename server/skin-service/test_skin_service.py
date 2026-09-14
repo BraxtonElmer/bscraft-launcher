@@ -94,8 +94,8 @@ def main() -> int:
         s, b = call("POST", "/api/account/verify", json.dumps({"username": "testuser", "passwordHash": sha256(b"wrong").hexdigest()}).encode())
         check("verify: wrong password", s == 200 and b == {"registered": True, "valid": False}, b)
 
-        s, b = call("POST", "/api/skin?model=default", png(64, 64), auth("nobody", "x"))
-        check("upload: unregistered -> 403 not_registered", s == 403 and b["error"] == "not_registered", b)
+        s, b = call("POST", "/api/skin?model=default", png(64, 64), auth("newcomer", "x"))
+        check("upload: unregistered name saves a claim", s == 200 and b.get("ok") is True, b)
         s, b = call("POST", "/api/skin?model=default", png(64, 64), auth("testuser", "nope"))
         check("upload: wrong password -> 401", s == 401 and b["error"] == "bad_password", b)
         s, b = call("POST", "/api/skin?model=default", b"not a png at all", auth("testuser", "hunter22"))
@@ -193,6 +193,7 @@ def main() -> int:
         proc.wait(timeout=5)
 
     remote_accounts(check, stored)
+    claims(check)
 
     print(f"\n{'ALL PASSED' if not failures else f'{len(failures)} FAILED: {failures}'}")
     return 1 if failures else 0
@@ -235,6 +236,121 @@ def remote_accounts(check, stored: str) -> None:
         check("remote: game server unreachable -> last copy still works", b == {"registered": True, "valid": True}, b)
         s, b = call("POST", "/api/skin?model=default", png(64, 64), auth("newplayer", "hunter22"))
         check("remote: skin upload works on the last copy", s == 200 and b.get("ok") is True, b)
+    finally:
+        BASE = saved
+        proc.terminate()
+        proc.wait(timeout=5)
+
+
+def registration(password: str) -> str:
+    """An sl_entries.dat password field for this password, as SimpleLogin writes it."""
+    wire = sha256(password.encode()).hexdigest()
+    return bcrypt.hashpw(sha256(wire.encode()).hexdigest().encode(), bcrypt.gensalt(prefix=b"2a")).decode()
+
+
+def start(port: int, tmp: str, **extra) -> subprocess.Popen:
+    env = dict(os.environ, BSC_SL_ENTRIES=os.path.join(tmp, "sl_entries.dat"), BSC_SKINS_DIR=os.path.join(tmp, "skins"),
+               BSC_INDEX_FILE=os.path.join(tmp, "index.json"), BSC_PORT=str(port), **extra)
+    proc = subprocess.Popen([sys.executable, os.path.join(HERE, "skin_service.py")], env=env, stderr=subprocess.DEVNULL)
+    for _ in range(50):
+        try:
+            if urllib.request.urlopen(f"http://127.0.0.1:{port}/api/health", timeout=2).status == 200:
+                break
+        except Exception:
+            time.sleep(0.1)
+    return proc
+
+
+def claims(check) -> None:
+    """Looks saved before the name is registered: only the password that saved one can change
+    it, it stays when that password registers the name, and goes when someone else does or
+    nobody does in time."""
+    global BASE
+    saved = BASE
+    verify = lambda name, pw: call("POST", "/api/account/verify", json.dumps({"username": name, "passwordHash": sha256(pw.encode()).hexdigest()}).encode())[1]
+    register = lambda path, accounts: json.dump([{"username": n, "password": registration(p), "gameType": 0} for n, p in accounts.items()], open(path, "w"))
+
+    # Settling left to requests, so each step can be seen
+    tmp = tempfile.mkdtemp(prefix="bsc-skin-claims-")
+    skins, entries = os.path.join(tmp, "skins"), os.path.join(tmp, "sl_entries.dat")
+    profile = lambda name: json.load(open(os.path.join(skins, name + ".json"))) if os.path.exists(os.path.join(skins, name + ".json")) else None
+    index = lambda: json.load(open(os.path.join(tmp, "index.json")))
+    register(entries, {"regular": "pw"})
+    os.makedirs(os.path.join(skins, "textures"))
+    # A look left from before this name was unregistered on the game server
+    json.dump({"resetname": {"name": "ResetName", "cape": "cd" * 32, "updated": 1}}, open(os.path.join(tmp, "index.json"), "w"))
+    json.dump({"username": "ResetName", "cape": "cd" * 32}, open(os.path.join(skins, "ResetName.json"), "w"))
+    proc = start(PORT + 2, tmp, BSC_CLAIM_SETTLE="3600", BSC_CLAIMS_PER_IP="4")
+    BASE = f"http://127.0.0.1:{PORT + 2}"
+    try:
+        skin, cape = png(64, 64, (1, 2, 3, 255)), png(64, 32, (9, 9, 9, 255))
+        s, b = call("POST", "/api/skin?model=slim", skin, auth("NewKid", "kidpw"))
+        check("claim: a new name can save a skin", s == 200 and b.get("ok") is True, b)
+        check("claim: published straight away, for the first join", profile("NewKid") == {"username": "NewKid", "skins": {"slim": sha256(skin).hexdigest()}}, profile("NewKid"))
+        check("claim: the index keeps no password, only the claim key",
+              index()["newkid"]["claim"]["key"] == sha256(sha256(b"kidpw").hexdigest().encode()).hexdigest())
+        check("claim: verify says it's yours", verify("newkid", "kidpw") == {"registered": False, "valid": False, "claim": "yours"}, verify("newkid", "kidpw"))
+        check("claim: verify tells others it's taken", verify("newkid", "other") == {"registered": False, "valid": False, "claim": "someone"})
+        s, b = call("POST", "/api/cape", cape, auth("NewKid", "kidpw"))
+        check("claim: the same password adds a cape", s == 200 and set(profile("NewKid") or {}) == {"username", "skins", "cape"}, b)
+        s, b = call("POST", "/api/skin?model=default", png(64, 64), auth("NewKid", "other"))
+        check("claim: another password can't change it", s == 403 and b["error"] == "claimed" and profile("NewKid")["skins"] == {"slim": sha256(skin).hexdigest()}, b)
+        s, b = call("DELETE", "/api/cape", b"", auth("newkid", "other"))
+        check("claim: or remove anything", s == 403 and "cape" in profile("NewKid"), b)
+        s, b = call("GET", "/api/profile?name=newkid")
+        check("claim: shows in the public profile", s == 200 and b["skin"] == {"model": "slim", "texture": sha256(skin).hexdigest()}, b)
+
+        s, b = call("POST", "/api/skin?model=default", skin, auth("ResetName", "fresh"))
+        check("claim: a name reset on the game server starts from a clean look",
+              s == 200 and profile("ResetName") == {"username": "ResetName", "skins": {"default": sha256(skin).hexdigest()}}, profile("ResetName"))
+
+        s, b = call("POST", "/api/skin?model=default", skin, auth("Squatter", "grief"))
+        s2, b2 = call("POST", "/api/skin?model=default", skin, auth("Name4", "x"))
+        s3, b3 = call("POST", "/api/skin?model=default", skin, auth("Name5", "x"))
+        # NewKid, ResetName, Squatter and Name4 are four new names; Name5 is one too many
+        check("claim: at most 4 new names a day from one address", (s, s2, s3) == (200, 200, 429) and b3["error"] == "too_many_claims", (s, s2, s3))
+        s, b = call("POST", "/api/skin?model=default", skin, dict(auth("Name5", "x"), **{"X-Real-IP": "10.9.9.9"}))
+        check("claim: another address still can", s == 200, b)
+        s, b = call("POST", "/api/cape", cape, auth("NewKid", "kidpw"))
+        check("claim: changing your own claim doesn't count as a new name", s == 200, b)
+        s, b = call("POST", "/api/skin?model=default", skin, auth("regular", "pw"))
+        check("claim: registered players aren't limited", s == 200, b)
+
+        # The game server registers both names: NewKid with the claim's password, Squatter's name by its real owner
+        register(entries, {"regular": "pw", "newkid": "kidpw", "squatter": "realowner"})
+        check("claim: verify once registered", verify("NewKid", "kidpw") == {"registered": True, "valid": True})
+        s, b = call("POST", "/api/skin?model=default", skin, auth("newkid", "kidpw"))
+        check("claim: settles on the owner's next save and the look is kept",
+              s == 200 and "claim" not in index()["newkid"] and set(profile("newkid") or {}) == {"username", "skins", "cape"}, index().get("newkid"))
+        new = png(64, 64, (7, 7, 7, 255))
+        s, b = call("POST", "/api/skin?model=default", new, auth("Squatter", "realowner"))
+        check("claim: the real owner's save replaces someone else's look",
+              s == 200 and profile("Squatter") == {"username": "Squatter", "skins": {"default": sha256(new).hexdigest()}} and "claim" not in index()["squatter"], profile("Squatter"))
+        s, b = call("POST", "/api/skin?model=default", skin, auth("Squatter", "grief"))
+        check("claim: the old claim's password is just a wrong password now", s == 401, b)
+    finally:
+        proc.terminate()
+        proc.wait(timeout=5)
+
+    # Settling in the background: after registration, and for claims nobody registers
+    tmp = tempfile.mkdtemp(prefix="bsc-skin-settle-")
+    skins, entries = os.path.join(tmp, "skins"), os.path.join(tmp, "sl_entries.dat")
+    register(entries, {})
+    proc = start(PORT + 3, tmp, BSC_CLAIM_SETTLE="0.3", BSC_CLAIM_DAYS=str(4 / 86400))
+    BASE = f"http://127.0.0.1:{PORT + 3}"
+    try:
+        skin = png(64, 64)
+        for name, pw in (("Keeper", "k"), ("Victim", "grief"), ("Ghost", "g")):
+            call("POST", "/api/skin?model=default", skin, auth(name, pw))
+        check("settle: three claims published", all(profile(n) for n in ("Keeper", "Victim", "Ghost")))
+        register(entries, {"keeper": "k", "victim": "the-real-one"})
+        time.sleep(1.5)
+        idx = index()
+        check("settle: registered with the claim's password -> kept, claim gone", profile("Keeper") and "claim" not in idx["keeper"], idx.get("keeper"))
+        check("settle: registered by someone else -> look removed", profile("Victim") is None and "victim" not in idx, idx.get("victim"))
+        check("settle: still waiting for its first join", profile("Ghost") and "claim" in idx["ghost"], idx.get("ghost"))
+        time.sleep(4)
+        check("settle: expires when nobody registers the name", profile("Ghost") is None and "ghost" not in index())
     finally:
         BASE = saved
         proc.terminate()

@@ -10,6 +10,12 @@ world/sl_entries.dat, where SimpleLogin keeps bcrypt(SHA-256 of that). That file
 server owns it. When the game server runs on another machine, BSC_SL_REMOTE fetches it
 from there whenever it's needed (see fetch_remote_accounts).
 
+A name nobody has registered yet can still get a look, so new players can set theirs up
+before their first join: it's saved as a claim tied to the credential that saved it (see
+update_entry), and only that credential can change it. Once the game server registers the
+name, the claim settles (settle_claims): the look stays if the name was registered with the
+same password and goes if someone else registered it. Claims nobody registers expire.
+
 Textures are published as static files in CustomSkinLoader's CustomSkinAPI
 format, which nginx serves from SKINS_DIR:
 
@@ -23,6 +29,7 @@ API (behind nginx at /api/, this process listens on localhost only):
     GET    /api/health
     GET    /api/profile?name=<name>   public, case-insensitive -> {"name", "skin", "cape", "elytra"}
     POST   /api/account/verify        JSON {"username", "passwordHash"} -> {"registered", "valid"}
+                                      (+ "claim": "yours"|"someone" for an unregistered name with a claim)
     POST   /api/skin?model=default|slim   body = PNG bytes
     POST   /api/cape                      body = PNG bytes
     POST   /api/elytra                    body = PNG bytes
@@ -44,6 +51,7 @@ import threading
 import time
 import zlib
 from hashlib import sha256
+from hmac import compare_digest
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
@@ -72,8 +80,16 @@ BACK_SIZES = tuple((64 * k, 32 * k) for k in (1, 2, 4, 8))
 FAIL_LIMIT = 8
 FAIL_WINDOW = 15 * 60
 
+# Looks saved for names that aren't registered yet: kept this long for their first join,
+# at most this many new ones per client address a day, settled this often
+CLAIM_DAYS = float(os.environ.get("BSC_CLAIM_DAYS", "7"))
+CLAIMS_PER_IP = int(os.environ.get("BSC_CLAIMS_PER_IP", "5"))
+CLAIM_SETTLE = float(os.environ.get("BSC_CLAIM_SETTLE", "60"))
+CLAIMED = "Someone else has already saved a look for this name. If it's yours, join the server once to claim it, then save."
+
 _lock = threading.Lock()
 _fails: dict[tuple[str, str], list[float]] = {}
+_claims: dict[str, list[float]] = {}
 
 
 class ApiError(Exception):
@@ -134,8 +150,17 @@ def record_failure(ip: str, username: str) -> None:
         _fails.setdefault((ip, username), []).append(time.time())
 
 
-def authenticate(ip: str, username: str, password_hash: str) -> None:
-    """Raises ApiError unless username is registered and the credential matches."""
+def claim_key(password_hash: str) -> str:
+    """What SimpleLogin runs through bcrypt for this credential (see authenticate), so a claim
+    can be checked against the registration once there is one. Kept in the private index only
+    until the claim settles."""
+    return sha256(password_hash.encode()).hexdigest()
+
+
+def authenticate(ip: str, username: str, password_hash: str, allow_unregistered: bool = False) -> bool:
+    """Raises ApiError unless username is registered and the credential matches. With
+    allow_unregistered, an unregistered name passes too (False is returned) and the caller
+    checks its claim instead."""
     if not USERNAME_RE.match(username or ""):
         raise ApiError(400, "bad_username", "Invalid username.")
     if not HASH_RE.match(password_hash or ""):
@@ -143,6 +168,8 @@ def authenticate(ip: str, username: str, password_hash: str) -> None:
     check_throttle(ip, username.lower())
     stored = load_accounts().get(username.lower())
     if stored is None:
+        if allow_unregistered:
+            return False
         raise ApiError(403, "not_registered", "This name isn't registered yet. Join the server once to claim it.")
     # SimpleLogin hashes twice: the client sends SHA-256(password), and the server's
     # MessageLogin decoder runs it through the hashing constructor again, so entries
@@ -150,6 +177,7 @@ def authenticate(ip: str, username: str, password_hash: str) -> None:
     if not bcrypt.checkpw(sha256(password_hash.encode()).hexdigest().encode(), stored.encode()):
         record_failure(ip, username.lower())
         raise ApiError(401, "bad_password", "Password doesn't match the one registered on the server.")
+    return True
 
 
 # ── Textures ─────────────────────────────────────────────────────────────
@@ -240,16 +268,43 @@ def publish(entry: dict) -> None:
         atomic_write(path, json.dumps(profile).encode())
 
 
-def update_entry(username: str, change) -> dict:
-    """Applies change(entry) to a player's entry and republishes their profile."""
+def update_entry(username: str, change, key: str, registered: bool, ip: str = "") -> dict:
+    """Applies change(entry) to a player's entry and republishes their profile.
+
+    key is claim_key() of the request's credential. On an unregistered name the entry is a
+    claim that only that credential can change; on a registered one (the credential already
+    checked) a claim still waiting to settle is settled on the spot."""
     with _lock:
         index = load_index()
-        entry = index.get(username.lower()) or {"name": username}
+        entry = index.get(username.lower())
+        held = (entry or {}).get("claim")
+        if held and not compare_digest(held["key"], key):
+            if not registered:
+                raise ApiError(403, "claimed", CLAIMED)
+            entry = None  # someone else's look from before the owner registered
+        elif held and registered:
+            del entry["claim"]  # the look they saved before joining is theirs now
+        elif entry and not held and not registered:
+            entry = None  # a look from before the name was reset on the game server: it's free again
+        fresh = entry is None
+        if fresh:
+            old = index.get(username.lower())
+            if old:
+                unlink_quiet(os.path.join(SKINS_DIR, old["name"] + ".json"))
+            entry = {"name": username}
+            if not registered:
+                entry["claim"] = {"key": key, "since": int(time.time())}
         # A name's case can change between uploads; keep a single profile file
         if entry["name"] != username:
             unlink_quiet(os.path.join(SKINS_DIR, entry["name"] + ".json"))
             entry["name"] = username
         change(entry)
+        if fresh and not registered and any(entry.get(k) for k in KINDS):
+            now = time.time()
+            recent = [t for t in _claims.get(ip, []) if now - t < 24 * 3600]
+            if len(recent) >= CLAIMS_PER_IP:
+                raise ApiError(429, "too_many_claims", "Too many new names saved from here today. Join the server with yours first.")
+            _claims[ip] = recent + [now]
         entry["updated"] = int(time.time())
         publish(entry)
         if any(entry.get(k) for k in KINDS):
@@ -260,7 +315,50 @@ def update_entry(username: str, change) -> dict:
         return entry
 
 
-def set_texture(username: str, kind: str, png: bytes, model: str = "default") -> dict:
+def settle_claims() -> None:
+    """Looks saved before their name was registered: kept once the game server registered the
+    name with the same password, dropped when someone else registered it, or when nobody has
+    within CLAIM_DAYS."""
+    if not any(entry.get("claim") for entry in load_index().values()):
+        return
+    accounts = load_accounts()
+    with _lock:
+        index = load_index()
+        changed = False
+        for name, entry in list(index.items()):
+            held = entry.get("claim")
+            if not held:
+                continue
+            stored = accounts.get(name)
+            if stored is None:
+                if time.time() - held["since"] < CLAIM_DAYS * 24 * 3600:
+                    continue
+                keep = False
+            else:
+                try:
+                    keep = bcrypt.checkpw(held["key"].encode(), stored.encode())
+                except ValueError:
+                    keep = False
+            if keep:
+                del entry["claim"]
+            else:
+                unlink_quiet(os.path.join(SKINS_DIR, entry["name"] + ".json"))
+                del index[name]
+            changed = True
+        if changed:
+            save_index(index)
+
+
+def settle_claims_forever() -> None:
+    while True:
+        time.sleep(CLAIM_SETTLE)
+        try:
+            settle_claims()
+        except Exception as e:  # keep settling; the next round may work
+            print(f"Couldn't settle claims: {e!r}", file=sys.stderr)
+
+
+def set_texture(username: str, kind: str, png: bytes, model: str, key: str, registered: bool, ip: str) -> dict:
     width, height = validate_png(png, kind)
     if kind == "skin" and model == "slim" and height != 64:
         raise ApiError(400, "bad_model", "Slim arms need a 64×64 skin.")
@@ -270,15 +368,15 @@ def set_texture(username: str, kind: str, png: bytes, model: str = "default") ->
     def change(entry: dict) -> None:
         entry[kind] = {"model": model, "texture": digest} if kind == "skin" else digest
 
-    update_entry(username, change)
+    update_entry(username, change, key, registered, ip)
     result = {"ok": True, "kind": kind, "texture": digest}
     if kind == "skin":
         result["model"] = model
     return result
 
 
-def remove_texture(username: str, kind: str) -> dict:
-    update_entry(username, lambda entry: entry.pop(kind, None))
+def remove_texture(username: str, kind: str, key: str, registered: bool, ip: str) -> dict:
+    update_entry(username, lambda entry: entry.pop(kind, None), key, registered, ip)
     return {"ok": True, "kind": kind}
 
 
@@ -332,7 +430,17 @@ class Handler(BaseHTTPRequestHandler):
                 raise ApiError(400, "bad_username", "Invalid username.")
             registered = username.lower() in load_accounts()
             if not registered:
-                return self.send_json(200, {"registered": False, "valid": False})
+                body = {"registered": False, "valid": False}
+                held = (load_index().get(username.lower()) or {}).get("claim")
+                if held:
+                    # Guessing at a claim is throttled like guessing at a password
+                    check_throttle(ip, username.lower())
+                    if HASH_RE.match(password_hash) and compare_digest(held["key"], claim_key(password_hash)):
+                        body["claim"] = "yours"
+                    else:
+                        record_failure(ip, username.lower())
+                        body["claim"] = "someone"
+                return self.send_json(200, body)
             try:
                 authenticate(ip, username, password_hash)
                 return self.send_json(200, {"registered": True, "valid": True})
@@ -342,15 +450,21 @@ class Handler(BaseHTTPRequestHandler):
                 raise
         kind = url.path.removeprefix("/api/")
         if kind in KINDS and method in ("POST", "DELETE"):
-            username = self.headers.get("X-Username", "")
-            authenticate(ip, username, self.headers.get("X-Password-Hash", ""))
-            if method == "DELETE":
-                return self.send_json(200, remove_texture(username, kind))
-            model = parse_qs(url.query).get("model", ["default"])[0]
-            if model not in MODELS:
-                raise ApiError(400, "bad_model", "Model must be 'default' or 'slim'.")
-            png = self.read_body(MAX_BYTES[kind] + 1)
-            return self.send_json(200, set_texture(username, kind, png, model))
+            username, password_hash = self.headers.get("X-Username", ""), self.headers.get("X-Password-Hash", "")
+            registered = authenticate(ip, username, password_hash, allow_unregistered=True)
+            key = claim_key(password_hash)
+            try:
+                if method == "DELETE":
+                    return self.send_json(200, remove_texture(username, kind, key, registered, ip))
+                model = parse_qs(url.query).get("model", ["default"])[0]
+                if model not in MODELS:
+                    raise ApiError(400, "bad_model", "Model must be 'default' or 'slim'.")
+                png = self.read_body(MAX_BYTES[kind] + 1)
+                return self.send_json(200, set_texture(username, kind, png, model, key, registered, ip))
+            except ApiError as e:
+                if e.code == "claimed":
+                    record_failure(ip, username.lower())
+                raise
         raise ApiError(404, "not_found", "Not found.")
 
     def handle_any(self, method: str) -> None:
@@ -377,6 +491,7 @@ class Handler(BaseHTTPRequestHandler):
 
 def main() -> None:
     os.makedirs(os.path.join(SKINS_DIR, "textures"), exist_ok=True)
+    threading.Thread(target=settle_claims_forever, daemon=True).start()
     httpd = ThreadingHTTPServer((HOST, PORT), Handler)
     print(f"bscraft-skins listening on {HOST}:{PORT}, skins in {SKINS_DIR}, accounts from {SL_ENTRIES}", flush=True)
     httpd.serve_forever()

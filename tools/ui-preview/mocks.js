@@ -39,15 +39,21 @@ export function createMocks() {
     running: false,
     logTimer: null,
     hold: params.get('hold') === '1',
-    // Server account (SimpleLogin): ?acct=new|registered|mismatch
+    // Server account (SimpleLogin): ?acct=new|registered|mismatch|claimed (new, with someone else's look saved for it)
     acct: params.get('acct') || (installed ? 'registered' : 'new'),
+    claim: params.get('acct') === 'claimed' ? 'someone-elses-password' : null,
     password: installed && params.get('nopw') !== '1' ? 'hunter22' : null,
     prefs: { cape: true, jacket: true, left_sleeve: true, right_sleeve: true, left_pants_leg: true, right_pants_leg: true, hat: true, main_hand: 'right' },
   }
   const serverPassword = () => (state.acct === 'registered' ? 'hunter22' : state.acct === 'mismatch' ? 'something-else' : null)
-  const checkAuth = () => {
+  // Mirrors the skin service: an unregistered name takes a look as a claim tied to the password
+  const checkAuth = (saving = false) => {
     const sp = serverPassword()
-    if (sp === null) throw new Error("This name isn't registered yet. Join the server once to claim it.")
+    if (sp === null) {
+      if (state.claim && state.claim !== state.password) throw new Error("Someone else has already saved a look for this name. If it's yours, join the server once to claim it, then save.")
+      if (saving) state.claim = state.password
+      return
+    }
     if (sp !== state.password) throw new Error("Password doesn't match the one registered on the server.")
   }
 
@@ -221,11 +227,12 @@ export function createMocks() {
     check_server_account: async () => {
       await sleep(400)
       const sp = serverPassword()
-      return { registered: sp !== null, valid: sp !== null && sp === state.password }
+      const claim = sp === null && state.claim ? (state.claim === state.password ? 'yours' : 'someone') : null
+      return { registered: sp !== null, valid: sp !== null && sp === state.password, ...(claim ? { claim } : {}) }
     },
     upload_texture: async ({ kind, model }) => {
       await sleep(700)
-      checkAuth()
+      checkAuth(true)
       return { kind, texture: 'mocktexturehash', model: kind === 'skin' ? model : null }
     },
     remove_texture: async () => { await sleep(400); checkAuth() },

@@ -74,20 +74,29 @@ export function ProfilePage({ username, account, gameRunning, onRename }: Props)
   }
 
   const { passwordSet, server, serverError } = account
+  // Before the first join the look is saved ahead for the name, tied to this password
+  const firstJoin = !!server && !server.registered
   const blocker =
     !passwordSet ? 'Set your server password first.'
     : serverError ? "Couldn't reach the BSCraft server."
     : !server ? null
-    : !server.registered ? 'Join the server once to claim your name, then you can save your look. New names show up here within about 5 minutes.'
+    : firstJoin && server.claim === 'someone' ? "A look is already saved for this name with a different password. If it's yours, join the server once, then save again."
+    : !server.registered ? null
     : !server.valid ? "Your saved password doesn't match the server's."
     : null
-  const canSave = !blocker && !!server?.valid && !wardrobe.saving
+  const canSave = !blocker && !!server && (server.valid || firstJoin) && !wardrobe.saving
 
   const save = async () => {
     setSaveNotice(null)
     try {
       await wardrobe.save()
-      setSaveNotice({ tone: 'ok', text: 'Saved! It shows in game the next time you join the server.' })
+      setSaveNotice({
+        tone: 'ok',
+        text: firstJoin
+          ? 'Saved! Everyone sees it from your first join with this name and password.'
+          : 'Saved! It shows in game the next time you join the server.',
+      })
+      if (firstJoin) account.checkServer()
     } catch (e) {
       setSaveNotice({ tone: 'danger', text: e instanceof Error ? e.message : String(e) })
     }

@@ -169,6 +169,8 @@ export interface ServerAccount {
   registered: boolean;
   /** The password saved on this PC matches the server's */
   valid: boolean;
+  /** Not registered yet, but a look is saved for the name: with this PC's password, or another */
+  claim?: 'yours' | 'someone' | null;
 }
 
 /** Mirrors commands::account::TextureUploadResult */

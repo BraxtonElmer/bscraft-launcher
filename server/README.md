@@ -48,7 +48,7 @@ which the modpack's CustomSkinLoader loads from
 |---|---|
 | `GET /api/health` | |
 | `GET /api/profile?name=<name>` | Public, case-insensitive: what a player has published (the launcher's "copy a look") |
-| `POST /api/account/verify` | `{username, passwordHash}` → `{registered, valid}` |
+| `POST /api/account/verify` | `{username, passwordHash}` → `{registered, valid}`, plus `claim` for an unregistered name with a look saved |
 | `POST /api/skin?model=default\|slim` | PNG body, 64×64 or 64×32, max 32 KB |
 | `POST /api/cape`, `POST /api/elytra` | PNG body, 64×32 or HD up to 512×256, max 60 KB |
 | `DELETE /api/skin\|cape\|elytra` | Removes one texture; the profile file goes once nothing is left |
@@ -58,6 +58,26 @@ Texture routes take the headers `X-Username` and `X-Password-Hash`
 SimpleLogin's server hashes that value once more before bcrypt, so entries
 hold `bcrypt(sha256(sha256(password)))`; the service does the same.
 
+### Looks saved before the first join
+
+A name nobody has registered yet can still get a look, so a new player can
+set theirs up in the launcher and have it from their very first join. It's
+saved as a *claim*: published straight away, and tied to the credential that
+saved it (the index keeps `sha256` of it, which is what SimpleLogin runs
+through bcrypt, and nothing else), so only that password can change it. Every
+minute the service settles claims against `sl_entries.dat`:
+
+- the name got registered with the same password → the look is theirs, the claim goes;
+- someone else registered it → the look is removed;
+- nobody registered it within 7 days → the look is removed.
+
+A registered owner saving before a round has run settles it on the spot. An
+address can start at most 5 new claims a day, and `verify` answers
+`"claim": "yours"|"someone"` for an unregistered name that has one, with
+wrong guesses throttled like wrong passwords. Someone could still save a look
+for a name that isn't theirs; it shows only until the real owner registers
+the name (up to ~5 minutes after their first join, then the next round).
+
 Minecraft only applies skin and cape textures from a profile. The elytra
 is always drawn from the cape's wing area, so the launcher puts elytra
 designs into the cape; the `elytra` route and field are kept but unused.
@@ -66,7 +86,7 @@ It listens on `127.0.0.1:18765`; nginx proxies `/api/` to it and serves
 `/skins/` directly.
 
 ```bash
-# run the tests (throwaway instance on port 18799, temp files)
+# run the tests (throwaway instances on ports 18799-18802, temp files)
 python3 test_skin_service.py
 
 # deploy a new version

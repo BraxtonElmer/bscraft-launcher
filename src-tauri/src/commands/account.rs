@@ -32,6 +32,10 @@ pub struct ServerAccount {
     pub registered: bool,
     /// The password saved on this PC matches the server's
     pub valid: bool,
+    /// For a name nobody has registered yet that already has a look saved: "yours" when it
+    /// was saved with this PC's password, "someone" when with another
+    #[serde(default)]
+    pub claim: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
