@@ -180,6 +180,34 @@ Everything lives in `%APPDATA%\BSCraft\`:
 | `minecraft/options.txt` | Minecraft settings; the pack's default is installed once, then it's the player's |
 | `minecraft/servers.dat` | Server list; the launcher adds BSCraft when it's missing |
 
+Settings › Storage shows how much of that is the game, Java, the modpack, the
+player's own worlds and the caches, and can clear the caches (logs, crash
+reports, downloaded skins, Distant Horizons' far-terrain cache). Uninstall there
+removes all of it, optionally moving worlds, screenshots, schematics and map
+waypoints to `Documents\BSCraft worlds`, then opens Windows' uninstaller for the
+launcher. Uninstalling from Windows' Apps list removes the game folder too when
+"Delete the application data" is ticked (`windows/installer-hooks.nsh`), but
+never during an update.
+
+## Memory
+
+Settings › Memory is on Auto unless the player picks an amount. Auto gives the
+game the most that helps and that the PC can spare (`settings::plan_for`):
+at most 8 GB, keeping 7 GB for Windows, the apps people keep open and the game's
+own memory outside the heap, plus 1.5 GB more on integrated graphics. That's
+7 GB on a 16 GB laptop with Intel graphics, 8 GB on 16 GB with a graphics card
+or anything bigger, and 4 GB (with advice to use Performance mode) on 8–12 GB.
+
+It comes from measuring pack 4.0.3 with Java's GC log (singleplayer, sprinting
+through new terrain): the heap holds about 4 GB once in a world, peaking near
+5.5 GB between clean-ups, and the game uses about 2 GB more outside it. More
+heap doesn't make it faster: each clean-up has more to go through and Windows
+starts swapping, which is why big allocations feel laggy. The launcher also
+starts Java with G1 settings tuned for short pauses (`GC_FLAGS` in
+`launcher.rs`), which halved the longest pauses in the same test (344 ms to
+163 ms). The warnings: under 6 GB is too little, over 10 GB is more than the
+pack can use, and over the PC's total minus ~5.5 GB starves Windows.
+
 ## Releasing a modpack update
 
 1. Put the new client pack in a folder, then copy `pack-overrides/` over it and

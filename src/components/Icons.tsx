@@ -25,6 +25,65 @@ function Icon({ size = 18, children, ...rest }: IconProps & { children: ReactNod
   )
 }
 
+/** Pixel art in Minecraft's style: rows of palette keys, '.' for empty */
+function PixelIcon({ size = 18, rows, palette, ...rest }: SVGProps<SVGSVGElement> & { size?: number; rows: string[]; palette: Record<string, string> }) {
+  const w = rows[0].length, h = rows.length
+  return (
+    <svg width={size} height={size * h / w} viewBox={`0 0 ${w} ${h}`} shapeRendering="crispEdges" aria-hidden {...rest}>
+      {rows.flatMap((row, y) => [...row].map((c, x) => palette[c]
+        ? <rect key={`${x}-${y}`} x={x} y={y} width={1} height={1} fill={palette[c]} />
+        : null))}
+    </svg>
+  )
+}
+
+/** A chest: something new inside (a launcher update) */
+export const ChestIcon = ({ size = 24, ...p }: IconProps) => (
+  <PixelIcon
+    size={size}
+    rows={[
+      '..KKKKKKKK..',
+      '.KhhhhhhhhK.',
+      'KwWWWWWWWWwK',
+      'KwWWWWWWWWwK',
+      'KkkkkLLkkkkK',
+      'KwWWWLlWWWwK',
+      'KwWWWWWWWWwK',
+      'KwWWWWWWWWwK',
+      'KwwwwwwwwwwK',
+      '.KKKKKKKKKK.',
+    ]}
+    palette={{ K: '#2e1c0e', h: '#d09446', W: '#b8772e', w: '#8d5520', k: '#4a2c12', L: '#ece6d6', l: '#a8a293' }}
+    {...p}
+  />
+)
+
+/** A diamond: everything at its best (Quality mode) */
+export const DiamondIcon = ({ size = 14, ...p }: IconProps) => (
+  <PixelIcon
+    size={size}
+    rows={[
+      '..DDD..',
+      '.DWCCD.',
+      'DWCCCCD',
+      'DCCCCcD',
+      '.DCCcD.',
+      '..DcD..',
+      '...D...',
+    ]}
+    palette={{ D: '#0f6e67', W: '#e6fffb', C: '#4fe3d2', c: '#27b8a9' }}
+    {...p}
+  />
+)
+
+export const DatabaseIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <ellipse cx="12" cy="5.5" rx="7.5" ry="2.8" />
+    <path d="M4.5 5.5v13c0 1.5 3.4 2.8 7.5 2.8s7.5-1.3 7.5-2.8v-13" />
+    <path d="M4.5 12c0 1.5 3.4 2.8 7.5 2.8s7.5-1.3 7.5-2.8" />
+  </Icon>
+)
+
 export const PlayIcon = (p: IconProps) => (
   <Icon {...p}><path d="M7 4.5v15l12.5-7.5L7 4.5z" /></Icon>
 )

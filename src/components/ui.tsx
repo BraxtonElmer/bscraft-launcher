@@ -40,6 +40,8 @@ export interface SegmentOption<T extends string> {
   label: ReactNode
   icon?: ReactNode
   title?: string
+  /** Explanation that pops up on hover or keyboard focus */
+  tip?: ReactNode
 }
 
 interface SegmentedProps<T extends string> {
@@ -55,21 +57,30 @@ interface SegmentedProps<T extends string> {
 export function Segmented<T extends string>({ value, options, onChange, disabled, size = 'md', label, id }: SegmentedProps<T>) {
   return (
     <div id={id} className={`segmented ${size}${disabled ? ' disabled' : ''}`} role="radiogroup" aria-label={label}>
-      {options.map(o => (
-        <button
-          key={o.value}
-          type="button"
-          role="radio"
-          aria-checked={o.value === value}
-          className={o.value === value ? 'active' : ''}
-          disabled={disabled}
-          title={o.title}
-          onClick={() => { if (o.value !== value) onChange(o.value) }}
-        >
-          {o.icon}
-          {o.label}
-        </button>
-      ))}
+      {options.map(o => {
+        const button = (
+          <button
+            key={o.value}
+            type="button"
+            role="radio"
+            aria-checked={o.value === value}
+            className={o.value === value ? 'active' : ''}
+            disabled={disabled}
+            title={o.tip ? undefined : o.title}
+            aria-describedby={o.tip && id ? `${id}-${o.value}-tip` : undefined}
+            onClick={() => { if (o.value !== value) onChange(o.value) }}
+          >
+            {o.icon}
+            {o.label}
+          </button>
+        )
+        return o.tip ? (
+          <span key={o.value} className="seg-tip-wrap">
+            {button}
+            <span className="seg-tip" role="tooltip" id={id ? `${id}-${o.value}-tip` : undefined}>{o.tip}</span>
+          </span>
+        ) : button
+      })}
     </div>
   )
 }

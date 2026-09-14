@@ -1,11 +1,12 @@
-import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { ProgressBar, Segmented, Spinner, Toggle, describeOperation, totalPercent } from '../components/ui'
 import {
-  AlertIcon, CheckIcon, ChevronRightIcon, ChipIcon, ImageIcon, InfoIcon,
+  CheckIcon, ChevronRightIcon, ChipIcon, DatabaseIcon, ImageIcon, InfoIcon,
   MemoryIcon, RefreshIcon, ShieldCheckIcon, SlidersIcon, WrenchIcon, XCircleIcon,
 } from '../components/Icons'
-import { formatRam } from '../lib/format'
+import { MemoryCard } from './settings/MemoryCard'
+import { StorageCard } from './settings/StorageCard'
 import type { Scenery } from '../components/PixelScene'
 import type { LauncherApi } from '../hooks/useLauncher'
 import type { ActiveOperation, AppConfig, GpuInfo, OperationKind, TaskResult } from '../types'
@@ -20,31 +21,10 @@ interface Props {
   onSceneryChange: (s: Scenery) => void
 }
 
-const RAM_MIN = 512
-const RAM_STEP = 256
-
 export function SettingsPage({ launcher, config, persist, operation, launcherVersion, scenery, onSceneryChange }: Props) {
-  const [systemRam, setSystemRam] = useState(8192)
-  const [ram, setRam] = useState(config.ram_mb)
   const [gpus, setGpus] = useState<GpuInfo[] | null>(null)
 
-  useEffect(() => { invoke<number>('get_system_ram').then(setSystemRam).catch(() => {}) }, [])
   useEffect(() => { invoke<GpuInfo[]>('get_gpus').then(setGpus).catch(() => setGpus([])) }, [])
-  useEffect(() => { setRam(config.ram_mb) }, [config.ram_mb])
-
-  const commitRam = (mb: number) => { if (mb !== config.ram_mb) persist({ ram_mb: mb }) }
-
-  const ramMax = Math.max(systemRam, RAM_MIN + RAM_STEP)
-  const fill = ((ram - RAM_MIN) / (ramMax - RAM_MIN)) * 100
-  const presets = [4, 6, 8, 12, 16].filter(gb => gb * 1024 <= systemRam * 0.8)
-  const ramHint =
-    ram > systemRam * 0.75
-      ? { tone: 'warn', text: 'That leaves little memory for Windows — expect stutter or crashes.' }
-      : ram < 4096
-      ? { tone: 'warn', text: 'Large modpacks usually need at least 4 GB.' }
-      : ram < 6144
-      ? { tone: 'info', text: 'Works for most setups. 6 GB or more helps with shaders and big bases.' }
-      : { tone: 'ok', text: 'Plenty of room for a large modpack.' }
 
   const { checkResult, verifyResult, verifyDetail, maintenanceBlocked, manifest, launcherUpdate } = launcher
   const opFor = (...kinds: OperationKind[]) => (operation && kinds.includes(operation.kind) ? operation : null)
@@ -63,49 +43,11 @@ export function SettingsPage({ launcher, config, persist, operation, launcherVer
       <div className="settings-grid">
         <div className="settings-col">
           {/* ── Memory ─────────────────────────────── */}
-          <section className="card">
-            <CardHead icon={<MemoryIcon size={18} />} tone="violet" title="Memory" desc="How much RAM Minecraft is allowed to use" />
-
-            <div className="ram-readout">
-              <span className="ram-value">{formatRam(ram)}</span>
-              <span className="ram-of">of {formatRam(Math.round(systemRam / 1024) * 1024)} installed</span>
-            </div>
-
-            <input
-              id="ram-slider"
-              type="range"
-              className="slider"
-              min={RAM_MIN}
-              max={ramMax}
-              step={RAM_STEP}
-              value={ram}
-              style={{ '--fill': `${fill}%` } as CSSProperties}
-              onChange={e => setRam(Number(e.target.value))}
-              onPointerUp={e => commitRam(Number((e.target as HTMLInputElement).value))}
-              onKeyUp={e => commitRam(Number((e.target as HTMLInputElement).value))}
-              onBlur={e => commitRam(Number(e.target.value))}
-              aria-label="Memory allocation"
-            />
-
-            {presets.length > 0 && (
-              <div className="ram-presets">
-                {presets.map(gb => (
-                  <button
-                    key={gb}
-                    className={`preset${ram === gb * 1024 ? ' active' : ''}`}
-                    onClick={() => { setRam(gb * 1024); commitRam(gb * 1024) }}
-                  >
-                    {gb} GB
-                  </button>
-                ))}
-              </div>
-            )}
-
-            <div className={`hint ${ramHint.tone}`}>
-              {ramHint.tone === 'warn' ? <AlertIcon size={14} /> : ramHint.tone === 'ok' ? <CheckIcon size={14} /> : <InfoIcon size={14} />}
-              {ramHint.text}
-            </div>
-          </section>
+          <MemoryCard
+            config={config}
+            persist={persist}
+            head={<CardHead icon={<MemoryIcon size={18} />} tone="violet" title="Memory" desc="How much RAM Minecraft is allowed to use" />}
+          />
 
           {/* ── Graphics ───────────────────────────── */}
           <section className="card">
@@ -238,6 +180,12 @@ export function SettingsPage({ launcher, config, persist, operation, launcherVer
               </div>
             )}
           </section>
+
+          {/* ── Storage ────────────────────────────── */}
+          <StorageCard
+            gameRunning={launcher.running}
+            head={<CardHead icon={<DatabaseIcon size={18} />} tone="green" title="Storage" desc="What BSCraft keeps on this PC" />}
+          />
 
           {/* ── About ──────────────────────────────── */}
           <section className="card">

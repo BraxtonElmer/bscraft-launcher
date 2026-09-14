@@ -420,6 +420,9 @@ pub async fn install_forge(
         .arg(&installer_path)
         .arg("--installClient")
         .arg(&mc_dir)
+        // It writes its log next to wherever it's run from; keep that in the game folder,
+        // not the launcher's install folder
+        .current_dir(&mc_dir)
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
         .output()

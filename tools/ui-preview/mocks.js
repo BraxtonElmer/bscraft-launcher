@@ -27,6 +27,7 @@ export function createMocks() {
     config: {
       username: installed ? 'Raxtray' : '',
       ram_mb: 6144,
+      ram_auto: params.get('ramauto') !== '0',
       console_enabled: false,
       prefer_dgpu: true,
       performance_mode: false,
@@ -71,8 +72,24 @@ export function createMocks() {
     return Array.from(new Uint8Array(await blob.arrayBuffer()))
   }
 
+  // ?pc=16i (16 GB, integrated graphics: this laptop) | 16d | 32 | 12i | 8i — mirrors settings::plan_for in Rust
+  const pc = params.get('pc') || '32'
+  const memoryPlan = (() => {
+    const totalMb = { '16i': 16062, '16d': 16300, '32': 32607, '12i': 12000, '8i': 8000 }[pc] ?? 32607
+    const integrated = pc.endsWith('i')
+    const gb = mb => Math.floor(mb / 1024) * 1024
+    const gpu = integrated ? 1536 : 0
+    const recommended = Math.min(8192, Math.max(4096, gb(Math.max(0, totalMb - 7168 - gpu))))
+    const safeMax = Math.max(recommended, gb(Math.max(0, totalMb - 5632 - gpu / 2)))
+    return { total_mb: totalMb, integrated_gpu: integrated, recommended_mb: recommended, min_mb: 6144, max_useful_mb: 10240, safe_max_mb: safeMax }
+  })()
+  const storage = { game: 1_100_000_000, java: 140_000_000, modpack: 1_950_000_000, worlds: 380_000_000, caches: 260_000_000 }
+
   const files = []
-  for (let i = 0; i < 209; i++) files.push({ path: `mods/mod-${i}.jar`, url: '', sha256: '', size: 3_400_000 + (i % 7) * 100_000 })
+  for (const name of ['DistantHorizons-3.0.3-b-1.20.1-fabric-forge.jar', 'oculus-mc1.20.1-1.8.0.jar', 'RyoamicLights-forge-0.2.3+mc1.20.1.jar', 'skinlayers3d-forge-1.11.1-mc1.20.1.jar', 'BetterAnimationsCollection-v8.0.1-1.20.1-Forge.jar', 'notenoughanimations-forge-1.12.3-mc1.20.1.jar', 'MobPlaques-v8.0.1-1.20.1-Forge.jar', 'AmbientSounds_FORGE_v6.3.8_mc1.20.1.jar', 'Presence Footsteps [FORGE] 1.0.0.jar', 'sound-physics-remastered-forge-1.20.1-1.4.10.jar']) {
+    files.push({ path: `mods/${name}`, url: '', sha256: '', size: 2_000_000, performance: true })
+  }
+  for (let i = 0; i < 199; i++) files.push({ path: `mods/mod-${i}.jar`, url: '', sha256: '', size: 3_400_000 + (i % 7) * 100_000 })
   for (let i = 0; i < 372; i++) files.push({ path: `config/mod-${i}/settings.toml`, url: '', sha256: '', size: 1200 })
   // ?java=21 makes the pack ask for another Java than the one installed (17), like a manifest bump
   const manifest = { modpack_version: '1.0.1', minecraft_version: '1.20.1', forge_version: '47.4.10', java_version: Number(params.get('java') || 17), files }
@@ -105,9 +122,21 @@ export function createMocks() {
   ]
 
   const handlers = {
-    get_config: () => ({ ...state.config }),
+    get_config: () => ({ ...state.config, ...(state.config.ram_auto !== false ? { ram_mb: memoryPlan.recommended_mb, ram_auto: true } : {}) }),
     save_config: ({ config }) => { state.config = { ...config } },
-    get_system_ram: () => 32607,
+    get_system_ram: () => memoryPlan.total_mb,
+    get_memory_plan: () => memoryPlan,
+    storage_usage: async () => {
+      await sleep(400)
+      const groups = Object.entries(storage).map(([key, bytes]) => ({ key, bytes }))
+      return { path: String.raw`C:\Users\raxtr\AppData\Roaming\BSCraft`, total: groups.reduce((n, g) => n + g.bytes, 0), groups }
+    },
+    clear_caches: async () => { await sleep(700); const freed = storage.caches; storage.caches = 0; return freed },
+    open_data_folder: () => null,
+    uninstall_bscraft: async ({ keepWorlds }) => {
+      await sleep(1500)
+      return { kept_in: keepWorlds ? String.raw`C:\Users\raxtr\Documents\BSCraft worlds` : null, uninstaller_started: true }
+    },
     get_gpus: async () => { await sleep(500); return [
       { name: 'NVIDIA GeForce RTX 4070 Laptop GPU', vendor: 'NVIDIA' },
       { name: 'Intel(R) UHD Graphics', vendor: 'Intel Corporation' },

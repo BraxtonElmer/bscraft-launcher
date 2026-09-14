@@ -38,6 +38,11 @@ pub fn run() {
             commands::settings::get_config,
             commands::settings::save_config,
             commands::settings::get_system_ram,
+            commands::settings::get_memory_plan,
+            commands::storage::storage_usage,
+            commands::storage::clear_caches,
+            commands::storage::open_data_folder,
+            commands::storage::uninstall_bscraft,
             commands::settings::get_gpus,
             commands::settings::write_error_report,
             // Launcher self-update

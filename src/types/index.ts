@@ -5,6 +5,8 @@
 export interface AppConfig {
   username: string;
   ram_mb: number;
+  /** Memory follows the recommendation for this PC until the player picks an amount */
+  ram_auto?: boolean | null;
   console_enabled: boolean;
   prefer_dgpu: boolean;
   performance_mode: boolean;
@@ -13,6 +15,27 @@ export interface AppConfig {
   installed_modpack_version: string | null;
   installed_mc_version: string | null;
   installed_forge_version: string | null;
+}
+
+/** How much memory suits this PC and the pack (Rust: settings::MemoryPlan) */
+export interface MemoryPlan {
+  total_mb: number;
+  integrated_gpu: boolean;
+  recommended_mb: number;
+  min_mb: number;
+  max_useful_mb: number;
+  safe_max_mb: number;
+}
+
+export interface StorageUsage {
+  path: string;
+  total: number;
+  groups: { key: 'game' | 'java' | 'modpack' | 'worlds' | 'caches'; bytes: number }[];
+}
+
+export interface UninstallResult {
+  kept_in: string | null;
+  uninstaller_started: boolean;
 }
 
 export interface GpuInfo {

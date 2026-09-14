@@ -8,4 +8,5 @@ pub mod launcher;
 pub mod modpack;
 pub mod server;
 pub mod settings;
+pub mod storage;
 pub mod update;

@@ -4,8 +4,8 @@ import { PlayerHead } from '../components/PlayerHead'
 import { PasswordForm } from '../components/PasswordForm'
 import { ProgressBar, Segmented, Spinner, describeOperation, totalPercent } from '../components/ui'
 import {
-  AlertIcon, CheckIcon, ChevronUpIcon, DownloadIcon, GaugeIcon, HomeIcon, KeyIcon, MemoryIcon,
-  RefreshIcon, ServerIcon, SparklesIcon, StopIcon, TerminalIcon,
+  AlertIcon, CheckIcon, ChestIcon, ChevronUpIcon, DiamondIcon, DownloadIcon, GaugeIcon, HomeIcon, KeyIcon, MemoryIcon,
+  RefreshIcon, ServerIcon, StopIcon, TerminalIcon,
 } from '../components/Icons'
 import { formatBytes, formatRam, sanitizeUsername, usernameProblem } from '../lib/format'
 import { usePublishedSkin } from '../hooks/useSkin'
@@ -85,7 +85,7 @@ export function HomePage({ launcher, config, operation, startedAt, onNavigate, o
 
         {launcherUpdate && !operation && (
           <div className="callout">
-            <div className="callout-icon"><SparklesIcon size={18} /></div>
+            <div className="callout-icon pixel"><ChestIcon size={24} /></div>
             <div className="callout-text">
               <strong>Launcher v{launcherUpdate.latest_version} is ready</strong>
               <span className="callout-notes">
@@ -264,6 +264,8 @@ function DockControls({ launcher, config, onNavigate, onPlay }: {
 
   const problem = usernameProblem(username)
   const showProblem = !!problem && (username.length > 0 || usernameNudge > 0)
+  // What Performance mode switches off, straight from the modpack's manifest
+  const extras = (launcher.manifest?.files ?? []).filter(f => f.performance).map(f => modName(f.path))
 
   return (
     <>
@@ -307,8 +309,8 @@ function DockControls({ launcher, config, onNavigate, onPlay }: {
           onChange={v => launcher.setPerformanceMode(v === 'performance')}
           disabled={busy}
           options={[
-            { value: 'quality', label: 'Quality', icon: <SparklesIcon size={13} />, title: 'All mods active' },
-            { value: 'performance', label: 'Performance', icon: <GaugeIcon size={13} />, title: 'Visual mods are removed for better FPS' },
+            { value: 'quality', label: 'Quality', icon: <DiamondIcon size={14} />, tip: <ModeTip mode="quality" extras={extras} /> },
+            { value: 'performance', label: 'Performance', icon: <GaugeIcon size={13} />, tip: <ModeTip mode="performance" extras={extras} /> },
           ]}
         />
       </div>
@@ -317,13 +319,58 @@ function DockControls({ launcher, config, onNavigate, onPlay }: {
 
       <div className="dock-field">
         <span className="overline">Memory</span>
-        <button className="dock-link" onClick={() => onNavigate('settings')} title="Change memory in Settings">
+        <button
+          className="dock-link"
+          onClick={() => onNavigate('settings')}
+          title={config.ram_auto !== false ? 'Automatic: the most that helps on this PC. Change it in Settings' : 'Change memory in Settings'}
+        >
           <MemoryIcon size={15} />
           {formatRam(config.ram_mb)}
         </button>
       </div>
 
       <div className="dock-spacer" />
+    </>
+  )
+}
+
+// ── Graphics mode explained ──────────────────────────────────
+
+/** Friendly names for the mods Performance mode turns off; others are tidied from the file name */
+const MOD_NAMES: Record<string, string> = {
+  distanthorizons: 'Distant Horizons (far terrain)',
+  oculus: 'Oculus (shaders)',
+  ryoamiclights: 'Ryoamic Lights (dynamic lights)',
+  skinlayers3d: '3D skin layers',
+  betteranimationscollection: 'Better Animations',
+  notenoughanimations: 'Not Enough Animations',
+  mobplaques: 'Mob health plaques',
+  ambientsounds: 'Ambient Sounds',
+  presencefootsteps: 'Presence Footsteps',
+  'soundphysicsremastered': 'Sound Physics',
+}
+
+export function modName(path: string): string {
+  const file = path.split('/').pop()?.replace(/\.jar$/i, '') ?? path
+  // Up to the version: "DistantHorizons-3.0.3-b..." → "DistantHorizons", "Presence Footsteps [FORGE] 1.0.0" → "Presence Footsteps"
+  const base = file.split(/[-_ ](?=v?\d|forge|fabric|mc\d|\[)/i)[0]
+  const key = base.toLowerCase().replace(/[^a-z0-9]/g, '')
+  return MOD_NAMES[key] ?? base.replace(/[-_]/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2')
+}
+
+function ModeTip({ mode, extras }: { mode: 'quality' | 'performance'; extras: string[] }) {
+  return mode === 'quality' ? (
+    <>
+      <strong>Quality</strong>
+      <span>Everything on, the way BSCraft is meant to look and sound: far terrain, shaders, dynamic lights, 3D skins, smoother animations and richer sound.</span>
+      <span className="tip-foot">Best with a graphics card.</span>
+    </>
+  ) : (
+    <>
+      <strong>Performance</strong>
+      <span>More FPS and less memory. Turns off {extras.length ? `${extras.length} extras` : 'the heaviest extras'}:</span>
+      {extras.length > 0 && <span className="tip-list">{extras.join(' · ')}</span>}
+      <span className="tip-foot">Nothing else changes, and you can switch back any time.</span>
     </>
   )
 }
