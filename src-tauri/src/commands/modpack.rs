@@ -95,7 +95,7 @@ pub async fn fetch_manifest() -> Result<ModpackManifest, String> {
         .build()
         .map_err(|e| e.to_string())?;
 
-    let manifest: ModpackManifest = client
+    let mut manifest: ModpackManifest = client
         .get(&modpack_manifest_url())
         .send()
         .await
@@ -103,11 +103,23 @@ pub async fn fetch_manifest() -> Result<ModpackManifest, String> {
         .json()
         .await
         .map_err(|e| format!("Failed to parse manifest: {}", e))?;
+    // Folder clutter that slipped into the pack isn't installed (and, being gone from the
+    // list now, is tidied away from players who already have it)
+    manifest.files.retain(|f| !is_os_clutter(&f.path));
+    manifest.initial_files.retain(|f| !is_os_clutter(&f.path));
 
     // Cache manifest on disk so apply_performance_mode works offline
     save_manifest_cache(&manifest);
 
     Ok(manifest)
+}
+
+/// Files Windows and macOS leave in folders (desktop.ini, Thumbs.db, .DS_Store...)
+fn is_os_clutter(path: &str) -> bool {
+    let name = path.rsplit('/').next().unwrap_or(path).to_ascii_lowercase();
+    matches!(name.as_str(), "desktop.ini" | "thumbs.db" | "ehthumbs.db" | ".ds_store")
+        || name.starts_with("._")
+        || path.split('/').any(|part| part == "__MACOSX")
 }
 
 // ── Manifest cache ─────────────────────────────────────────────────────────
@@ -671,7 +683,17 @@ fn collect_files(
 
 #[cfg(test)]
 mod tests {
-    use super::safe_relative;
+    use super::{is_os_clutter, safe_relative};
+
+    #[test]
+    fn folder_clutter_is_left_out() {
+        for junk in ["desktop.ini", "config/Desktop.ini", "shaderpacks/Thumbs.db", "mods/.DS_Store", "__MACOSX/mods/x.jar", "mods/._jei.jar"] {
+            assert!(is_os_clutter(junk), "{junk}");
+        }
+        for real in ["mods/jei-1.20.1.jar", "config/desktop.json", "options.txt", "config/thumbs/db.toml"] {
+            assert!(!is_os_clutter(real), "{real}");
+        }
+    }
 
     #[test]
     fn manifest_paths_must_stay_inside_the_game_folder() {

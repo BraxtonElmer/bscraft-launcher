@@ -19,15 +19,19 @@ export function useAccount(username: string) {
     return s.password_set
   }, [])
 
-  const checkServer = useCallback(async () => {
-    if (usernameProblem(username)) { setServer(null); return }
+  /** Asks the server about the name and saved password; null if it couldn't be asked */
+  const checkServer = useCallback(async (): Promise<ServerAccount | null> => {
+    if (usernameProblem(username)) { setServer(null); return null }
     setChecking(true)
     setServerError(null)
     try {
-      setServer(await invoke<ServerAccount>('check_server_account', { username }))
+      const s = await invoke<ServerAccount>('check_server_account', { username })
+      setServer(s)
+      return s
     } catch (e) {
       setServer(null)
       setServerError(String(e))
+      return null
     } finally {
       setChecking(false)
     }
@@ -41,10 +45,11 @@ export function useAccount(username: string) {
     return () => window.clearTimeout(t)
   }, [checkServer])
 
+  /** Saves the password on this PC, then checks it with the server */
   const savePassword = useCallback(async (password: string) => {
     await invoke('set_game_password', { password })
     await refreshLocal()
-    await checkServer()
+    return checkServer()
   }, [refreshLocal, checkServer])
 
   const revealPassword = useCallback(() => invoke<string | null>('reveal_game_password'), [])

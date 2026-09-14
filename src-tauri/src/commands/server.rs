@@ -5,13 +5,18 @@
 // handshake + status request over TCP, then a ping for the latency.
 // The server answers with the player count and a sample of up to 12
 // online players' names.
+//
+// That sample hides anyone whose "Allow Server Listings" is off, and
+// Minecraft 1.20.1 turns it off for everyone who has died and respawned
+// until they rejoin. So if the server also answers Query (enable-query in
+// server.properties), the names come from there: all of them, always.
 // ============================================================
 
 use crate::constants::GAME_SERVER_ADDRESS;
 use serde::Serialize;
 use std::time::{Duration, Instant};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::net::TcpStream;
+use tokio::net::{TcpStream, UdpSocket};
 
 const GAME_SERVER_PORT: u16 = 25565;
 /// Minecraft 1.20.1
@@ -30,14 +35,25 @@ pub struct ServerStatus {
 
 #[tauri::command]
 pub async fn server_status() -> Result<ServerStatus, String> {
-    match tokio::time::timeout(Duration::from_secs(6), query(GAME_SERVER_ADDRESS, GAME_SERVER_PORT)).await {
-        Ok(Ok(status)) => Ok(status),
+    let (status, names) = tokio::join!(
+        tokio::time::timeout(Duration::from_secs(6), ping(GAME_SERVER_ADDRESS, GAME_SERVER_PORT)),
+        tokio::time::timeout(Duration::from_millis(1500), query_names(GAME_SERVER_ADDRESS, GAME_SERVER_PORT)),
+    );
+    match status {
+        Ok(Ok(mut status)) => {
+            if let Ok(Ok(mut names)) = names {
+                names.sort_by_key(|n| n.to_lowercase());
+                names.dedup();
+                status.players = names;
+            }
+            Ok(status)
+        }
         // Unreachable, refused or too slow: the server is down as far as players are concerned
         _ => Ok(ServerStatus::default()),
     }
 }
 
-async fn query(host: &str, port: u16) -> Result<ServerStatus, String> {
+async fn ping(host: &str, port: u16) -> Result<ServerStatus, String> {
     let mut stream = TcpStream::connect((host, port)).await.map_err(|e| e.to_string())?;
     stream.set_nodelay(true).ok();
 
@@ -95,6 +111,55 @@ fn parse_status(json: &[u8]) -> Result<ServerStatus, String> {
         latency_ms: 0,
         version: v["version"]["name"].as_str().unwrap_or_default().to_string(),
     })
+}
+
+// ── Query (GameSpy 4, UDP) ─────────────────────────────────────────────────
+
+/// Every online player's name, if the server answers Query (it's off unless enabled)
+async fn query_names(host: &str, port: u16) -> Result<Vec<String>, String> {
+    let socket = UdpSocket::bind(("0.0.0.0", 0)).await.map_err(|e| e.to_string())?;
+    socket.connect((host, port)).await.map_err(|e| e.to_string())?;
+    let session: u32 = 0x0B5C_0B5C & 0x0F0F_0F0F;
+    let mut buf = [0u8; 8192];
+
+    // Handshake: the server answers with a challenge token, as ASCII digits
+    let mut hello = vec![0xFE, 0xFD, 0x09];
+    hello.extend_from_slice(&session.to_be_bytes());
+    socket.send(&hello).await.map_err(|e| e.to_string())?;
+    let n = socket.recv(&mut buf).await.map_err(|e| e.to_string())?;
+    let token = parse_challenge(&buf[..n], session)?;
+
+    // Full stat (the four padding bytes ask for the full answer, player list included)
+    let mut stat = vec![0xFE, 0xFD, 0x00];
+    stat.extend_from_slice(&session.to_be_bytes());
+    stat.extend_from_slice(&token.to_be_bytes());
+    stat.extend_from_slice(&[0, 0, 0, 0]);
+    socket.send(&stat).await.map_err(|e| e.to_string())?;
+    let n = socket.recv(&mut buf).await.map_err(|e| e.to_string())?;
+    parse_full_stat(&buf[..n], session)
+}
+
+fn parse_challenge(data: &[u8], session: u32) -> Result<i32, String> {
+    if data.len() < 6 || data[0] != 0x09 || data[1..5] != session.to_be_bytes() {
+        return Err("unexpected query handshake".into());
+    }
+    let digits = data[5..].split(|&b| b == 0).next().unwrap_or_default();
+    std::str::from_utf8(digits).ok().and_then(|t| t.trim().parse::<i32>().ok()).ok_or_else(|| "bad challenge token".into())
+}
+
+/// Names from a full stat answer: key/value pairs, then `\x01player_\0\0` and the names
+fn parse_full_stat(data: &[u8], session: u32) -> Result<Vec<String>, String> {
+    if data.len() < 5 || data[0] != 0x00 || data[1..5] != session.to_be_bytes() {
+        return Err("unexpected query answer".into());
+    }
+    const MARKER: &[u8] = b"\x01player_\0\0";
+    let at = data.windows(MARKER.len()).position(|w| w == MARKER).ok_or("no player list")?;
+    Ok(data[at + MARKER.len()..]
+        .split(|&b| b == 0)
+        .filter_map(|n| std::str::from_utf8(n).ok())
+        .filter(|n| (1..=16).contains(&n.len()) && n.chars().all(|c| c.is_ascii_alphanumeric() || c == '_'))
+        .map(str::to_string)
+        .collect())
 }
 
 fn write_varint(out: &mut Vec<u8>, value: i32) {
@@ -155,7 +220,7 @@ async fn read_packet(stream: &mut TcpStream) -> Result<Vec<u8>, String> {
 
 #[cfg(test)]
 mod tests {
-    use super::{parse_status, read_varint_slice, write_varint};
+    use super::{parse_challenge, parse_full_stat, parse_status, read_varint_slice, write_varint};
 
     #[test]
     fn varints_round_trip() {
@@ -175,5 +240,26 @@ mod tests {
         assert_eq!((s.players_online, s.players_max), (3, 20));
         assert_eq!(s.players, vec!["akariyu".to_string(), "Zed".to_string()]);
         assert_eq!(s.version, "1.20.1");
+    }
+
+    #[test]
+    fn reads_query_answers() {
+        let session = 0x0B0C_0B0C_u32;
+        let mut hello = vec![0x09];
+        hello.extend_from_slice(&session.to_be_bytes());
+        hello.extend_from_slice(b"-1234567\0");
+        assert_eq!(parse_challenge(&hello, session).unwrap(), -1_234_567);
+
+        let mut stat = vec![0x00];
+        stat.extend_from_slice(&session.to_be_bytes());
+        stat.extend_from_slice(b"splitnum\0\x80\0hostname\0BSCraft\0numplayers\02\0\0");
+        stat.extend_from_slice(b"\x01player_\0\0Elmer\0zukashixx\0\0");
+        assert_eq!(parse_full_stat(&stat, session).unwrap(), vec!["Elmer".to_string(), "zukashixx".to_string()]);
+        // Nobody on
+        let mut empty = stat[..stat.len() - 17].to_vec();
+        empty.extend_from_slice(b"\0");
+        assert_eq!(parse_full_stat(&empty, session).unwrap(), Vec::<String>::new());
+        // Someone else's answer
+        assert!(parse_full_stat(&stat, 7).is_err());
     }
 }

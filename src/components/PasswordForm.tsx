@@ -41,7 +41,7 @@ export function PasswordForm({ confirm, submitLabel, onSubmit, onCancel, cancelL
     try {
       await onSubmit(password)
     } catch (err) {
-      setError(String(err))
+      setError(err instanceof Error ? err.message : String(err))
     } finally {
       setBusy(false)
     }

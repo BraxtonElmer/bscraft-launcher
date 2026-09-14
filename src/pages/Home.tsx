@@ -27,23 +27,37 @@ interface Props {
 
 // Asked once per session; skipping leaves it to SimpleLogin's in-game prompt
 let passwordPromptSkipped = false
+// "Play anyway" past a password the server says is wrong (it can lag a few minutes behind
+// a password changed in game), once per session
+let wrongPasswordSkipped = false
 
 export function HomePage({ launcher, config, operation, startedAt, onNavigate, onStopGame, account, onStartIn }: Props) {
   const { status, manifest, launcherUpdate, modpackUpdate, running } = launcher
-  const [askPassword, setAskPassword] = useState(false)
+  const [askPassword, setAskPassword] = useState<'new' | 'wrong' | null>(null)
+  const checking = useRef(false)
 
   const mcVersion = config.installed_mc_version ?? manifest?.minecraft_version
 
-  const play = () => {
+  const play = async () => {
     const readyToLaunch = !launcherUpdate && status !== 'offline' && status !== 'error' && !usernameProblem(launcher.username.trim())
     if (readyToLaunch && account.passwordSet === false && !passwordPromptSkipped) {
-      setAskPassword(true)
+      setAskPassword('new')
       return
+    }
+    if (readyToLaunch && account.passwordSet && !wrongPasswordSkipped) {
+      // Joining with the wrong password gets you kicked, after the whole game has loaded
+      if (checking.current) return
+      checking.current = true
+      const server = await account.checkServer().finally(() => { checking.current = false })
+      if (server?.registered && !server.valid) {
+        setAskPassword('wrong')
+        return
+      }
     }
     launcher.play()
   }
   const continueToPlay = () => {
-    setAskPassword(false)
+    setAskPassword(null)
     launcher.play()
   }
 
@@ -136,12 +150,24 @@ export function HomePage({ launcher, config, operation, startedAt, onNavigate, o
 
       <div className="credit">Made by Akariyu and Zukashi</div>
 
-      {askPassword && (
+      {askPassword === 'new' && (
         <PasswordPrompt
           username={launcher.username.trim()}
           onSave={async p => { await account.savePassword(p); continueToPlay() }}
           onSkip={() => { passwordPromptSkipped = true; continueToPlay() }}
-          onClose={() => setAskPassword(false)}
+          onClose={() => setAskPassword(null)}
+        />
+      )}
+      {askPassword === 'wrong' && (
+        <WrongPasswordPrompt
+          username={launcher.username.trim()}
+          onSave={async p => {
+            const server = await account.savePassword(p)
+            if (server && !server.valid) throw new Error("That's not the one the server has either.")
+            continueToPlay()
+          }}
+          onSkip={() => { wrongPasswordSkipped = true; continueToPlay() }}
+          onClose={() => setAskPassword(null)}
         />
       )}
     </div>
@@ -177,6 +203,41 @@ function PasswordPrompt({ username, onSave, onSkip, onClose }: {
           onSubmit={onSave}
           onCancel={onSkip}
           cancelLabel="Skip, set it in game"
+        />
+      </div>
+    </div>
+  )
+}
+
+function WrongPasswordPrompt({ username, onSave, onSkip, onClose }: {
+  username: string; onSave: (p: string) => Promise<void>; onSkip: () => void; onClose: () => void
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal narrow" role="dialog" aria-modal="true" aria-labelledby="pw-wrong-title" onClick={e => e.stopPropagation()}>
+        <div className="modal-head">
+          <div className="modal-icon danger"><KeyIcon size={20} /></div>
+          <div>
+            <h2 id="pw-wrong-title" className="modal-title">That password won't get you in</h2>
+            <p className="modal-sub">
+              BSCraft has a different password for <b>{username}</b> than the one saved on this PC, so the server
+              would turn you away once the game has loaded. Enter the password you used before (on the PC you
+              first played on, it's under Profile › Server password), or ask an admin to reset your name.
+            </p>
+          </div>
+        </div>
+        <PasswordForm
+          autoFocus
+          submitLabel="Save and play"
+          onSubmit={onSave}
+          onCancel={onSkip}
+          cancelLabel="Play anyway"
         />
       </div>
     </div>

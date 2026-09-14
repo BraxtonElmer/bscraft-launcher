@@ -50,6 +50,9 @@ CONFIG_FILE = Path(__file__).parent / "config.ini"
 # by the launcher itself, with BSCraft always listed.)
 SKIP_ROOT_FILES = {"servers.dat", "usercache.json"}
 
+# Files Windows and macOS leave in folders, never part of the pack
+OS_CLUTTER = {"desktop.ini", "thumbs.db", "ehthumbs.db", ".ds_store"}
+
 # Pack defaults the launcher installs only when a player doesn't have the file
 # yet (manifest "initial_files"; launchers before 1.1.0 ignore that list).
 INITIAL_ROOT_FILES = {"options.txt"}
@@ -114,6 +117,10 @@ def scan_modpack_dir(modpack_dir: Path, base_url: str) -> list[dict]:
         if rel.endswith(".log") or rel.endswith(".tmp"):
             continue
         if rel in SKIP_ROOT_FILES or rel in INITIAL_ROOT_FILES:
+            continue
+        # Folder clutter from Windows and macOS (the launcher skips it too)
+        name = abs_path.name.lower()
+        if name in OS_CLUTTER or name.startswith("._") or "__MACOSX" in rel.split("/"):
             continue
 
         digest = sha256_file(abs_path)
