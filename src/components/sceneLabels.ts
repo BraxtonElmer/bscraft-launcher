@@ -165,6 +165,10 @@ const ICONS: Record<Icon, { rows: string[]; colors: Record<string, string> }> = 
     rows: ['...ff..', 't.ffff.', 'ttfffkf', 't.fwwf.', '...ff..'],
     colors: { f: '#ff9e45', t: '#e27a2a', k: '#3b2418', w: '#ffd6a8' },
   },
+  horns: {
+    rows: ['h.....h', 'hrrrrrh', 'rrwrwrr', 'rrrrrrr', 'rkrrrkr', '.rkkkr.'],
+    colors: { h: '#5a1a24', r: '#ff5d5d', w: '#ffffff', k: '#5a1a24' },
+  },
   sun: {
     rows: ['...s...', '.s...s.', '..wyy..', 's.yyy.s', '..yyy..', '.s...s.', '...s...'],
     colors: { s: '#ffa02a', y: '#ffd04a', w: '#fff3b8' },

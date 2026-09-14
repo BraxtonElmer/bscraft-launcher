@@ -615,7 +615,7 @@ const WINGS = [
 ]
 
 /** A little angel, facing out of the screen; (x, y) is the hem of the robe */
-export function drawAngel(ctx: CanvasRenderingContext2D, x: number, y: number, t: number, arms: number, alpha: number) {
+export function drawAngel(ctx: CanvasRenderingContext2D, x: number, y: number, t: number, arms: number, alpha: number, halo = true) {
   ctx.globalAlpha = alpha
   const glow = ctx.createRadialGradient(x, y - 14, 2, x, y - 14, 30)
   glow.addColorStop(0, 'rgba(255,248,220,0.55)')
@@ -653,9 +653,112 @@ export function drawAngel(ctx: CanvasRenderingContext2D, x: number, y: number, t
   drawRows(ctx, ['.hhhh.', 'hhhhhh', 'hssssh', 'sesses', 'pssssp', '.ssss.'],
     { h: '#f5d77a', s: '#f6d2b4', e: '#4a6fd8', p: '#f2a3b0' }, x - 3, y - 21)
   // Halo, bobbing
-  const hy = y - 25 + Math.round(Math.sin(t * 3) * 0.6)
-  drawRows(ctx, ['.####.', '#....#', '.####.'], { '#': '#ffd84a' }, x - 3, hy)
+  if (halo) drawHalo(ctx, x, y - 25 + Math.round(Math.sin(t * 3) * 0.6))
   ctx.globalAlpha = 1
+}
+
+export function drawHalo(ctx: CanvasRenderingContext2D, x: number, y: number) {
+  drawRows(ctx, ['.####.', '#....#', '.####.'], { '#': '#ffd84a' }, x - 3, y)
+}
+
+// The imp: a little red devil with a pitchfork, facing right, feet at (x, y)
+const IMP = [
+  '.h.....h.',
+  '.hh...hh.',
+  '..rrrrr..',
+  '.rrrrrrr.',
+  '.rwkrwkr.',
+  '.rrrrrrr.',
+  '.rcmmmcr.',
+  '..rrrrr..',
+  '..rrrrr..',
+  '..rrrrr..',
+  '..r...r..',
+]
+const IMP_COLORS = { r: '#e5484d', h: '#4a1422', w: '#ffffff', k: '#2a0a12', m: '#5a1020', c: '#ff9aa0' }
+
+export interface ImpPose {
+  dir: 1 | -1
+  /** 0..1, jabbing the pitchfork forward */
+  poke: number
+  wave: boolean
+  kick: boolean
+  dizzy: boolean
+}
+
+export function drawImp(ctx: CanvasRenderingContext2D, x: number, y: number, t: number, pose: ImpPose) {
+  const d = pose.dir
+  const top = y - IMP.length - 2
+  const px = (dx: number, dy: number, color: string) => {
+    ctx.fillStyle = color
+    ctx.fillRect(x + dx * d, top + dy, 1, 1)
+  }
+  // Tail behind, wagging, with its arrow tip
+  const wag = Math.round(Math.sin(t * 7))
+  px(-3, 9, '#a3263a'); px(-4, 8, '#a3263a'); px(-5, 7 + wag, '#a3263a'); px(-5, 6 + wag, '#a3263a')
+  px(-6, 5 + wag, '#a3263a'); px(-5, 5 + wag, '#a3263a'); px(-4, 5 + wag, '#a3263a'); px(-5, 4 + wag, '#a3263a')
+  // Body, mirrored when facing left
+  IMP.forEach((row, r) => {
+    for (let i = 0; i < row.length; i++) {
+      let ch = row[i]
+      if (ch === '.') continue
+      if (pose.dizzy && ch === 'k') ch = 'w'
+      px(i - 4, r, IMP_COLORS[ch as keyof typeof IMP_COLORS])
+    }
+  })
+  // Feet, kicking when held
+  const kick = pose.kick ? (Math.floor(t * 10) % 2 ? 1 : -1) : 0
+  px(-2 - (kick > 0 ? 1 : 0), 11, '#a3263a'); px(-2, 12, '#7a1a2c'); px(-3, 12, '#7a1a2c')
+  px(2 + (kick < 0 ? 1 : 0), 11, '#a3263a'); px(2, 12, '#7a1a2c'); px(3, 12, '#7a1a2c')
+  // Back arm waving, or at its side
+  if (pose.wave) {
+    const up = Math.floor(t * 8) % 2
+    px(-3, 6 - up, '#e5484d'); px(-4, 5 - up, '#e5484d'); px(-4, 4 - up, '#e5484d')
+  } else {
+    px(-3, 8, '#a3263a'); px(-3, 9, '#a3263a')
+  }
+  // Front arm and the pitchfork
+  const reach = Math.round(pose.poke * 3)
+  px(3, 8, '#a3263a'); px(4 + Math.min(1, reach), 8, '#a3263a')
+  const fx = 5 + reach, tilt = pose.poke * 0.5
+  for (let i = -2; i < 10; i++) px(fx + Math.round((i + 2) * tilt * 0.4), 9 - i, '#8a5a2a')
+  // A little golden trident
+  const tx = fx + Math.round(12 * tilt * 0.4), ty = -1
+  for (let i = -2; i <= 2; i++) px(tx + i, ty, '#e0a830')
+  px(tx - 2, ty - 1, '#ffd04a'); px(tx, ty - 1, '#ffd04a'); px(tx + 2, ty - 1, '#ffd04a')
+  px(tx, ty - 2, '#fff0a0')
+  if (pose.dizzy) {
+    // Little stars going round its head
+    for (let k = 0; k < 3; k++) {
+      const a = t * 5 + k * 2.1
+      ctx.fillStyle = '#ffe27a'
+      ctx.fillRect(Math.round(x + Math.cos(a) * 5), Math.round(top - 2 + Math.sin(a) * 1.5), 1, 1)
+    }
+  }
+}
+
+/** A glowing crack in the ground, `a` (0..1) how open it is */
+export function drawCrack(ctx: CanvasRenderingContext2D, x: number, base: number, a: number, t: number) {
+  if (a <= 0) return
+  const zig = [0, 1, 1, 0, 1, 2, 1, 0, 1, 1, 2, 1, 0, 1, 0, 1, 1]
+  const half = Math.round(8 * Math.min(1, a * 1.4))
+  const pulse = 0.7 + Math.sin(t * 8) * 0.3
+  const glow = ctx.createRadialGradient(x, base, 1, x, base, 16)
+  glow.addColorStop(0, `rgba(255,90,42,${(0.45 * a * pulse).toFixed(3)})`)
+  glow.addColorStop(1, 'rgba(255,90,42,0)')
+  ctx.globalCompositeOperation = 'lighter'
+  ctx.fillStyle = glow
+  ctx.fillRect(x - 16, base - 16, 32, 20)
+  ctx.globalCompositeOperation = 'source-over'
+  for (let i = -half; i <= half; i++) {
+    const dy = zig[(i + 8) % zig.length]
+    ctx.fillStyle = '#2a0c0c'
+    ctx.fillRect(x + i, base + dy, 1, 1)
+    ctx.globalAlpha = a * pulse
+    ctx.fillStyle = Math.abs(i) < half - 2 ? '#ff8a3a' : '#ff5a2a'
+    ctx.fillRect(x + i, base + dy - 1, 1, 1)
+    ctx.globalAlpha = 1
+  }
 }
 
 /** Soft light pouring down from the sky onto x */
@@ -674,4 +777,4 @@ export function drawBeam(ctx: CanvasRenderingContext2D, x: number, bottom: numbe
 
 // ── Speech bubbles (drawn by sceneLabels) ───────────────────
 
-export type Icon = 'heart' | 'note' | 'excl' | 'quest' | 'zzz' | 'dots' | 'star' | 'tear' | 'fish' | 'sun'
+export type Icon = 'heart' | 'note' | 'excl' | 'quest' | 'zzz' | 'dots' | 'star' | 'tear' | 'fish' | 'sun' | 'horns'

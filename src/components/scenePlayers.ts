@@ -13,6 +13,10 @@
 // dangle and kick; throw them and they ragdoll, splash into the pond
 // or tumble to a stop, then dust themselves off. Overdo it and they
 // end up under a gravestone, until an angel comes down for them.
+// She can be clicked (she giggles), carried off (she flutters back) or
+// flung away, and then an imp climbs out of the ground instead and
+// brings them back its own way, with horns and a taste for mischief,
+// unless you bonk it or throw it in the pond first.
 //
 // Positions are in world overlay pixels: the scene's front ground
 // layer at twice its resolution, one skin pixel each.
@@ -27,7 +31,7 @@ import {
   type Ragdoll, type RagWorld,
 } from './playerRagdoll'
 import {
-  bedAt, catchFish, createPond, drawBeam, drawBucket, drawFire, drawGrave, drawAngel, drawJukebox,
+  bedAt, catchFish, createPond, drawBeam, drawBucket, drawCrack, drawHalo, drawImp, drawFire, drawGrave, drawAngel, drawJukebox,
   drawPicnic, drawPondBack, drawPondFront, drawReeds, drawRows, flatSpot, groundAt, hillSpot, inPond, lit, lure,
   pondSpot, splash, stepPond, surfaceAt,
   type Fire, type Icon, type Jukebox, type Light, type Picnic, type Pond,
@@ -144,6 +148,10 @@ interface Figure {
   dizzy: number
   red: number
   halo: number
+  /** Brought back by the imp: horns, a tail and pranks for this long */
+  devil: number
+  prank: Figure | null
+  prankCool: number
   wet: number
   lastHit: number
   immune: number
@@ -175,14 +183,67 @@ interface Chicken { x: number; dir: 1 | -1; hop: number; hopV: number; t: number
 interface Grave {
   f: Figure
   x: number
-  phase: 'ko' | 'grave' | 'angel' | 'raise' | 'depart'
+  /**
+   * ko → grave → angel → raise → depart, the kind way; or, with the angel flung away,
+   * spurned → rumble → imp → gone (back with horns), or back to angel if the imp is seen off
+   */
+  phase: 'ko' | 'grave' | 'angel' | 'raise' | 'depart' | 'spurned' | 'rumble' | 'imp' | 'gone'
   t: number
   rise: number
   glow: number
   beam: number
-  angelY: number
   arms: number
   alpha: number
+  angel: Angel
+  imp: Imp | null
+  /** The glowing crack the imp comes up through, 0..1 */
+  crack: number
+  /** The angel's halo, knocked off when she's flung */
+  halo: { x: number; y: number; vy: number; t: number; down: boolean } | null
+  /** A speech bubble over the angel or the imp */
+  talk: { who: 'angel' | 'imp'; icon: Icon; age: number; life: number } | null
+  shake: number
+}
+
+interface Angel {
+  /** fly: doing her job; held: picked up; back: fluttering back; flung: thrown away; off: not here */
+  state: 'off' | 'fly' | 'held' | 'back' | 'flung'
+  x: number
+  y: number
+  vx: number
+  vy: number
+  spin: number
+  /** Time left of a happy twirl, after a click */
+  twirl: number
+  t: number
+}
+
+interface Imp {
+  state: 'rise' | 'cackle' | 'poke' | 'bye' | 'held' | 'flung' | 'dizzy' | 'sulk' | 'dive' | 'sizzle'
+  x: number
+  y: number
+  vx: number
+  vy: number
+  t: number
+  dir: 1 | -1
+  pokes: number
+  /** 0 standing on the ground .. 1 all the way under it */
+  sink: number
+  /** Bonked or thrown: it gives up, and the angel comes back */
+  beaten: boolean
+  air: boolean
+}
+
+interface SpiritPress {
+  g: Grave
+  who: 'angel' | 'imp'
+  sx: number
+  sy: number
+  t: number
+  grabbed: boolean
+  gx: number
+  gy: number
+  samples: { x: number; y: number; t: number }[]
 }
 
 interface Press {
@@ -216,6 +277,8 @@ export interface Party {
   flyers: Flyer[]
   butterflies: Butterfly[]
   press: Press | null
+  /** Pressing on the angel or an imp */
+  spirit: SpiritPress | null
   it: Figure | null
   beat: number
   t: number
@@ -247,7 +310,7 @@ const easeOut = (k: number) => 1 - Math.pow(1 - clamp(k, 0, 1), 3)
 export function createParty(env: LifeEnv, light: PartyLight): Party {
   const party = { env, light, figures: [], activity: 'wander', timer: 0, started: false } as unknown as Party
   Object.assign(party, {
-    graves: [], particles: [], flyers: [], butterflies: [], press: null, it: null, beat: 0, t: 0,
+    graves: [], particles: [], flyers: [], butterflies: [], press: null, spirit: null, it: null, beat: 0, t: 0,
     offX: 0, offY: 0, cursor: null, picnic: null, jukebox: null, chicken: null,
   })
   place(party, env)
@@ -310,7 +373,7 @@ function newFigure(party: Party, key: string, p: OnlinePlayer, x: number, dir: 1
     sub: '', subT: 0, subDur: 0, item: null, fishing: null, pair: null, react: null, bubble: null,
     faceCam: false, faceT: rand(1, 4), blink: rand(1, 4), jump: 0, jumpV: 0, hopT: 0, hopV: 0,
     acc: 0, lastVx: 0, glance: 0, glanceT: rand(1, 4), nod: 1, nodDir: 1, squash: 0,
-    hurt: 0, dizzy: 0, red: 0, halo: 0, wet: 0, lastHit: 0, immune: 0, danceMove: 'bounce', bucket: 0,
+    hurt: 0, dizzy: 0, red: 0, halo: 0, devil: 0, prank: null, prankCool: 0, wet: 0, lastHit: 0, immune: 0, danceMove: 'bounce', bucket: 0,
     leaving: false, hidden: false, rise: 0, t: rand(0, 10),
     head: { x, y: feet - 32 }, box: { x0: x - 5, y0: feet - 32, x1: x + 5, y1: feet },
     tag: { x, y: feet - 40, dx: 0, lift: 0, row: 0, hold: 0, ready: false },
@@ -608,6 +671,18 @@ function stepFigure(party: Party, f: Figure, dt: number) {
   f.squash = f.squash > 0 ? Math.max(0, f.squash - dt * 5) : Math.min(0, f.squash + dt * 3.5)
   f.flip = Math.max(0, f.flip - dt)
   f.nod += dt
+  if (f.devil > 0) {
+    f.devil -= dt
+    if (Math.random() < dt * 1.5 && !f.hidden) emit(party, 'smoke', f.head.x, f.head.y, 1, '90,40,50')
+    if (f.devil <= 0) {
+      // The horns go in a puff, and they wonder what came over them
+      f.devil = 0
+      f.prank = null
+      emit(party, 'smoke', f.head.x, f.head.y, 6, '90,40,50')
+      say(f, 'quest', 1.6)
+      if (f.mode === 'free') f.react = { kind: 'shake', t: 0.9, x: f.x }
+    }
+  }
   if (f.mode !== 'held') f.hurt = Math.max(0, f.hurt - dt * 0.1)
   if (f.bubble) {
     f.bubble.age += dt
@@ -802,6 +877,10 @@ function think(party: Party, f: Figure, dt: number) {
     reactThink(party, f, dt)
     return
   }
+  if (f.devil > 0 && !f.pair) {
+    prankThink(party, f, dt)
+    return
+  }
   if (f.pair) {
     pairThink(party, f, f.pair, dt)
     return
@@ -826,6 +905,38 @@ function think(party: Party, f: Figure, dt: number) {
     case 'flowers': flowersThink(party, f); break
     default: wanderThink(party, f, dt)
   }
+}
+
+/** Back from the imp: running about poking people with a cackle */
+function prankThink(party: Party, f: Figure, dt: number) {
+  f.prankCool -= dt
+  if (f.prankCool > 0) {
+    hold(f, 'stand', 'none')
+    if (Math.random() < dt * 1.2) hop(f, 80)
+    return
+  }
+  let t = f.prank
+  if (!t || t.hidden || t.leaving || t.mode !== 'free') {
+    const near = free(party).filter(o => o !== f).sort((a, b) => Math.abs(a.x - f.x) - Math.abs(b.x - f.x)).slice(0, 3)
+    t = f.prank = near.length ? pick(near) : null
+    if (!t) { wanderThink(party, f, dt); return }
+  }
+  const side = t.x > f.x ? 1 : -1
+  if (Math.abs(t.x - f.x) > 7) {
+    goTo(f, t.x - side * 6, true)
+    return
+  }
+  // Poke!
+  f.dest = null
+  hold(f, 'stand', 'point', side)
+  hop(t, 120, 0)
+  t.red = 0.25
+  say(t, 'excl', 1.2)
+  if (t.react?.kind !== 'mourn') t.react = { kind: 'look', t: 1.2, x: f.x }
+  emit(party, 'spark', t.x, t.skel.y - 6, 4, '#ff6a3a')
+  say(f, 'horns', 1.3)
+  f.prank = null
+  f.prankCool = rand(1.3, 2.4)
 }
 
 function reactThink(party: Party, f: Figure, dt: number) {
@@ -1414,12 +1525,112 @@ const toWorld = (party: Party, p: ScenePointer, px: number, py: number) =>
 /** Whether a player is under a point given in scene (quarter-resolution) pixels */
 export function figureAt(party: Party, p: ScenePointer, px: number, py: number): boolean {
   const w = toWorld(party, p, px, py)
-  return !!hitFigure(party, w.x, w.y)
+  return !!hitSpirit(party, w.x, w.y) || !!hitFigure(party, w.x, w.y)
+}
+
+/** The angel or an imp under a point, if either can be picked up just now */
+function hitSpirit(party: Party, x: number, y: number): { g: Grave; who: 'angel' | 'imp' } | null {
+  for (let i = party.graves.length - 1; i >= 0; i--) {
+    const g = party.graves[i]
+    const im = g.imp
+    if (im && im.sink < 0.5 && ['cackle', 'poke', 'held', 'dizzy', 'bye'].includes(im.state)) {
+      if (x >= im.x - 6 && x <= im.x + 6 && y >= im.y - 16 && y <= im.y + 1) return { g, who: 'imp' }
+    }
+    const a = g.angel
+    if ((a.state === 'fly' || a.state === 'back' || a.state === 'held') && g.alpha > 0.5 && ['angel', 'raise', 'depart'].includes(g.phase)) {
+      if (x >= a.x - 11 && x <= a.x + 11 && y >= a.y - 28 && y <= a.y + 1) return { g, who: 'angel' }
+    }
+  }
+  return null
+}
+
+function stepSpirit(party: Party, dt: number) {
+  const sp = party.spirit
+  if (!sp) return
+  const c = party.cursor
+  const g = sp.g, a = g.angel, im = g.imp
+  const gone = !party.graves.includes(g) || (sp.who === 'imp' ? !im : a.state === 'off' || a.state === 'flung')
+  if (!c || gone) {
+    if (sp.grabbed) letGo(party, sp, 0, 0)
+    party.spirit = null
+    return
+  }
+  sp.t += dt
+  sp.samples.push({ x: c.x, y: c.y, t: party.t })
+  if (sp.samples.length > 12) sp.samples.shift()
+  // The angel only lets herself be carried off before she's done
+  const canGrab = sp.who === 'imp' ? im!.state !== 'bye' : g.phase === 'angel' || g.phase === 'raise'
+  if (!sp.grabbed && canGrab && (Math.hypot(c.x - sp.sx, c.y - sp.sy) > 4 || sp.t > 0.3)) {
+    sp.grabbed = true
+    if (sp.who === 'angel') {
+      a.state = 'held'
+      sp.gx = a.x - c.x
+      sp.gy = a.y - c.y
+      g.talk = { who: 'angel', icon: 'excl', age: 0, life: 1.2 }
+      for (const o of party.figures) if (o.react?.kind === 'mourn' && o.react.of === g.f) say(o, 'quest', 1.2)
+    } else {
+      im!.state = 'held'
+      im!.air = false
+      sp.gx = im!.x - c.x
+      sp.gy = im!.y - c.y
+      g.talk = { who: 'imp', icon: 'excl', age: 0, life: 1.2 }
+    }
+  }
+  if (sp.grabbed) {
+    sp.gx *= 1 - Math.min(1, dt * 5)
+    sp.gy *= 1 - Math.min(1, dt * 5)
+    if (sp.who === 'angel') {
+      a.x = c.x + sp.gx
+      a.y = c.y + sp.gy
+    } else {
+      im!.x = c.x + sp.gx
+      im!.y = c.y + sp.gy
+    }
+  }
+}
+
+/** Letting go of the angel or the imp, moving at (vx, vy) */
+function letGo(party: Party, sp: SpiritPress, vx: number, vy: number) {
+  const g = sp.g, a = g.angel, im = g.imp
+  const speed = Math.hypot(vx, vy)
+  if (speed > 600) { vx *= 600 / speed; vy *= 600 / speed }
+  if (sp.who === 'angel') {
+    if (speed > 220) {
+      // Flung! Off she tumbles, and her halo comes off
+      a.state = 'flung'
+      a.t = 0
+      a.vx = vx
+      a.vy = vy
+      g.halo = { x: a.x, y: a.y - 25, vy: -40, t: 0, down: false }
+      g.talk = { who: 'angel', icon: 'excl', age: 0, life: 1.4 }
+      for (const o of party.figures) if (o.react?.kind === 'mourn' && o.react.of === g.f) say(o, pick(['excl', 'tear']), 1.6)
+    } else {
+      a.state = 'back'
+      g.talk = { who: 'angel', icon: 'dots', age: 0, life: 1.6 }
+    }
+  } else if (im) {
+    im.state = 'flung'
+    im.t = 0
+    im.air = true
+    im.vx = vx
+    im.vy = vy
+    // Thrown hard it gives up; set down, it gets back to work
+    if (speed > 200) {
+      im.beaten = true
+      g.talk = { who: 'imp', icon: 'excl', age: 0, life: 1 }
+    }
+  }
 }
 
 /** Mouse down on the scene: if it's on a player, that's a click or the start of a grab */
 export function pressParty(party: Party, p: ScenePointer, px: number, py: number): boolean {
   const w = toWorld(party, p, px, py)
+  const sp = hitSpirit(party, w.x, w.y)
+  if (sp) {
+    party.cursor = w
+    party.spirit = { ...sp, sx: w.x, sy: w.y, t: 0, grabbed: false, gx: 0, gy: 0, samples: [{ x: w.x, y: w.y, t: party.t }] }
+    return true
+  }
   const f = hitFigure(party, w.x, w.y)
   if (!f) return false
   party.cursor = w
@@ -1427,10 +1638,36 @@ export function pressParty(party: Party, p: ScenePointer, px: number, py: number
   return true
 }
 
-export const draggingParty = (party: Party) => !!party.press?.grabbed
+export const draggingParty = (party: Party) => !!party.press?.grabbed || !!party.spirit?.grabbed
 
 /** Mouse up: a quick click waves, a grab throws */
 export function releaseParty(party: Party) {
+  const sp = party.spirit
+  if (sp) {
+    party.spirit = null
+    const g = sp.g, a = g.angel, im = g.imp
+    if (!party.graves.includes(g)) return
+    if (sp.grabbed) {
+      const [vx, vy] = throwSpeed(party, sp.samples)
+      letGo(party, sp, vx, vy)
+    } else if (sp.who === 'angel') {
+      // A click: she giggles and twirls
+      a.twirl = 0.8
+      g.talk = { who: 'angel', icon: 'heart', age: 0, life: 1.5 }
+      emit(party, 'heart', a.x, a.y - 26, 2)
+      emit(party, 'spark', a.x, a.y - 14, 6)
+    } else if (im && im.state !== 'bye') {
+      // Bonk
+      im.beaten = true
+      im.state = 'dizzy'
+      im.t = 0
+      g.talk = { who: 'imp', icon: 'star', age: 0, life: 1 }
+      emit(party, 'spark', im.x, im.y - 14, 5, '#ffe27a')
+    } else if (im) {
+      g.talk = { who: 'imp', icon: 'horns', age: 0, life: 1.2 }
+    }
+    return
+  }
   const pr = party.press
   party.press = null
   if (!pr) return
@@ -1446,15 +1683,7 @@ export function releaseParty(party: Party) {
     return
   }
   if (!f.rag || f.mode !== 'held') return
-  // Throw velocity from the last ~90 ms of the cursor's movement
-  const s = pr.samples.filter(q => party.t - q.t < 0.09)
-  let vx = 0, vy = 0
-  if (s.length >= 2) {
-    const a = s[0], b = s[s.length - 1]
-    const dt = Math.max(0.016, b.t - a.t)
-    vx = (b.x - a.x) / dt
-    vy = (b.y - a.y) / dt
-  }
+  let [vx, vy] = throwSpeed(party, pr.samples)
   const speed = Math.hypot(vx, vy)
   if (speed > 1000) { vx *= 1000 / speed; vy *= 1000 / speed }
   throwRagdoll(f.rag, vx, vy)
@@ -1471,7 +1700,17 @@ export function releaseParty(party: Party) {
   }
 }
 
+/** Throw velocity from the last ~90 ms of the cursor's movement */
+function throwSpeed(party: Party, samples: { x: number; y: number; t: number }[]): [number, number] {
+  const s = samples.filter(q => party.t - q.t < 0.09)
+  if (s.length < 2) return [0, 0]
+  const a = s[0], b = s[s.length - 1]
+  const dt = Math.max(0.016, b.t - a.t)
+  return [(b.x - a.x) / dt, (b.y - a.y) / dt]
+}
+
 function stepPress(party: Party, dt: number) {
+  stepSpirit(party, dt)
   const pr = party.press
   if (!pr) return
   pr.t += dt
@@ -1663,7 +1902,11 @@ function die(party: Party, f: Figure) {
   f.red = 1.2
   if (party.press?.f === f) party.press = null
   if (f.rag) f.rag.pin = -1
-  party.graves.push({ f, x: f.x, phase: 'ko', t: 0, rise: 0, glow: 0, beam: 0, angelY: 0, arms: 0, alpha: 0 })
+  party.graves.push({
+    f, x: f.x, phase: 'ko', t: 0, rise: 0, glow: 0, beam: 0, arms: 0, alpha: 0,
+    angel: { state: 'off', x: f.x, y: 0, vx: 0, vy: 0, spin: 0, twirl: 0, t: 0 },
+    imp: null, crack: 0, halo: null, talk: null, shake: 0,
+  })
 }
 
 /** Everyone mourning `dead` stops: cheering if they came back, quietly if they left */
@@ -1683,18 +1926,29 @@ function stepGraves(party: Party, dt: number) {
   for (const g of party.graves) {
     g.t += dt
     const f = g.f
-    if (f.leaving && g.phase !== 'depart') {
+    if (g.talk) {
+      g.talk.age += dt
+      if (g.talk.age > g.talk.life) g.talk = null
+    }
+    g.shake = Math.max(0, g.shake - dt)
+    stepHalo(party, g, dt)
+    if (g.phase !== 'rumble' && g.phase !== 'imp') g.crack = Math.max(0, g.crack - dt * 0.8)
+    if (f.leaving && g.phase !== 'depart' && g.phase !== 'gone') {
       // Logged off while down: gone in a puff, grave and all
       const x = f.rag ? f.rag.pts[HIP].x : g.x
       emit(party, 'smoke', x, feetY(party, x) - 4, 6)
       if (g.phase !== 'ko') emit(party, 'dust', g.x, feetY(party, g.x), 6, '#7a5a3e')
       endMourning(party, f, false)
       if (party.press?.f === f) party.press = null
+      if (party.spirit?.g === g) party.spirit = null
       party.graves = party.graves.filter(q => q !== g)
       party.figures = party.figures.filter(q => q !== f)
       continue
     }
     const base = feetY(party, g.x)
+    const a = g.angel
+    stepAngel(party, g, dt)
+    if (g.imp) stepImp(party, g, g.imp, dt)
     switch (g.phase) {
       case 'ko':
         f.red = Math.max(f.red, 0.6)
@@ -1724,19 +1978,40 @@ function stepGraves(party: Party, dt: number) {
         if (g.t > 4.5) { g.phase = 'angel'; g.t = 0 }
         break
       case 'angel': {
+        if (a.state === 'off') {
+          // On her way down (again, if the imp was seen off)
+          a.state = 'fly'
+          a.spin = 0
+          g.t = 0
+        }
+        if (a.state !== 'fly') {
+          // Carried off, or on her way back: nothing happens without her
+          g.t -= dt
+          g.beam = Math.max(0, g.beam - dt * 1.5)
+          break
+        }
         g.beam = Math.min(1, g.t / 0.8)
         g.alpha = Math.min(1, g.t / 0.6)
-        const top = -party.offY - 40
-        g.angelY = top + (base - 34 - top) * easeOut(g.t / 3.2)
-        if (Math.random() < dt * 8) emit(party, 'spark', g.x + rand(-8, 8), g.angelY - rand(4, 20), 1)
+        a.x = g.x
+        a.y = angelDescent(party, g, base)
+        if (Math.random() < dt * 8) emit(party, 'spark', a.x + rand(-8, 8), a.y - rand(4, 20), 1)
         if (g.t > 0.5 && g.t - dt <= 0.5) for (const o of party.figures) if (o.react?.kind === 'mourn' && o.react.of === f) say(o, 'excl', 1.4)
         if (g.t > 3.6) { g.phase = 'raise'; g.t = 0 }
         break
       }
       case 'raise':
+        if (a.state !== 'fly') {
+          g.t = 0
+          g.arms = Math.max(0, g.arms - dt * 3)
+          g.glow = Math.max(0, g.glow - dt * 2)
+          g.beam = Math.max(0, g.beam - dt * 1.5)
+          break
+        }
+        g.beam = Math.min(1, g.beam + dt * 2)
         g.arms = Math.min(1, g.t / 0.5)
         g.glow = Math.min(1, g.t / 1.1)
-        g.angelY = base - 34 + Math.sin(g.t * 3) * 1.5
+        a.x = g.x
+        a.y = base - 34 + Math.sin(g.t * 3) * 1.5
         if (Math.random() < dt * 20) emit(party, 'spark', g.x + rand(-6, 6), base - rand(0, 12), 1)
         if (g.t > 1.3) {
           for (let i = 0; i < 14; i++) emit(party, 'spark', g.x + rand(-5, 5), base - rand(0, 10), 1)
@@ -1778,14 +2053,265 @@ function stepGraves(party: Party, dt: number) {
         g.rise = 1 - clamp((g.t - 1.2) / 0.7, 0, 1)
         g.glow = Math.max(0, 1 - g.t / 0.8)
         if (g.t > 1.6) {
-          g.angelY -= dt * (20 + (g.t - 1.6) * 40)
+          a.y -= dt * (20 + (g.t - 1.6) * 40)
           g.alpha = Math.max(0, 1 - (g.t - 2.4) / 1.6)
           g.beam = Math.max(0, 1 - (g.t - 2.4) / 1.4)
         }
         break
+      case 'spurned':
+        // She's gone off in a huff. A pause, and then the ground starts to rumble...
+        if (g.t > 1.1) {
+          g.phase = 'rumble'
+          g.t = 0
+        }
+        break
+      case 'rumble':
+        g.crack = Math.min(1, g.t / 1.2)
+        g.shake = Math.max(g.shake, 0.1)
+        if (Math.random() < dt * 10) emit(party, 'smoke', g.x + rand(-7, 7), base - 1, 1, '90,40,50')
+        if (g.t > 0.3 && g.t - dt <= 0.3) {
+          for (const o of party.figures) {
+            if (o.react?.kind !== 'mourn' || o.react.of !== f) continue
+            hop(o, 100)
+            say(o, 'excl', 1.4)
+          }
+        }
+        if (g.t > 1.5) {
+          const side: 1 | -1 = g.x + 12 > party.hi ? -1 : 1
+          g.imp = { state: 'rise', x: g.x + side * 11, y: base, vx: 0, vy: 0, t: 0, dir: side === 1 ? -1 : 1, pokes: 0, sink: 1, beaten: false, air: false }
+          g.phase = 'imp'
+          g.t = 0
+        }
+        break
+      case 'imp':
+        g.crack = Math.max(g.crack, 0.6)
+        if (!g.imp) {
+          // Seen off: the crack closes and the angel, a little sheepish, comes back down
+          g.phase = 'angel'
+          g.t = 0
+          a.state = 'off'
+          if (g.halo) g.halo.t = Math.max(g.halo.t, 3)
+          for (const o of party.figures) if (o.react?.kind === 'mourn' && o.react.of === f) say(o, pick(['star', 'heart']))
+        }
+        break
+      case 'gone':
+        // Out they came: the gravestone crumbles, the imp waves and goes home
+        g.rise = Math.max(0, 1 - g.t / 0.35)
+        if (!g.imp && g.crack <= 0 && g.t > 1) party.graves = party.graves.filter(q => q !== g)
+        break
     }
   }
   party.graves = party.graves.filter(g => !(g.phase === 'depart' && g.t > 4.2))
+}
+
+const angelDescent = (party: Party, g: Grave, base: number) => {
+  const top = -party.offY - 40
+  return top + (base - 34 - top) * easeOut(g.t / 3.2)
+}
+
+function stepAngel(party: Party, g: Grave, dt: number) {
+  const a = g.angel
+  a.t += dt
+  a.twirl = Math.max(0, a.twirl - dt)
+  const base = feetY(party, g.x)
+  switch (a.state) {
+    case 'back': {
+      // Fluttering back to where she was, a bit put out
+      const hx = g.x, hy = g.phase === 'angel' ? angelDescent(party, g, base) : base - 34
+      const k = 1 - Math.exp(-4 * dt)
+      a.x += (hx - a.x) * k
+      a.y += (hy - a.y) * k
+      a.spin *= 1 - k
+      if (Math.hypot(hx - a.x, hy - a.y) < 1.5) a.state = 'fly'
+      break
+    }
+    case 'flung': {
+      if (a.t < 0.8) {
+        // Tumbling
+        a.vy += 160 * dt
+        a.spin += dt * 10 * (a.vx >= 0 ? 1 : -1)
+        const floor = groundAt(party.env, a.x) - 4
+        if (a.y > floor && a.vy > 0) { a.y = floor; a.vy = -Math.abs(a.vy) * 0.5 }
+      } else {
+        // Rights herself and flies off in a huff
+        a.spin *= 1 - Math.min(1, dt * 6)
+        a.vx += ((a.vx >= 0 ? 70 : -70) - a.vx) * Math.min(1, dt * 2)
+        a.vy += (-110 - a.vy) * Math.min(1, dt * 2)
+      }
+      a.x += a.vx * dt
+      a.y += a.vy * dt
+      const left = -party.offX - 30, right = party.env.W * 2 - party.offX + 30
+      if (a.t > 3 || a.x < left || a.x > right || a.y < -party.offY - 50) {
+        a.state = 'off'
+        g.phase = 'spurned'
+        g.t = 0
+        g.beam = 0
+        g.arms = 0
+        g.glow = 0
+      }
+      break
+    }
+  }
+}
+
+function stepHalo(party: Party, g: Grave, dt: number) {
+  const h = g.halo
+  if (!h) return
+  h.t += dt
+  if (!h.down) {
+    h.vy += 300 * dt
+    h.y += h.vy * dt
+    const floor = groundAt(party.env, h.x) - 3
+    if (h.y >= floor) {
+      h.y = floor
+      if (h.vy > 60) h.vy = -h.vy * 0.3
+      else { h.down = true; emit(party, 'spark', h.x, h.y, 3) }
+    }
+  }
+  if (h.t > 6) g.halo = null
+}
+
+function stepImp(party: Party, g: Grave, im: Imp, dt: number) {
+  im.t += dt
+  const ground = feetY(party, im.x)
+  // Hops and throws
+  if (im.air && im.state !== 'held') {
+    im.vy += 420 * dt
+    im.x += im.vx * dt
+    im.y += im.vy * dt
+    im.x = clamp(im.x, -party.offX + 4, party.env.W * 2 - party.offX - 4)
+    const water = surfaceAt(party.pond, im.x)
+    if (water !== null && im.y >= water && im.state === 'flung') {
+      // Into the pond: sssss
+      im.state = 'sizzle'
+      im.t = 0
+      im.air = false
+      im.y = water + 2
+      splash(party.pond, im.x, 2)
+      emit(party, 'smoke', im.x, water - 2, 10, '235,235,240')
+      g.talk = { who: 'imp', icon: 'tear', age: 0, life: 1.4 }
+    } else if (im.y >= feetY(party, im.x)) {
+      im.y = feetY(party, im.x)
+      if (im.vy > 90 && im.state === 'flung') {
+        im.vy = -im.vy * 0.35
+        im.vx *= 0.6
+        emit(party, 'dust', im.x, im.y, 3)
+      } else {
+        im.air = false
+        im.vy = 0
+        im.vx = 0
+        if (im.state === 'flung') {
+          im.state = im.beaten ? 'dizzy' : 'poke'
+          im.t = 0
+        }
+      }
+    }
+  }
+  const home = g.x + (im.x >= g.x ? 1 : -1) * 7
+  switch (im.state) {
+    case 'rise':
+      im.sink = Math.max(0, 1 - im.t / 0.4)
+      im.y = ground
+      if (im.t > 0.4) {
+        im.state = 'cackle'
+        im.t = 0
+        im.air = true
+        im.vy = -110
+        emit(party, 'smoke', im.x, ground - 2, 8, '90,40,50')
+        g.talk = { who: 'imp', icon: 'horns', age: 0, life: 1.6 }
+      }
+      break
+    case 'cackle':
+      // A little bounce of glee
+      if (!im.air && im.t < 1.3 && Math.random() < dt * 4) { im.air = true; im.vy = -60 }
+      if (im.t > 1.4 && !im.air) { im.state = 'poke'; im.t = 0; im.pokes = 0 }
+      break
+    case 'poke':
+      if (Math.abs(home - im.x) > 1) {
+        im.dir = home > im.x ? 1 : -1
+        im.x += Math.sign(home - im.x) * Math.min(Math.abs(home - im.x), 22 * dt)
+        im.y = feetY(party, im.x)
+        im.t = 0
+        break
+      }
+      im.dir = g.x > im.x ? 1 : -1
+      if (im.t > 0.35 && im.t - dt <= 0.35) {
+        // Jab
+        im.pokes++
+        g.shake = 0.3
+        emit(party, 'spark', g.x - im.dir * 3, feetY(party, g.x) - 6, 5, '#ff6a3a')
+        if (im.pokes === 2) g.talk = { who: 'imp', icon: 'note', age: 0, life: 1 }
+      }
+      if (im.t > 0.7) {
+        im.t = 0
+        if (im.pokes >= 3) burst(party, g)
+      }
+      break
+    case 'bye':
+      if (im.t > 1.4) { im.state = 'dive'; im.t = 0; im.air = true; im.vy = -80; im.vx = (g.x - im.x) * 1.5 }
+      break
+    case 'dizzy':
+      if (im.t > 1.3) {
+        im.state = 'sulk'
+        im.t = 0
+        g.talk = { who: 'imp', icon: 'tear', age: 0, life: 1.4 }
+      }
+      break
+    case 'sulk':
+      if (im.t > 0.9) { im.state = 'dive'; im.t = 0 }
+      break
+    case 'dive':
+      if (im.air) break
+      if (im.sink === 0) emit(party, 'smoke', im.x, im.y - 2, 6, '90,40,50')
+      im.sink = Math.min(1, im.sink + dt / 0.4)
+      if (im.sink >= 1) g.imp = null
+      break
+    case 'sizzle':
+      im.sink = Math.min(1, im.sink + dt / 0.9)
+      if (Math.random() < dt * 14) emit(party, 'smoke', im.x + rand(-3, 3), im.y - 3, 1, '235,235,240')
+      if (im.sink >= 1) g.imp = null
+      break
+  }
+}
+
+/** The imp's way: they burst out of the ground, horns and all */
+function burst(party: Party, g: Grave) {
+  const f = g.f, base = feetY(party, g.x)
+  emit(party, 'smoke', g.x, base - 4, 12, '90,40,50')
+  emit(party, 'spark', g.x, base - 6, 10, '#ff6a3a')
+  emit(party, 'dust', g.x, base, 10, '#8f94a3')
+  f.hidden = false
+  f.mode = 'free'
+  f.modeT = 0
+  f.rag = null
+  f.x = g.x
+  f.dir = g.imp && g.imp.x > g.x ? -1 : 1
+  f.front = true
+  f.want = { stance: 'stand', gesture: 'cheer', dir: 0, front: true }
+  f.skel = targetSkel(party, f)
+  f.jump = -1
+  f.jumpV = -150
+  f.squash = -0.5
+  f.hurt = 0
+  f.dizzy = 0
+  f.red = 0.5
+  f.devil = 22
+  f.prank = null
+  f.prankCool = 1.2
+  f.react = null
+  say(f, 'horns', 2)
+  for (const o of party.figures) {
+    if (o.react?.kind !== 'mourn' || o.react.of !== f) continue
+    o.react = { kind: 'look', t: 1.6, x: f.x }
+    say(o, pick(['excl', 'quest']))
+  }
+  g.phase = 'gone'
+  g.t = 0
+  if (g.imp) {
+    g.imp.state = 'bye'
+    g.imp.t = 0
+    g.talk = { who: 'imp', icon: 'horns', age: 0, life: 1.4 }
+  }
 }
 
 // ── Things in flight, butterflies ────────────────────────────
@@ -2003,7 +2529,15 @@ export function drawParty(ctx: CanvasRenderingContext2D, party: Party, now: numb
     if (f.bucket > 0 && f.spot?.fisher) drawBucket(ctx, f.spot.x - f.spot.dir * 9 + offX, feetY(party, f.spot.x - f.spot.dir * 9) + offY, f.bucket, light)
   }
   for (const g of party.graves) {
-    if (g.phase !== 'ko') drawGrave(ctx, g.x + offX, feetY(party, g.x) + offY, g.rise, g.phase === 'raise' || g.phase === 'depart' ? g.glow : 0, light)
+    const base = feetY(party, g.x) + offY
+    drawCrack(ctx, g.x + offX, base, g.crack, party.t)
+    const jolt = g.shake > 0 ? Math.round(Math.sin(party.t * 60)) : 0
+    if (g.phase !== 'ko') drawGrave(ctx, g.x + offX + jolt, base, g.rise, g.phase === 'raise' || g.phase === 'depart' ? g.glow : 0, light)
+    if (g.halo) {
+      ctx.globalAlpha = Math.max(0, Math.min(1, 6 - g.halo.t))
+      drawHalo(ctx, Math.round(g.halo.x) + offX, Math.round(g.halo.y) + offY)
+      ctx.globalAlpha = 1
+    }
   }
 
   // People: back to front by x, anyone in the air on top
@@ -2026,15 +2560,75 @@ export function drawParty(ctx: CanvasRenderingContext2D, party: Party, now: numb
       Math.round(b.x) - 1 + offX, Math.round(b.y) - 1 + offY)
   }
 
-  // The angel and her light
+  // The angel and her light, and any imp
   for (const g of party.graves) {
-    if (g.phase === 'angel' || g.phase === 'raise' || g.phase === 'depart') {
-      drawBeam(ctx, g.x + offX, feetY(party, g.x) + offY, g.beam)
-      drawAngel(ctx, g.x + offX, Math.round(g.angelY) + offY, party.t, g.arms, g.alpha)
+    const a = g.angel
+    drawBeam(ctx, g.x + offX, feetY(party, g.x) + offY, g.beam)
+    if (a.state !== 'off') {
+      const x = Math.round(a.x) + offX, y = Math.round(a.y) + offY
+      // Flapping hard when held or tumbling, turning round in a twirl
+      const flap = a.state === 'held' || a.state === 'flung' ? party.t * 2.5 : party.t
+      const turn = a.twirl > 0 ? Math.cos((1 - a.twirl / 0.8) * Math.PI * 4) : 1
+      ctx.save()
+      if (a.spin || turn !== 1) {
+        ctx.translate(x, y - 12)
+        ctx.rotate(a.spin)
+        ctx.scale(Math.abs(turn) < 0.2 ? 0.2 * Math.sign(turn || 1) : turn, 1)
+        ctx.translate(-x, -(y - 12))
+      }
+      drawAngel(ctx, x, y, flap, a.state === 'fly' ? g.arms : a.state === 'held' ? 1 : 0, a.state === 'fly' ? g.alpha : 1, !g.halo)
+      ctx.restore()
+    }
+    const im = g.imp
+    if (im) {
+      const ground = feetY(party, im.x) + offY
+      ctx.save()
+      if (im.sink > 0) {
+        ctx.beginPath()
+        ctx.rect(0, 0, ctx.canvas.width, (im.state === 'sizzle' ? (surfaceAt(party.pond, im.x) ?? ground) + offY : ground))
+        ctx.clip()
+      }
+      const poking = im.state === 'poke' && im.t > 0.2 && im.t < 0.5 ? Math.sin(((im.t - 0.2) / 0.3) * Math.PI) : 0
+      drawImp(ctx, Math.round(im.x) + offX, Math.round(im.y + im.sink * 15) + offY, party.t, {
+        dir: im.dir, poke: poking, wave: im.state === 'bye' || im.state === 'cackle',
+        kick: im.state === 'held' || im.state === 'flung', dizzy: im.state === 'dizzy',
+      })
+      ctx.restore()
     }
   }
 
   drawParticles(ctx, party, offX, offY, light)
+}
+
+/** Little devil horns, following the head's tilt */
+function drawHorns(g: CanvasRenderingContext2D, j: Joints) {
+  const ux = j.headTop.x - j.head.x, uy = j.headTop.y - j.head.y
+  const len = Math.hypot(ux, uy) || 1
+  const upX = ux / len, upY = uy / len
+  // Outward along the top of the head (s) and up from it (u); each horn curls outwards
+  const at = (side: number, s: number, u: number, color: string) => {
+    g.fillStyle = color
+    g.fillRect(Math.round(j.headTop.x - upY * s * side + upX * u), Math.round(j.headTop.y + upX * s * side + upY * u), 1, 1)
+  }
+  for (const side of [-1, 1]) {
+    at(side, 2, 0, '#6a1a26'); at(side, 3, 0, '#6a1a26')
+    at(side, 3, 1, '#a8323f'); at(side, 2, 1, '#8a2433')
+    at(side, 4, 2, '#d0485a')
+  }
+}
+
+/** A pointy tail from behind the hips, wagging */
+function drawTail(g: CanvasRenderingContext2D, view: View, t: number) {
+  const back = view.front ? 1 : -view.dir
+  const wag = Math.round(Math.sin(t * 6))
+  g.fillStyle = '#a3263a'
+  const pts = [[1, 1], [2, 2], [3, 2], [4, 1 + wag], [5, 0 + wag]]
+  for (const [dx, dy] of pts) g.fillRect(HX + back * dx, HY + dy, 1, 1)
+  // Arrow tip
+  g.fillRect(HX + back * 6, HY - 1 + wag, 1, 1)
+  g.fillRect(HX + back * 5, HY - 1 + wag, 1, 1)
+  g.fillRect(HX + back * 6, HY + wag, 1, 1)
+  g.fillRect(HX + back * 6, HY - 2 + wag, 1, 1)
 }
 
 function drawFigure(ctx: CanvasRenderingContext2D, party: Party, f: Figure, offX: number, offY: number, light: PartyLight) {
@@ -2051,11 +2645,14 @@ function drawFigure(ctx: CanvasRenderingContext2D, party: Party, f: Figure, offX
   const scaleX = f.flip > 0 ? Math.max(0.25, k > 0.5 ? (k - 0.5) * 2 : (0.5 - k) * 2) : 1
   const s = f.skel
   const faceShown = view.front || f.faceCam
+  if (f.devil > 0 && !f.rag) drawTail(g, view, party.t)
   const j = drawSkel(g, f.rig, s, view, HX, HY, {
     faceCam: f.faceCam && !view.front && f.want.stance !== 'lie' && f.mode === 'free',
     blink: faceShown && f.blink < 0,
     held: jj => drawHeld(g, f, jj, view, light),
   })
+
+  if (f.devil > 0) drawHorns(g, j)
 
   // Light the figure like the rest of the scene, warmer near the fire
   const fire = party.fire
@@ -2074,6 +2671,12 @@ function drawFigure(ctx: CanvasRenderingContext2D, party: Party, f: Figure, offX
   if (warm > 0) {
     g.globalAlpha = warm * 0.22
     g.fillStyle = '#ff9a3c'
+    g.fillRect(0, 0, SW, SH)
+  }
+  if (f.devil > 0) {
+    // A devilish flush, fading as it wears off
+    g.globalAlpha = 0.16 * Math.min(1, f.devil / 2)
+    g.fillStyle = '#ff2a2a'
     g.fillRect(0, 0, SW, SH)
   }
   if (f.red > 0) {
@@ -2261,7 +2864,7 @@ function drawParticles(ctx: CanvasRenderingContext2D, party: Party, offX: number
     ctx.globalAlpha = Math.min(1, a * 1.6)
     switch (p.kind) {
       case 'smoke':
-        ctx.fillStyle = `rgba(165,165,176,${(a * 0.42).toFixed(3)})`
+        ctx.fillStyle = `rgba(${p.color || '165,165,176'},${(a * 0.42).toFixed(3)})`
         ctx.globalAlpha = 1
         ctx.fillRect(x, y, 2, 2)
         break
@@ -2331,7 +2934,8 @@ export function drawPartyLabels(ctx: CanvasRenderingContext2D, party: Party, px:
     if (f.hidden && !grave) continue
     // Tags ease after the head so a tumbling player doesn't shake theirs about
     const hx = grave ? grave.x : f.mode === 'free' || f.mode === 'rising' ? f.skel.x : f.head.x
-    const hy = grave ? feetY(party, grave.x) - 11 * grave.rise : Math.min(f.head.y, f.skel.y - 18)
+    // (clear of any devil horns)
+    const hy = grave ? feetY(party, grave.x) - 11 * grave.rise : Math.min(f.head.y, f.skel.y - 18) - (f.devil > 0 ? 3 : 0)
     if (!f.tag.ready || dt === 0) { f.tag.x = hx; f.tag.y = hy; f.tag.ready = true }
     f.tag.x += (hx - f.tag.x) * follow
     f.tag.y += (hy - f.tag.y) * follow
@@ -2399,6 +3003,8 @@ export function drawPartyLabels(ctx: CanvasRenderingContext2D, party: Party, px:
   }
   const row1 = labels.filter(l => l.row === 1)
   if (row1.length) {
+    // Up here there's more room to spread out, so a crowd's second row doesn't overlap
+    for (const l of row1) l.lim *= 1.8
     spread(row1)
     for (const l of row1) {
       // Just clear of whatever is below it
@@ -2427,6 +3033,13 @@ export function drawPartyLabels(ctx: CanvasRenderingContext2D, party: Party, px:
     }
     // Bubbles float just above the tag, pointing down at it, and go on top of every tag
     if (l.bubble) speech.push({ icon: l.bubble.icon, x, y: y - unit, age: l.bubble.age, life: l.bubble.life })
+  }
+  for (const g of party.graves) {
+    const tk = g.talk
+    if (!tk) continue
+    const at = tk.who === 'angel' ? { x: g.angel.x, y: g.angel.y - 29 } : g.imp ? { x: g.imp.x, y: g.imp.y - 16 } : null
+    if (!at || (tk.who === 'angel' && g.angel.state === 'off')) continue
+    speech.push({ icon: tk.icon, x: Math.round((at.x + offX) * scale), y: Math.round((at.y + offY) * scale), age: tk.age, life: tk.life })
   }
   for (const b of speech) drawSpeech(ctx, b.icon, b.x, b.y, unit, b.age, b.life)
 }
