@@ -3,7 +3,8 @@
 //
 // Every player on the BSCraft server is in the landscape, drawn from
 // their own skin with a Minecraft name tag, and they spend their time
-// together: round the campfire toasting marshmallows, fishing at the
+// in little groups (joining up, splitting off, moving on): round the
+// campfire toasting marshmallows, fishing at the
 // pond, watching the sunset from the hill, lying under the stars,
 // picnicking, dancing round a jukebox, chasing a chicken, playing tag,
 // picking flowers for each other, or just wandering about, hugging and
@@ -79,17 +80,37 @@ interface Fishing {
 
 interface Pair { kind: 'hug' | 'highfive' | 'crouch' | 'wave'; a: Figure; b: Figure; t: number; met: boolean }
 
+/** A few people doing something together; there can be several groups at once */
+interface Group {
+  activity: Activity
+  /** Until they move on to something else */
+  timer: number
+  /** Where it's happening: its place (the fire, the pond...), or the middle of the patch they roam */
+  x: number
+  span: number
+  /** Tag: who's it */
+  it: Figure | null
+}
+
 interface React {
-  kind: 'look' | 'wave' | 'mourn' | 'cheer' | 'hot' | 'shake'
+  kind: 'look' | 'wave' | 'mourn' | 'cheer' | 'hot' | 'shake' | 'flee'
   t: number
   x: number
   /** Mourning: whose grave */
   of?: Figure
+  /** Looking up (at the angel) rather than across */
+  up?: boolean
+  /** Fleeing: from whom */
+  by?: Chaser
 }
+
+/** Someone chasing everyone about: a player with devil horns, or the imp */
+type Chaser = { fig: Figure } | { imp: Imp }
 
 interface Figure {
   key: string
   name: string
+  group: Group | null
   skin: OnlinePlayer['skin']
   rig: Rig
   /** Feet position */
@@ -148,9 +169,10 @@ interface Figure {
   dizzy: number
   red: number
   halo: number
-  /** Brought back by the imp: horns, a tail and pranks for this long */
+  /** Brought back by the imp: horns, a tail and chasing everyone for this long */
   devil: number
   prank: Figure | null
+  prankLast: Figure | null
   prankCool: number
   wet: number
   lastHit: number
@@ -219,7 +241,7 @@ interface Angel {
 }
 
 interface Imp {
-  state: 'rise' | 'cackle' | 'poke' | 'bye' | 'held' | 'flung' | 'dizzy' | 'sulk' | 'dive' | 'sizzle'
+  state: 'rise' | 'cackle' | 'poke' | 'chase' | 'home' | 'bye' | 'held' | 'flung' | 'dizzy' | 'sulk' | 'dive' | 'sizzle'
   x: number
   y: number
   vx: number
@@ -232,6 +254,13 @@ interface Imp {
   /** Bonked or thrown: it gives up, and the angel comes back */
   beaten: boolean
   air: boolean
+  /** After raising them it chases everyone about for a while */
+  chaseT: number
+  victim: Figure | null
+  last: Figure | null
+  /** Catching its breath after a jab, and the jab itself */
+  rest: number
+  jab: number
 }
 
 interface SpiritPress {
@@ -263,7 +292,8 @@ export interface Party {
   env: LifeEnv
   light: PartyLight
   figures: Figure[]
-  activity: Activity
+  groups: Group[]
+  /** Until everyone shuffles into new groups */
   timer: number
   started: boolean
   sites: { fire: number; hill: number; picnic: number }
@@ -279,7 +309,6 @@ export interface Party {
   press: Press | null
   /** Pressing on the angel or an imp */
   spirit: SpiritPress | null
-  it: Figure | null
   beat: number
   t: number
   offX: number
@@ -308,9 +337,9 @@ const easeOut = (k: number) => 1 - Math.pow(1 - clamp(k, 0, 1), 3)
 // ── Setting up ───────────────────────────────────────────────
 
 export function createParty(env: LifeEnv, light: PartyLight): Party {
-  const party = { env, light, figures: [], activity: 'wander', timer: 0, started: false } as unknown as Party
+  const party = { env, light, figures: [], groups: [], timer: 0, started: false } as unknown as Party
   Object.assign(party, {
-    graves: [], particles: [], flyers: [], butterflies: [], press: null, spirit: null, it: null, beat: 0, t: 0,
+    graves: [], particles: [], flyers: [], butterflies: [], press: null, spirit: null, beat: 0, t: 0,
     offX: 0, offY: 0, cursor: null, picnic: null, jukebox: null, chicken: null,
   })
   place(party, env)
@@ -343,37 +372,47 @@ export function retargetParty(party: Party, env: LifeEnv, light: PartyLight) {
     party.env = env
     if (!bed) {
       place(party, env)
-      for (const f of party.figures) f.x = clamp(f.x, party.lo, party.hi)
+      for (const f of party.figures) {
+        f.x = clamp(f.x, party.lo, party.hi)
+        stopFishing(party, f)
+        if (f.mode === 'swim' && !inPond(party.pond, f.x)) { f.mode = 'free'; f.wet = 4 }
+      }
+      if (party.picnic) party.picnic.x = party.sites.picnic
+      if (party.jukebox) party.jukebox.x = party.sites.picnic
+      for (const g of party.graves) g.x = clamp(g.x, party.lo + 6, party.hi - 6)
+      if (!changed) for (const g of party.groups) begin(party, g, g.activity)
     }
   }
-  if (changed && live(party).length) begin(party, pickActivity(party))
+  if (changed && live(party).length) regroup(party)
 }
 
 export function partyEvent(party: Party, event: 'star') {
   if (event !== 'star') return
   // A shooting star: everyone lying out under the sky points at it
   for (const f of live(party)) {
-    if (f.mode !== 'free' || party.activity !== 'stargaze') continue
+    if (f.mode !== 'free' || activityOf(f) !== 'stargaze') continue
     setSub(f, 'point', 2.4)
     say(f, Math.random() < 0.5 ? 'excl' : 'star')
   }
 }
 
 const live = (party: Party) => party.figures.filter(f => !f.leaving)
+const members = (party: Party, g: Group) => party.figures.filter(f => f.group === g && !f.leaving)
+const activityOf = (f: Figure): Activity => f.group?.activity ?? 'wander'
 const free = (party: Party) => party.figures.filter(f => !f.leaving && !f.hidden && f.mode === 'free')
 
 function newFigure(party: Party, key: string, p: OnlinePlayer, x: number, dir: 1 | -1): Figure {
   const feet = feetY(party, x)
   const skel: Skel = { x, y: feet - 12, body: 0, head: 0, armN: 0, armF: 0, legN: 0, legF: 0 }
   return {
-    key, name: p.name ?? '', skin: p.skin, rig: buildRig(p),
+    key, name: p.name ?? '', group: null, skin: p.skin, rig: buildRig(p),
     x, vx: 0, dest: null, fast: false, dir, front: false, flip: 0, from: { dir, front: false },
     want: { stance: 'stand', gesture: 'none', dir: 0, front: false },
     skel, pose: null, poseV: zeroPose(), poseOut: null, feet, stance: 'stand', stanceT: 1, phase: 0, mode: 'free', modeT: 0, rag: null, spot: null,
     sub: '', subT: 0, subDur: 0, item: null, fishing: null, pair: null, react: null, bubble: null,
     faceCam: false, faceT: rand(1, 4), blink: rand(1, 4), jump: 0, jumpV: 0, hopT: 0, hopV: 0,
     acc: 0, lastVx: 0, glance: 0, glanceT: rand(1, 4), nod: 1, nodDir: 1, squash: 0,
-    hurt: 0, dizzy: 0, red: 0, halo: 0, devil: 0, prank: null, prankCool: 0, wet: 0, lastHit: 0, immune: 0, danceMove: 'bounce', bucket: 0,
+    hurt: 0, dizzy: 0, red: 0, halo: 0, devil: 0, prank: null, prankLast: null, prankCool: 0, wet: 0, lastHit: 0, immune: 0, danceMove: 'bounce', bucket: 0,
     leaving: false, hidden: false, rise: 0, t: rand(0, 10),
     head: { x, y: feet - 32 }, box: { x0: x - 5, y0: feet - 32, x1: x + 5, y1: feet },
     tag: { x, y: feet - 40, dx: 0, lift: 0, row: 0, hold: 0, ready: false },
@@ -389,7 +428,7 @@ export function syncParty(party: Party, players: OnlinePlayer[]) {
   for (const f of party.figures) {
     const p = wanted.get(f.key)
     if (!p) {
-      if (!f.leaving) { f.leaving = true; f.spot = null; f.pair = null; changed = true }
+      if (!f.leaving) { f.leaving = true; f.spot = null; interrupt(party, f); f.react = null; changed = true }
       continue
     }
     // Their skin finished loading, or they changed it
@@ -410,72 +449,190 @@ export function syncParty(party: Party, players: OnlinePlayer[]) {
 
   if (first && live(party).length) {
     // The first players are already hanging out when the launcher opens
-    begin(party, pickActivity(party), true)
+    regroup(party, true)
     for (const f of live(party)) if (f.spot) snapTo(party, f, f.spot)
   } else if (live(party).length) {
-    assign(party)
+    // Newcomers join whichever group is nearest where they come in
+    for (const f of live(party)) {
+      if (f.group && party.groups.includes(f.group)) continue
+      const g = [...party.groups].sort((a, b) => Math.abs(a.x - f.x) - Math.abs(b.x - f.x))[0]
+      if (g) f.group = g
+      else { regroup(party); return }
+    }
+    tidyGroups(party)
+    for (const g of party.groups) assign(party, g)
   }
 }
 
 // ── Activities ───────────────────────────────────────────────
 
-function pickActivity(party: Party): Activity {
-  const n = live(party).length
+/** The place each activity needs to itself: one group at a time there */
+const SITE: Partial<Record<Activity, string>> = {
+  campfire: 'fire', fishing: 'pond', sunset: 'hill', picnic: 'meadow', dance: 'meadow', stargaze: 'meadow', chase: 'chicken', tag: 'tag',
+}
+
+function pickActivity(party: Party, g: Group): Activity {
+  const n = members(party, g).length
   const time = party.light.time
   const w: Partial<Record<Activity, number>> =
     time === 'night' ? { campfire: 5, stargaze: 4, dance: 1.2, fishing: 1, wander: 0.8 }
     : time === 'dusk' ? { sunset: 5, campfire: 3, fishing: 1.5, dance: 1.5, wander: 0.8 }
     : time === 'dawn' ? { sunset: 3.5, fishing: 3, picnic: 2, flowers: n > 1 ? 1.5 : 0, wander: 1.5 }
     : { fishing: 3, picnic: 3, chase: 2.5, tag: n > 1 ? 2.5 : 0, flowers: n > 1 ? 2 : 0, stargaze: 1.2, dance: 1, wander: 1.5 }
-  if (w[party.activity]) w[party.activity]! *= 0.12
+  // Not where another group already is, and not the same as another group if there's a choice
+  const others = party.groups.filter(o => o !== g && members(party, o).length)
+  const taken = new Set(others.map(o => SITE[o.activity]).filter(Boolean))
+  for (const a of Object.keys(w) as Activity[]) {
+    if (SITE[a] && taken.has(SITE[a])) w[a] = 0
+    else if (others.some(o => o.activity === a)) w[a]! *= 0.3
+  }
+  if (w[g.activity]) w[g.activity]! *= 0.12
   const entries = Object.entries(w) as [Activity, number][]
   let roll = Math.random() * entries.reduce((s, [, v]) => s + v, 0)
   for (const [a, v] of entries) if ((roll -= v) <= 0) return a
   return 'wander'
 }
 
-/** Starts an activity: sets out (or packs away) its things and sends everyone to a spot */
-function begin(party: Party, activity: Activity, instant = false) {
-  const was = party.activity
-  party.activity = activity
-  party.timer = rand(50, 80)
-  party.fire.lit = activity === 'campfire'
-  if (instant) party.fire.a = party.fire.lit ? 1 : 0
+/** How many groups suit this many people */
+function groupCount(n: number): number {
+  if (n <= 2) return 1
+  if (n <= 4) return Math.random() < 0.55 ? 2 : 1
+  if (n <= 7) return Math.random() < 0.3 ? 3 : 2
+  return Math.random() < 0.5 ? 3 : 4
+}
 
-  if (activity === 'picnic') {
-    party.picnic = { x: party.sites.picnic, half: 0, a: instant ? 1 : 0, dying: false, cake: 0 }
+/** Everyone into new groups: whoever's near each other goes together */
+function regroup(party: Party, instant = false) {
+  party.timer = rand(150, 220)
+  const fs = live(party).sort((a, b) => a.x - b.x)
+  if (!fs.length) { party.groups = []; syncProps(party, instant); return }
+  const k = Math.min(fs.length, groupCount(fs.length))
+  party.groups = []
+  let at = 0
+  for (let i = 0; i < k; i++) {
+    const left = fs.length - at, size = i === k - 1 ? left : Math.max(1, Math.round(left / (k - i) + rand(-0.6, 0.6)))
+    const g: Group = { activity: 'wander', timer: 0, x: 0, span: 0, it: null }
+    party.groups.push(g)
+    for (const f of fs.slice(at, at + size)) f.group = g
+    at += size
+  }
+  for (const g of party.groups) begin(party, g, pickActivity(party, g), instant)
+}
+
+/** A group's time is up: they join up with another group, split in two, or just do something else */
+function moveOn(party: Party, g: Group) {
+  const mine = members(party, g)
+  const others = party.groups.filter(o => o !== g && members(party, o).length)
+  const want = groupCount(live(party).length)
+  if (others.length && (party.groups.length > want || Math.random() < 0.2)) {
+    const o = others.sort((a, b) => Math.abs(a.x - g.x) - Math.abs(b.x - g.x))[0]
+    for (const f of mine) {
+      f.group = o
+      resetFor(party, f)
+      if (Math.random() < 0.5) say(f, pick(['heart', 'note', 'excl']), 1.4)
+    }
+    party.groups = party.groups.filter(q => q !== g)
+    syncProps(party)
+    assign(party, o)
+    return
+  }
+  if (mine.length >= 3 && (party.groups.length < want || Math.random() < 0.25)) {
+    const h: Group = { activity: 'wander', timer: 0, x: 0, span: 0, it: null }
+    party.groups.push(h)
+    for (const f of mine.sort((a, b) => a.x - b.x).slice(Math.ceil(mine.length / 2))) f.group = h
+    begin(party, h, pickActivity(party, h))
+  }
+  begin(party, g, pickActivity(party, g))
+}
+
+/** Drops groups nobody is in any more */
+function tidyGroups(party: Party) {
+  const before = party.groups.length
+  party.groups = party.groups.filter(g => members(party, g).length)
+  for (const f of party.figures) if (f.group && !party.groups.includes(f.group)) f.group = null
+  if (party.groups.length !== before) syncProps(party)
+}
+
+/** Clears what someone was doing for their group, ready for something new */
+function resetFor(party: Party, f: Figure) {
+  // Whoever was holding up the chicken lets it go
+  const ch = party.chicken
+  if (ch?.held === f) { ch.held = null; ch.free = true; ch.x = f.x; f.item = null }
+  if (f.fishing || f.spot?.fisher) f.bucket = 0
+  stopFishing(party, f)
+  if (f.pair) unpair(f.pair)
+  f.sub = ''
+  f.subT = 0
+  f.subDur = 0
+  if (f.item && f.item.kind !== 'flower' && f.item.kind !== 'chicken') f.item = null
+}
+
+/** Sets out (or packs away) the things the groups' activities need */
+function syncProps(party: Party, instant = false) {
+  const has = (a: Activity) => party.groups.some(g => g.activity === a && members(party, g).length)
+  party.fire.lit = has('campfire')
+  if (instant) party.fire.a = party.fire.lit ? 1 : 0
+  if (has('picnic')) {
+    if (!party.picnic || party.picnic.dying) party.picnic = { x: party.sites.picnic, half: 0, a: instant ? 1 : 0, dying: false, cake: 0 }
   } else if (party.picnic) {
     party.picnic.dying = true
   }
-  if (activity === 'dance') {
-    party.jukebox = { x: party.sites.picnic, a: instant ? 1 : 0, dying: false }
-    party.beat = 0
+  if (has('dance')) {
+    if (!party.jukebox || party.jukebox.dying) {
+      party.jukebox = { x: party.sites.picnic, a: instant ? 1 : 0, dying: false }
+      party.beat = 0
+    }
   } else if (party.jukebox) {
     party.jukebox.dying = true
   }
-  if (party.chicken && !party.chicken.held) party.chicken.free = true
-  if (activity === 'chase') {
-    const x = rand(party.lo + 60, party.hi - 60)
-    party.chicken = { x, dir: Math.random() < 0.5 ? 1 : -1, hop: 0, hopV: 0, t: 0, rest: 2, flap: 0, held: null, free: false }
+  if (has('chase')) {
+    if (!party.chicken || party.chicken.free) {
+      const g = party.groups.find(q => q.activity === 'chase')!
+      party.chicken = { x: clamp(g.x + rand(-30, 30), party.lo + 30, party.hi - 30), dir: Math.random() < 0.5 ? 1 : -1, hop: 0, hopV: 0, t: 0, rest: 2, flap: 0, held: null, free: false }
+    }
+  } else if (party.chicken && !party.chicken.held) {
+    party.chicken.free = true
   }
-  party.it = null
-  for (const fish of party.pond.fish) fish.target = null
-
-  for (const f of party.figures) {
-    f.fishing = null
-    f.pair = null
-    f.sub = ''
-    f.subT = 0
-    f.subDur = 0
-    if (f.item && f.item.kind !== 'flower' && f.item.kind !== 'chicken') f.item = null
-    if (was === 'fishing') f.bucket = 0
-  }
-  assign(party)
+  if (!has('fishing')) for (const fish of party.pond.fish) fish.target = null
 }
 
-/** Gives everyone a place in the current activity (again when someone joins or leaves) */
-function assign(party: Party) {
-  const fs = live(party)
+/** Somewhere to roam that's clear of the other groups and the pond */
+function roamPatch(party: Party, g: Group, n: number): { x: number; span: number } {
+  const span = clamp(50 + n * 14, 60, 140)
+  const others = party.groups.filter(o => o !== g && o.x)
+  const { pond } = party
+  const spots: { x: number; score: number }[] = []
+  for (let x = party.lo + span * 0.6; x <= party.hi - span * 0.6; x += 16) {
+    const clear = others.length ? Math.min(...others.map(o => Math.abs(o.x - x) - o.span * 0.5)) : 200
+    const wet = x > pond.x0 - 20 && x < pond.x1 + 20 ? 60 : 0
+    spots.push({ x, score: clear - wet + rand(0, 40) })
+  }
+  spots.sort((a, b) => b.score - a.score)
+  return { x: spots[0]?.x ?? (party.lo + party.hi) / 2, span }
+}
+
+/** A group starts an activity: its things are set out and everyone in it gets a spot */
+function begin(party: Party, g: Group, activity: Activity, instant = false) {
+  g.activity = activity
+  g.timer = rand(45, 75)
+  g.it = null
+  const mine = members(party, g)
+  const { sites, pond } = party
+  const at: Partial<Record<Activity, number>> = { campfire: sites.fire, fishing: (pond.x0 + pond.x1) / 2, sunset: sites.hill, picnic: sites.picnic, dance: sites.picnic, stargaze: sites.picnic }
+  if (at[activity] !== undefined) {
+    g.x = at[activity]!
+    g.span = 60
+  } else {
+    Object.assign(g, roamPatch(party, g, mine.length))
+  }
+  for (const f of mine) resetFor(party, f)
+  syncProps(party, instant)
+  assign(party, g)
+}
+
+/** Gives everyone in a group a place in its activity (again when someone joins or leaves) */
+function assign(party: Party, g: Group) {
+  const fs = members(party, g)
   const n = fs.length
   const { pond, sites } = party
   const sunWorld = party.env.PAD * 2 + party.light.sunX * party.env.W * 2
@@ -486,7 +643,7 @@ function assign(party: Party) {
     const side: 1 | -1 = i % 2 === 0 ? -1 : 1
     const ring = Math.floor(i / 2)
     let spot: Spot | null = null
-    switch (party.activity) {
+    switch (g.activity) {
       case 'campfire':
         spot = { x: sites.fire + side * (20 + ring * 20), dir: side === -1 ? 1 : -1, stance: 'sit' }
         break
@@ -515,9 +672,10 @@ function assign(party: Party) {
         spot = null
     }
     if (spot) spot.x = clamp(spot.x, party.lo + 6, party.hi - 6)
+    if (f.fishing && (!spot?.fisher || Math.abs((f.spot?.x ?? 0) - spot.x) > 1)) stopFishing(party, f)
     f.spot = spot
   })
-  if (party.activity === 'tag' && !party.it) party.it = pick(fs)
+  if (g.activity === 'tag' && !g.it && fs.length) g.it = pick(fs)
 }
 
 function snapTo(party: Party, f: Figure, spot: Spot) {
@@ -611,7 +769,12 @@ export function stepParty(party: Party, dt: number, pointer: ScenePointer | null
 
   const people = live(party)
   party.timer -= dt
-  if (party.timer <= 0 && people.length) begin(party, pickActivity(party))
+  if (party.timer <= 0 && people.length) regroup(party)
+  tidyGroups(party)
+  for (const g of [...party.groups]) {
+    g.timer -= dt
+    if (g.timer <= 0 && party.groups.includes(g)) moveOn(party, g)
+  }
   if (!people.length) party.fire.lit = false
 
   stepPond(party.pond, dt)
@@ -838,7 +1001,7 @@ function move(party: Party, f: Figure, dt: number) {
       f.dest = null
       f.vx = 0
     } else {
-      const max = f.fast ? RUN : WALK
+      const max = f.fast ? (f.devil > 0 ? RUN * 1.3 : RUN) : WALK
       want = Math.sign(d) * Math.min(max, Math.sqrt(2 * ACCEL * Math.abs(d)) * 0.9)
     }
   }
@@ -893,7 +1056,14 @@ function think(party: Party, f: Figure, dt: number) {
     return
   }
 
-  switch (party.activity) {
+  const activity = activityOf(f)
+  if (!spot && activity !== 'chase' && activity !== 'tag' && activity !== 'flowers' && activity !== 'wander') {
+    // No place for them yet (just back, say): find them one, and stroll about meanwhile
+    if (f.group) assign(party, f.group)
+    wanderThink(party, f, dt)
+    return
+  }
+  switch (activity) {
     case 'campfire': campfireThink(party, f, spot!, dt); break
     case 'fishing': fishingThink(party, f, spot!, dt); break
     case 'sunset': sunsetThink(party, f, spot!); break
@@ -907,36 +1077,104 @@ function think(party: Party, f: Figure, dt: number) {
   }
 }
 
-/** Back from the imp: running about poking people with a cackle */
+// ── Chases ───────────────────────────────────────────────────
+
+/** Who can be chased: anyone out and about who isn't doing the chasing */
+const chaseable = (o: Figure | null): o is Figure => !!o && o.mode === 'free' && !o.hidden && !o.leaving && o.devil <= 0
+
+/** One of the nearest, and not the one just caught if there's anyone else */
+function pickVictim(party: Party, x: number, last: Figure | null): Figure | null {
+  const near = party.figures.filter(chaseable).sort((a, b) => Math.abs(a.x - x) - Math.abs(b.x - x))
+  const options = near.filter(o => o !== last).slice(0, 2)
+  return options.length ? pick(options) : near[0] ?? null
+}
+
+/** Where a chaser is, or null once they've stopped chasing */
+function chaserX(party: Party, by: Chaser): number | null {
+  if ('fig' in by) {
+    const c = by.fig
+    return c.devil > 0 && c.mode === 'free' && !c.hidden && !c.leaving ? c.x : null
+  }
+  const im = by.imp
+  return im.state === 'chase' && party.graves.some(g => g.imp === im) ? im.x : null
+}
+
+/** Stops whatever they were in the middle of (fishing, roasting, a hug, carrying the chicken) */
+function interrupt(party: Party, f: Figure) {
+  stopFishing(party, f)
+  if (f.item && f.item.kind !== 'flower') f.item = null
+  if (f.pair) unpair(f.pair)
+  if (party.chicken?.held === f) { party.chicken.held = null; party.chicken.free = true; party.chicken.x = f.x }
+  f.sub = ''
+  f.subT = 0
+  f.subDur = 0
+}
+
+/** Reels in: the line goes, and the fish that was coming for the float swims off */
+function stopFishing(party: Party, f: Figure) {
+  const bob = f.fishing?.bob
+  if (bob) for (const fish of party.pond.fish) if (fish.target !== null && Math.abs(fish.target - bob.x) < 8) fish.target = null
+  f.fishing = null
+  if (f.item?.kind === 'rod') f.item = null
+}
+
+/** Run for it! */
+function scare(party: Party, f: Figure, by: Chaser, t = 1.2) {
+  if (!chaseable(f)) return
+  if (f.react?.kind === 'flee') {
+    f.react.t = Math.max(f.react.t, t)
+    f.react.by = by
+    return
+  }
+  interrupt(party, f)
+  f.react = { kind: 'flee', t, x: f.x, by }
+  say(f, 'excl', 1.1)
+  hop(f, 90, 0.06)
+}
+
+/** Anyone the chaser gets near starts running too */
+function panic(party: Party, x: number, by: Chaser, radius: number) {
+  for (const o of party.figures) if (Math.abs(o.x - x) < radius && (o.react?.kind !== 'flee' || o.react.t < 0.6)) scare(party, o, by, 0.9)
+}
+
+/** Caught: a jab, a yelp and a jump, then off they run again */
+function caught(party: Party, v: Figure, fromX: number, by: Chaser) {
+  hop(v, 135, 0)
+  v.red = 0.3
+  v.dest = null
+  v.vx = (v.x >= fromX ? 1 : -1) * 34
+  emit(party, 'spark', v.x, v.skel.y - 8, 5, '#ff6a3a')
+  scare(party, v, by, 1.8)
+  say(v, pick(['excl', 'tear']), 1.2)
+}
+
+/** Back from the imp with horns: chasing everyone about, poking whoever they catch */
 function prankThink(party: Party, f: Figure, dt: number) {
+  const by: Chaser = { fig: f }
   f.prankCool -= dt
+  panic(party, f.x, by, 45)
   if (f.prankCool > 0) {
-    hold(f, 'stand', 'none')
-    if (Math.random() < dt * 1.2) hop(f, 80)
+    // A cackle between catches
+    hold(f, 'stand', 'cheer', 0, true)
+    if (Math.random() < dt * 1.5) hop(f, 80)
     return
   }
-  let t = f.prank
-  if (!t || t.hidden || t.leaving || t.mode !== 'free') {
-    const near = free(party).filter(o => o !== f).sort((a, b) => Math.abs(a.x - f.x) - Math.abs(b.x - f.x)).slice(0, 3)
-    t = f.prank = near.length ? pick(near) : null
-    if (!t) { wanderThink(party, f, dt); return }
-  }
-  const side = t.x > f.x ? 1 : -1
-  if (Math.abs(t.x - f.x) > 7) {
-    goTo(f, t.x - side * 6, true)
+  if (!chaseable(f.prank)) f.prank = pickVictim(party, f.x, f.prankLast)
+  const t = f.prank
+  if (!t) { wanderThink(party, f, dt); return }
+  if (Math.abs(t.x - f.x) > 6) {
+    goTo(f, t.x, true)
+    // A leap now and then as they close in
+    if (Math.abs(t.x - f.x) < 30 && Math.random() < dt * 0.8) hop(f, 100)
     return
   }
-  // Poke!
   f.dest = null
-  hold(f, 'stand', 'point', side)
-  hop(t, 120, 0)
-  t.red = 0.25
-  say(t, 'excl', 1.2)
-  if (t.react?.kind !== 'mourn') t.react = { kind: 'look', t: 1.2, x: f.x }
-  emit(party, 'spark', t.x, t.skel.y - 6, 4, '#ff6a3a')
+  hold(f, 'stand', 'point', t.x > f.x ? 1 : -1)
+  caught(party, t, f.x, by)
   say(f, 'horns', 1.3)
+  f.prankLast = t
   f.prank = null
-  f.prankCool = rand(1.3, 2.4)
+  f.prankCool = rand(0.8, 1.5)
 }
 
 function reactThink(party: Party, f: Figure, dt: number) {
@@ -944,8 +1182,30 @@ function reactThink(party: Party, f: Figure, dt: number) {
   r.t -= dt
   switch (r.kind) {
     case 'look':
-      hold(f, f.spot && Math.abs(f.spot.x - f.x) < 1 ? f.spot.stance === 'lie' ? 'sit' : f.spot.stance : 'stand', 'none', r.x > f.x ? 1 : -1)
+      hold(f, f.spot && Math.abs(f.spot.x - f.x) < 1 ? f.spot.stance === 'lie' ? 'sit' : f.spot.stance : 'stand', r.up ? 'lookup' : 'none', r.x > f.x ? 1 : -1)
       break
+    case 'flee': {
+      const cx = r.by ? chaserX(party, r.by) : null
+      if (cx === null) {
+        // They've stopped: catch your breath
+        f.react = { kind: 'look', t: 0.8, x: r.x }
+        say(f, 'dots', 1.2)
+        return
+      }
+      r.x = cx
+      const near = Math.abs(f.x - cx)
+      if (near < 60) r.t = Math.max(r.t, 0.4)
+      const away = f.x >= cx ? 1 : -1
+      let to = f.x + away * 50
+      if (to < party.lo + 6 || to > party.hi - 6) {
+        // Cornered: dodge back past them, with a jump
+        to = cx - away * 50
+        if (near < 12) hop(f, 115)
+      }
+      goTo(f, clamp(to, party.lo + 4, party.hi - 4), true)
+      hold(f, 'stand', 'flail')
+      break
+    }
     case 'wave':
       hold(f, 'stand', 'wave', 0, true)
       break
@@ -994,7 +1254,12 @@ function campfireThink(party: Party, f: Figure, spot: Spot, dt: number) {
   let gesture: Gesture = 'none', dir = spot.dir
   switch (f.sub) {
     case 'roast': {
-      const it = f.item!
+      const it = f.item
+      if (it?.kind !== 'stick') {
+        // Their stick went (eaten, or dropped when they were picked up): something else for now
+        setSub(f, 'warm', rand(2, 4))
+        break
+      }
       const eating = f.subT > f.subDur - 2
       if (!eating) {
         gesture = 'roast'
@@ -1019,6 +1284,7 @@ function campfireThink(party: Party, f: Figure, spot: Spot, dt: number) {
         if (f.subT > f.subDur - 0.1) {
           say(f, (it.toast ?? 0) > 1.2 ? 'quest' : 'heart')
           f.item = null
+          setSub(f, 'idle', rand(2, 4))
         }
       }
       break
@@ -1259,7 +1525,7 @@ function danceThink(party: Party, f: Figure, spot: Spot) {
       stance = (beats * 2) % 2 < 1 ? 'crouch' : 'stand'
       break
     case 'jump':
-      if (beat % 2 === 0 && beats % 1 < 0.1) hop(f, 100, 0)
+      if (beat % 2 === 0 && beats % 1 < 0.2) hop(f, 100, 0)
       break
   }
   hold(f, stance, 'dance', dir, front)
@@ -1279,7 +1545,7 @@ function chaseThink(party: Party, f: Figure, dt: number) {
       ch.free = true
       ch.x = f.x
       f.item = null
-      party.timer = Math.min(party.timer, 5)
+      if (f.group) f.group.timer = Math.min(f.group.timer, 5)
     }
     return
   }
@@ -1288,7 +1554,7 @@ function chaseThink(party: Party, f: Figure, dt: number) {
     return
   }
   // The closest one goes right for it, the rest string out behind
-  const chasers = free(party).sort((a, b) => Math.abs(a.x - ch.x) - Math.abs(b.x - ch.x))
+  const chasers = free(party).filter(o => o.group === f.group).sort((a, b) => Math.abs(a.x - ch.x) - Math.abs(b.x - ch.x))
   const rank = chasers.indexOf(f)
   const behind = ch.x - ch.dir * (rank === 0 ? 1 : 6 + rank * 8)
   if (Math.abs(behind - f.x) > 2) goTo(f, behind, true)
@@ -1297,10 +1563,12 @@ function chaseThink(party: Party, f: Figure, dt: number) {
 }
 
 function tagThink(party: Party, f: Figure) {
-  const it = party.it
-  if (!it || it.leaving || it.mode !== 'free') {
-    const players = free(party)
-    party.it = players.length ? pick(players) : null
+  const g = f.group!
+  const it = g.it
+  const lo = Math.max(party.lo, g.x - g.span), hi = Math.min(party.hi, g.x + g.span)
+  if (!it || it.leaving || it.mode !== 'free' || it.group !== g) {
+    const players = free(party).filter(o => o.group === g)
+    g.it = players.length ? pick(players) : null
     return
   }
   if (it === f) {
@@ -1309,17 +1577,17 @@ function tagThink(party: Party, f: Figure) {
       hold(f, 'stand', 'none')
       return
     }
-    const prey = nearest(party, f, o => o.mode === 'free' && o.immune <= 0)
+    const prey = nearest(party, f, o => o.mode === 'free' && o.immune <= 0 && o.group === g)
     if (!prey) { hold(f, 'stand', 'cheer', 0, true); return }
     goTo(f, prey.x, true)
     if (Math.abs(prey.x - f.x) < 6) {
-      party.it = prey
+      g.it = prey
       setSub(prey, 'tagged', 0)
       say(prey, 'excl', 1.2)
       say(f, 'star', 1.2)
       f.immune = 2
       setSub(f, 'run', 0)
-      goTo(f, clamp(f.x + (f.x > prey.x ? 40 : -40), party.lo, party.hi), true)
+      goTo(f, clamp(f.x + (f.x > prey.x ? 40 : -40), lo, hi), true)
     }
     return
   }
@@ -1327,8 +1595,8 @@ function tagThink(party: Party, f: Figure) {
   if (Math.abs(d) < 60 && it.subT >= 1) {
     let to = f.x + Math.sign(d || 1) * 50
     // Cornered: dodge round them instead
-    if (to < party.lo || to > party.hi) to = it.x - Math.sign(d || 1) * 30
-    goTo(f, clamp(to, party.lo, party.hi), true)
+    if (to < lo || to > hi) to = it.x - Math.sign(d || 1) * 30
+    goTo(f, clamp(to, lo, hi), true)
   } else if (arrived(f)) {
     if (Math.random() < 0.01) hop(f, 100)
     hold(f, 'stand', Math.random() < 0.3 ? 'wave' : 'none', it.x > f.x ? 1 : -1, false)
@@ -1339,7 +1607,8 @@ function flowersThink(party: Party, f: Figure) {
   if (!f.sub) setSub(f, 'find', 0)
   switch (f.sub) {
     case 'find': {
-      let x = rand(party.lo + 10, party.hi - 10)
+      const g = f.group
+      let x = g ? clamp(g.x + rand(-g.span, g.span), party.lo + 10, party.hi - 10) : rand(party.lo + 10, party.hi - 10)
       if (inPond(party.pond, x) || Math.abs(x - party.pond.x0) < 6 || Math.abs(x - party.pond.x1) < 6) x = party.pond.x0 - 12
       goTo(f, x)
       setSub(f, 'walk', 0)
@@ -1357,8 +1626,9 @@ function flowersThink(party: Party, f: Figure) {
       }
       break
     case 'give': {
-      const o = nearest(party, f, o => o.mode === 'free' && o.item?.kind !== 'flower')
-        ?? nearest(party, f, o => o.mode === 'free')
+      const o = nearest(party, f, o => o.mode === 'free' && o.group === f.group && o.item?.kind !== 'flower')
+        ?? nearest(party, f, o => o.mode === 'free' && o.item?.kind !== 'flower' && Math.abs(o.x - f.x) < 80)
+        ?? nearest(party, f, o => o.mode === 'free' && o.group === f.group)
       if (!o || f.subT > f.subDur) { setSub(f, 'find', 0); break }
       const side = o.x > f.x ? 1 : -1
       if (Math.abs(o.x - f.x) > 10) goTo(f, o.x - side * 9)
@@ -1383,7 +1653,8 @@ function flowersThink(party: Party, f: Figure) {
 
 function wanderThink(party: Party, f: Figure, dt: number) {
   if (!f.sub || (f.sub === 'idle' && f.subT >= f.subDur)) {
-    let x = rand(party.lo + 10, party.hi - 10)
+    const g = f.group?.activity === 'wander' ? f.group : null
+    let x = g ? clamp(g.x + rand(-g.span, g.span), party.lo + 10, party.hi - 10) : rand(party.lo + 10, party.hi - 10)
     if (inPond(party.pond, x)) x = party.pond.x0 - 14
     goTo(f, x)
     setSub(f, 'stroll', 0)
@@ -1402,6 +1673,12 @@ function wanderThink(party: Party, f: Figure, dt: number) {
     if (o) startPair(party, f, o)
   }
   if (Math.random() < dt * 0.05) hop(f, 90)
+}
+
+/** Ends a hug or high-five for both of them */
+function unpair(p: Pair) {
+  p.a.pair = null
+  p.b.pair = null
 }
 
 function startPair(party: Party, a: Figure, b: Figure) {
@@ -1442,7 +1719,7 @@ function pairThink(party: Party, f: Figure, p: Pair, dt: number) {
       break
     case 'highfive':
       hold(f, 'stand', t > 0.25 && t < 1 ? 'highfive' : 'none', face)
-      if (t > 0.3 && t < 0.35) hop(f, 120)
+      if (t >= 0.3 && t - dt < 0.3) hop(f, 120)
       if (f === p.a && t > 0.5 && t - dt <= 0.5) emit(party, 'spark', (p.a.x + p.b.x) / 2, f.skel.y - 26, 7)
       break
     case 'crouch':
@@ -1463,6 +1740,15 @@ function pairThink(party: Party, f: Figure, p: Pair, dt: number) {
 
 function stepChicken(party: Party, dt: number) {
   const ch = party.chicken
+  if (ch?.held) {
+    const h = ch.held
+    if (h.mode !== 'free' || h.hidden || h.leaving || !party.figures.includes(h) || activityOf(h) !== 'chase') {
+      ch.held = null
+      ch.free = true
+      ch.x = h.x
+      if (h.item?.kind === 'chicken') h.item = null
+    }
+  }
   if (!ch || ch.held) return
   ch.t += dt
   ch.flap = Math.max(0, ch.flap - dt)
@@ -1533,7 +1819,7 @@ function hitSpirit(party: Party, x: number, y: number): { g: Grave; who: 'angel'
   for (let i = party.graves.length - 1; i >= 0; i--) {
     const g = party.graves[i]
     const im = g.imp
-    if (im && im.sink < 0.5 && ['cackle', 'poke', 'held', 'dizzy', 'bye'].includes(im.state)) {
+    if (im && im.sink < 0.5 && ['cackle', 'poke', 'chase', 'home', 'held', 'dizzy', 'bye'].includes(im.state)) {
       if (x >= im.x - 6 && x <= im.x + 6 && y >= im.y - 16 && y <= im.y + 1) return { g, who: 'imp' }
     }
     const a = g.angel
@@ -1604,6 +1890,10 @@ function letGo(party: Party, sp: SpiritPress, vx: number, vy: number) {
       g.halo = { x: a.x, y: a.y - 25, vy: -40, t: 0, down: false }
       g.talk = { who: 'angel', icon: 'excl', age: 0, life: 1.4 }
       for (const o of party.figures) if (o.react?.kind === 'mourn' && o.react.of === g.f) say(o, pick(['excl', 'tear']), 1.6)
+      for (const o of onlookers(party, a.x, 150, g.f)) {
+        o.react = { kind: 'look', t: rand(1.2, 2), x: a.x + vx * 0.5, up: vy < -80 }
+        say(o, pick(['excl', 'quest']), 1.3)
+      }
     } else {
       a.state = 'back'
       g.talk = { who: 'angel', icon: 'dots', age: 0, life: 1.6 }
@@ -1624,6 +1914,7 @@ function letGo(party: Party, sp: SpiritPress, vx: number, vy: number) {
 
 /** Mouse down on the scene: if it's on a player, that's a click or the start of a grab */
 export function pressParty(party: Party, p: ScenePointer, px: number, py: number): boolean {
+  if (party.press || party.spirit) releaseParty(party)
   const w = toWorld(party, p, px, py)
   const sp = hitSpirit(party, w.x, w.y)
   if (sp) {
@@ -1674,7 +1965,7 @@ export function releaseParty(party: Party) {
   const f = pr.f
   if (!pr.grabbed) {
     if (f.mode === 'free') {
-      if (f.pair) { f.pair.a.pair = null; f.pair.b.pair = null }
+      if (f.pair) unpair(f.pair)
       f.react = { kind: 'wave', t: 1.6, x: f.x }
       hop(f, 110)
       say(f, 'heart')
@@ -1757,10 +2048,7 @@ function grab(party: Party, pr: Press, c: XY) {
   f.hopT = 0
   f.vx = 0
   f.dest = null
-  f.fishing = null
-  if (f.item && f.item.kind !== 'flower') f.item = null
-  if (f.pair) { f.pair.a.pair = null; f.pair.b.pair = null }
-  if (party.chicken?.held === f) { party.chicken.held = null; party.chicken.free = true; party.chicken.x = f.x }
+  interrupt(party, f)
   f.react = null
   say(f, 'excl', 1.2)
   for (const o of free(party)) {
@@ -1774,7 +2062,7 @@ function grab(party: Party, pr: Press, c: XY) {
 function ragWorld(party: Party, f: Figure): RagWorld {
   const pond = party.pond
   return {
-    floor: x => (inPond(pond, x) ? bedAt(pond, x)! : groundAt(party.env, x)),
+    floor: x => (inPond(pond, x) ? bedAt(pond, x) ?? groundAt(party.env, x) : groundAt(party.env, x)),
     water: x => surfaceAt(pond, x),
     left: -party.offX + 2,
     right: party.env.W * 2 - party.offX - 2,
@@ -1899,6 +2187,8 @@ function stepSwim(party: Party, f: Figure, dt: number) {
 function die(party: Party, f: Figure) {
   f.mode = 'dead'
   f.modeT = 0
+  f.devil = 0
+  f.prank = null
   f.red = 1.2
   if (party.press?.f === f) party.press = null
   if (f.rag) f.rag.pin = -1
@@ -1907,6 +2197,12 @@ function die(party: Party, f: Figure) {
     angel: { state: 'off', x: f.x, y: 0, vx: 0, vy: 0, spin: 0, twirl: 0, t: 0 },
     imp: null, crack: 0, halo: null, talk: null, shake: 0,
   })
+}
+
+/** Everyone out and about near x (not the dead player, not mourners unless asked) */
+function onlookers(party: Party, x: number, radius: number, except: Figure | null, mourners = false): Figure[] {
+  return party.figures.filter(o => o !== except && o.mode === 'free' && !o.hidden && !o.leaving && o.devil <= 0 &&
+    Math.abs(o.x - x) < radius && (mourners || o.react?.kind !== 'mourn'))
 }
 
 /** Everyone mourning `dead` stops: cheering if they came back, quietly if they left */
@@ -1968,7 +2264,7 @@ function stepGraves(party: Party, dt: number) {
           mourners.forEach((o, k) => {
             const side = o.x < g.x ? -1 : 1
             o.react = { kind: 'mourn', t: 1, x: clamp(g.x + side * (15 + Math.floor(k / 2) * 12), party.lo, party.hi), of: f }
-            o.pair = null
+            interrupt(party, o)
           })
         }
         break
@@ -1995,7 +2291,15 @@ function stepGraves(party: Party, dt: number) {
         a.x = g.x
         a.y = angelDescent(party, g, base)
         if (Math.random() < dt * 8) emit(party, 'spark', a.x + rand(-8, 8), a.y - rand(4, 20), 1)
-        if (g.t > 0.5 && g.t - dt <= 0.5) for (const o of party.figures) if (o.react?.kind === 'mourn' && o.react.of === f) say(o, 'excl', 1.4)
+        if (g.t > 0.5 && g.t - dt <= 0.5) {
+          for (const o of party.figures) if (o.react?.kind === 'mourn' && o.react.of === f) say(o, 'excl', 1.4)
+          // Everyone nearby looks up at her
+          for (const o of onlookers(party, g.x, 150, f)) {
+            if (o.react) continue
+            o.react = { kind: 'look', t: rand(2, 3.2), x: g.x, up: true }
+            if (Math.random() < 0.4) say(o, pick(['star', 'excl']))
+          }
+        }
         if (g.t > 3.6) { g.phase = 'raise'; g.t = 0 }
         break
       }
@@ -2075,10 +2379,18 @@ function stepGraves(party: Party, dt: number) {
             hop(o, 100)
             say(o, 'excl', 1.4)
           }
+          for (const o of onlookers(party, g.x, 110, f)) {
+            o.react = { kind: 'look', t: rand(1.5, 2.5), x: g.x }
+            hop(o, 80)
+            if (Math.random() < 0.6) say(o, pick(['excl', 'quest']), 1.3)
+          }
         }
         if (g.t > 1.5) {
           const side: 1 | -1 = g.x + 12 > party.hi ? -1 : 1
-          g.imp = { state: 'rise', x: g.x + side * 11, y: base, vx: 0, vy: 0, t: 0, dir: side === 1 ? -1 : 1, pokes: 0, sink: 1, beaten: false, air: false }
+          g.imp = {
+            state: 'rise', x: g.x + side * 11, y: base, vx: 0, vy: 0, t: 0, dir: side === 1 ? -1 : 1, pokes: 0, sink: 1,
+            beaten: false, air: false, chaseT: 0, victim: null, last: null, rest: 0, jab: 0,
+          }
           g.phase = 'imp'
           g.t = 0
         }
@@ -2095,8 +2407,9 @@ function stepGraves(party: Party, dt: number) {
         }
         break
       case 'gone':
-        // Out they came: the gravestone crumbles, the imp waves and goes home
+        // Out they came: the gravestone crumbles, and the crack stays open till the imp goes home
         g.rise = Math.max(0, 1 - g.t / 0.35)
+        if (g.imp && g.imp.state !== 'dive' && g.imp.state !== 'sizzle') g.crack = Math.max(g.crack, 0.5)
         if (!g.imp && g.crack <= 0 && g.t > 1) party.graves = party.graves.filter(q => q !== g)
         break
     }
@@ -2201,14 +2514,33 @@ function stepImp(party: Party, g: Grave, im: Imp, dt: number) {
         im.vy = 0
         im.vx = 0
         if (im.state === 'flung') {
-          im.state = im.beaten ? 'dizzy' : 'poke'
+          // Thrown hard it's had enough; set down, it gets back to what it was doing
+          im.state = im.beaten ? 'dizzy' : g.phase === 'gone' ? 'chase' : 'poke'
           im.t = 0
         }
       }
     }
   }
   const home = g.x + (im.x >= g.x ? 1 : -1) * 7
+  im.jab = Math.max(0, im.jab - dt)
   switch (im.state) {
+    case 'chase':
+      impChase(party, g, im, dt)
+      break
+    case 'home':
+      // Scampering back to its crack
+      if (Math.abs(home - im.x) > 2) {
+        if (!im.air) {
+          im.dir = home > im.x ? 1 : -1
+          im.x += im.dir * Math.min(Math.abs(home - im.x), 50 * dt)
+          im.y = feetY(party, im.x)
+        }
+        break
+      }
+      im.state = im.beaten ? 'dive' : 'bye'
+      im.t = 0
+      if (!im.beaten) g.talk = { who: 'imp', icon: 'horns', age: 0, life: 1.2 }
+      break
     case 'rise':
       im.sink = Math.max(0, 1 - im.t / 0.4)
       im.y = ground
@@ -2248,7 +2580,7 @@ function stepImp(party: Party, g: Grave, im: Imp, dt: number) {
       }
       break
     case 'bye':
-      if (im.t > 1.4) { im.state = 'dive'; im.t = 0; im.air = true; im.vy = -80; im.vx = (g.x - im.x) * 1.5 }
+      if (im.t > 1.2) { im.state = 'dive'; im.t = 0; im.air = true; im.vy = -80; im.vx = (g.x - im.x) * 1.5 }
       break
     case 'dizzy':
       if (im.t > 1.3) {
@@ -2258,7 +2590,17 @@ function stepImp(party: Party, g: Grave, im: Imp, dt: number) {
       }
       break
     case 'sulk':
-      if (im.t > 0.9) { im.state = 'dive'; im.t = 0 }
+      // Off home in a sulk, everyone cheering
+      if (im.t > 0.9) {
+        im.state = 'home'
+        im.t = 0
+        for (const o of party.figures) {
+          if (o === g.f || o.mode !== 'free' || o.hidden || o.devil > 0 || Math.abs(o.x - im.x) > 140) continue
+          if (o.react?.kind === 'mourn') { say(o, pick(['star', 'heart'])); continue }
+          o.react = { kind: 'cheer', t: 1.4, x: o.x }
+          say(o, pick(['star', 'heart', 'note']))
+        }
+      }
       break
     case 'dive':
       if (im.air) break
@@ -2267,6 +2609,14 @@ function stepImp(party: Party, g: Grave, im: Imp, dt: number) {
       if (im.sink >= 1) g.imp = null
       break
     case 'sizzle':
+      if (im.t < dt * 1.5) {
+        for (const o of party.figures) {
+          if (o === g.f || o.mode !== 'free' || o.hidden || o.devil > 0 || Math.abs(o.x - im.x) > 160) continue
+          if (o.react?.kind === 'mourn') { say(o, pick(['star', 'heart'])); continue }
+          o.react = { kind: 'cheer', t: 1.6, x: o.x }
+          say(o, pick(['star', 'heart', 'note']))
+        }
+      }
       im.sink = Math.min(1, im.sink + dt / 0.9)
       if (Math.random() < dt * 14) emit(party, 'smoke', im.x + rand(-3, 3), im.y - 3, 1, '235,235,240')
       if (im.sink >= 1) g.imp = null
@@ -2301,17 +2651,60 @@ function burst(party: Party, g: Grave) {
   f.react = null
   say(f, 'horns', 2)
   for (const o of party.figures) {
-    if (o.react?.kind !== 'mourn' || o.react.of !== f) continue
-    o.react = { kind: 'look', t: 1.6, x: f.x }
+    if (o === f || (o.react?.kind !== 'mourn' || o.react.of !== f) && !onlookers(party, g.x, 110, f).includes(o)) continue
+    o.react = { kind: 'look', t: 1.2, x: f.x }
+    hop(o, 90)
     say(o, pick(['excl', 'quest']))
   }
   g.phase = 'gone'
   g.t = 0
   if (g.imp) {
-    g.imp.state = 'bye'
-    g.imp.t = 0
+    // And now, everyone else
+    const im = g.imp
+    im.state = 'chase'
+    im.t = 0
+    im.chaseT = 14
+    im.rest = 1
+    im.victim = null
+    im.last = f
     g.talk = { who: 'imp', icon: 'horns', age: 0, life: 1.4 }
   }
+}
+
+/** The imp's own chase: quick little legs, a hop now and then, a jab for whoever it catches */
+function impChase(party: Party, g: Grave, im: Imp, dt: number) {
+  const by: Chaser = { imp: im }
+  im.chaseT -= dt
+  im.rest -= dt
+  if (im.chaseT <= 0 || !party.figures.some(chaseable)) {
+    im.state = 'home'
+    im.t = 0
+    return
+  }
+  panic(party, im.x, by, 50)
+  if (im.rest > 0) {
+    if (!im.air && Math.random() < dt * 3) { im.air = true; im.vy = -60 }
+    return
+  }
+  if (!chaseable(im.victim)) im.victim = pickVictim(party, im.x, im.last)
+  const v = im.victim
+  if (!v) return
+  const d = v.x - im.x
+  im.dir = d >= 0 ? 1 : -1
+  if (Math.abs(d) > 5) {
+    if (!im.air) {
+      im.x += im.dir * Math.min(Math.abs(d), 36 * dt)
+      im.y = feetY(party, im.x)
+      if (Math.random() < dt * 1.2) { im.air = true; im.vy = -75; im.vx = im.dir * 36 }
+    }
+    return
+  }
+  im.jab = 0.3
+  caught(party, v, im.x, by)
+  g.talk = { who: 'imp', icon: pick(['horns', 'note']), age: 0, life: 1 }
+  im.last = v
+  im.victim = null
+  im.rest = 0.8
 }
 
 // ── Things in flight, butterflies ────────────────────────────
@@ -2588,9 +2981,10 @@ export function drawParty(ctx: CanvasRenderingContext2D, party: Party, now: numb
         ctx.rect(0, 0, ctx.canvas.width, (im.state === 'sizzle' ? (surfaceAt(party.pond, im.x) ?? ground) + offY : ground))
         ctx.clip()
       }
-      const poking = im.state === 'poke' && im.t > 0.2 && im.t < 0.5 ? Math.sin(((im.t - 0.2) / 0.3) * Math.PI) : 0
+      const poking = im.state === 'poke' && im.t > 0.2 && im.t < 0.5 ? Math.sin(((im.t - 0.2) / 0.3) * Math.PI)
+        : im.jab > 0 ? Math.sin((im.jab / 0.3) * Math.PI) : 0
       drawImp(ctx, Math.round(im.x) + offX, Math.round(im.y + im.sink * 15) + offY, party.t, {
-        dir: im.dir, poke: poking, wave: im.state === 'bye' || im.state === 'cackle',
+        dir: im.dir, poke: poking, wave: im.state === 'bye' || im.state === 'cackle' || (im.state === 'chase' && im.rest > 0),
         kick: im.state === 'held' || im.state === 'flung', dizzy: im.state === 'dizzy',
       })
       ctx.restore()
@@ -2930,7 +3324,7 @@ export function drawPartyLabels(ctx: CanvasRenderingContext2D, party: Party, px:
 
   const labels: Label[] = []
   for (const f of party.figures) {
-    const grave = f.hidden ? party.graves.find(g => g.f === f && g.phase !== 'depart') : null
+    const grave = f.hidden ? [...party.graves].reverse().find(g => g.f === f && g.phase !== 'depart' && g.phase !== 'gone') : null
     if (f.hidden && !grave) continue
     // Tags ease after the head so a tumbling player doesn't shake theirs about
     const hx = grave ? grave.x : f.mode === 'free' || f.mode === 'rising' ? f.skel.x : f.head.x

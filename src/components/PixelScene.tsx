@@ -696,7 +696,8 @@ export function PixelScene({ time, paused, title = false, players = NO_PLAYERS, 
     }
     let pressing = false
     const onDown = (e: PointerEvent) => {
-      if (e.button !== 0) return
+      // One at a time (a second finger or a pen shouldn't strand whoever is held)
+      if (e.button !== 0 || pressing) return
       const target = e.target as Element | null
       if (target?.closest('button, a, input, select, textarea, label, .dock, .callout, .titlebar, [class*="modal"], [class*="toast"]')) return
       const r = canvas.getBoundingClientRect()

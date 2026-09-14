@@ -23,6 +23,8 @@ export interface Ragdoll {
   t: number
   /** Seconds it has lain still */
   still: number
+  /** Time not yet simulated, carried to the next frame */
+  acc: number
 }
 
 export interface RagWorld {
@@ -49,7 +51,7 @@ export function ragdollFromSkel(s: Skel, dir: 1 | -1, vx = 0, vy = 0): Ragdoll {
   const at = (p: { x: number; y: number }): Pt => ({ x: p.x, y: p.y, px: p.x - vx * STEP, py: p.y - vy * STEP, wet: false })
   return {
     pts: [at(j.head), at(j.neck), at(j.hip), at(j.handN), at(j.handF), at(j.footN), at(j.footF)],
-    pin: -1, pinX: 0, pinY: 0, t: 0, still: 0,
+    pin: -1, pinX: 0, pinY: 0, t: 0, still: 0, acc: 0,
   }
 }
 
@@ -87,7 +89,10 @@ export function throwRagdoll(r: Ragdoll, vx: number, vy: number) {
 }
 
 export function stepRagdoll(r: Ragdoll, dt: number, world: RagWorld) {
-  const steps = Math.max(1, Math.min(6, Math.round(dt / STEP)))
+  r.acc += dt
+  const steps = Math.min(6, Math.floor(r.acc / STEP))
+  // After a long hitch, drop what can't be caught up rather than fast-forwarding
+  r.acc = steps === 6 ? 0 : r.acc - steps * STEP
   for (let s = 0; s < steps; s++) step(r, world)
 }
 

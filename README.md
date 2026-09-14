@@ -70,9 +70,21 @@ Query parameters pick the situation:
 
 `tools/ui-preview/scene.html?t=night&q=s%3Dfresh` opens the preview with a fixed
 time of day. In dev builds `__party` in the console is the players' scene state;
-`__party.timer = 0` moves them on to the next activity. In the preview,
-`__players = [...]` changes who's online and `__freezeStatus = true` stops the
-mock server answering.
+`__party.timer = 0` shuffles everyone into new groups and activities. In the
+preview, `__players = [...]` changes who's online, `__freezeStatus = true` stops
+the mock server answering, and `?bubbles=1` keeps a speech bubble over everyone.
+
+After changing the players' scene (`src/components/scene*.ts`), run the soak
+test from the preview's console (with `?srv=busy`). It plays a copy of the scene
+at full speed while clicking, throwing, killing, flinging the angel, throwing
+the imp, and logging people on and off at random. It checks every frame that
+nobody gets stuck, lost, invisible or NaN:
+
+```js
+await (await import('/tools/ui-preview/party-soak.js')).soak(600)
+```
+
+`broken` in the result should be empty.
 
 **Try a modpack change before publishing it:** dev builds read the manifest
 from `BSCRAFT_MANIFEST_URL` when it's set (release builds ignore it):
