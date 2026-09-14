@@ -107,7 +107,7 @@ export function nameTag(name: string, unit: number): HTMLCanvasElement {
   const w = Math.max(1, width) + 4, h = TAG_ROWS + 2
   const [c, g] = canvas(w * unit, h * unit)
   const px = (x: number, y: number, pw = 1) => g.fillRect(x * unit, y * unit, pw * unit, unit)
-  g.fillStyle = 'rgba(20, 12, 36, 0.45)'
+  g.fillStyle = 'rgba(20, 12, 36, 0.52)'
   for (let y = 0; y < h; y++) {
     const inset = y === 0 || y === h - 1 ? 1 : 0
     px(inset, y, w - inset * 2)

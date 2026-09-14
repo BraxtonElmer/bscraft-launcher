@@ -643,14 +643,17 @@ export function PixelScene({ time, paused, title = false, players = NO_PLAYERS, 
     }
     const octx = overlay.getContext('2d')!
     const labels = labelsRef.current!
-    const dpr = window.devicePixelRatio || 1
-    const LW = Math.round(canvas.clientWidth * dpr) || W * 2, LH = Math.round(canvas.clientHeight * dpr) || H * 2
-    if (labels.width !== LW || labels.height !== LH) {
-      labels.width = LW
-      labels.height = LH
-    }
     const lctx = labels.getContext('2d')!
-    const unit = labelUnit(dpr)
+    // Kept at the display's resolution, which can change under us (another monitor, a zoom)
+    const fitLabels = () => {
+      const dpr = window.devicePixelRatio || 1
+      const lw = Math.round(canvas.clientWidth * dpr) || W * 2, lh = Math.round(canvas.clientHeight * dpr) || H * 2
+      if (labels.width !== lw || labels.height !== lh) {
+        labels.width = lw
+        labels.height = lh
+      }
+      return labelUnit(dpr)
+    }
     if (!partyRef.current) {
       partyRef.current = createParty(scene.life.env, scene.playerLight)
       syncParty(partyRef.current, onlineRef.current)
@@ -667,7 +670,8 @@ export function PixelScene({ time, paused, title = false, players = NO_PLAYERS, 
     const draw = (now: number, dt: number) => {
       drawFrame(ctx, scene, now, dt, p.x, p.y, title)
       drawParty(octx, party, now, p.x, p.y, scene.playerLight)
-      drawPartyLabels(lctx, party, p.x, p.y, LW / overlay.width, unit, dt)
+      const unit = fitLabels()
+      drawPartyLabels(lctx, party, p.x, p.y, labels.width / overlay.width, unit, dt)
     }
 
     if (paused || reduced) {

@@ -156,7 +156,8 @@ interface Figure {
   /** Last drawn head top and bounds, for name tags, bubbles and clicks */
   head: XY
   box: { x0: number; y0: number; x1: number; y1: number }
-  tag: { x: number; y: number; lift: number; slot: number; ready: boolean }
+  /** Where the name tag is: following the head, nudged aside (dx) or up a row (lift) to make room */
+  tag: { x: number; y: number; dx: number; lift: number; row: number; hold: number; ready: boolean }
 }
 
 interface Particle {
@@ -312,7 +313,7 @@ function newFigure(party: Party, key: string, p: OnlinePlayer, x: number, dir: 1
     hurt: 0, dizzy: 0, red: 0, halo: 0, wet: 0, lastHit: 0, immune: 0, danceMove: 'bounce', bucket: 0,
     leaving: false, hidden: false, rise: 0, t: rand(0, 10),
     head: { x, y: feet - 32 }, box: { x0: x - 5, y0: feet - 32, x1: x + 5, y1: feet },
-    tag: { x, y: feet - 40, lift: 0, slot: 0, ready: false },
+    tag: { x, y: feet - 40, dx: 0, lift: 0, row: 0, hold: 0, ready: false },
   }
 }
 
@@ -2292,23 +2293,40 @@ function drawParticles(ctx: CanvasRenderingContext2D, party: Party, offX: number
   ctx.globalAlpha = 1
 }
 
+interface Label {
+  f: Figure
+  tag: HTMLCanvasElement | null
+  bubble: { icon: Icon; age: number; life: number } | null
+  /** Over the head, and the tag's bottom edge, in device pixels */
+  cx: number
+  bottom: number
+  /** The tag with any bubble above it */
+  w: number
+  h: number
+  /** How far it may be nudged aside, where it ends up, and which row */
+  lim: number
+  x: number
+  row: number
+  lift: number
+}
+
 /**
  * Name tags and speech bubbles, on their own full-resolution canvas: `scale` is its device
  * pixels per players-layer pixel, `unit` the device pixels per label art pixel.
+ *
+ * Tags that would overlap slide apart sideways into a row above the group; only people
+ * nearly on top of each other get a second row, and never more than two.
  */
 export function drawPartyLabels(ctx: CanvasRenderingContext2D, party: Party, px: number, py: number, scale: number, unit: number, dt: number) {
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
   ctx.imageSmoothingEnabled = false
   const offX = (Math.round(px * 10) - party.env.PAD) * 2
   const offY = Math.round((py + 1) * 2) * 2
-  const follow = 1 - Math.exp(-22 * dt), settle = 1 - Math.exp(-16 * dt)
-  const gap = Math.round(2.5 * scale), pad = unit
-  // Tags (with any bubble just above) stack when they'd overlap, placed left to right so
-  // the stacking stays steady; bubbles are drawn last so no tag covers one
-  const placed: { x: number; y: number; w: number; h: number }[] = []
-  const speech: { icon: Icon; x: number; y: number; age: number; life: number }[] = []
-  const order = [...party.figures].sort((a, b) => a.tag.x - b.tag.x)
-  for (const f of order) {
+  const follow = 1 - Math.exp(-22 * dt), settle = dt === 0 ? 1 : 1 - Math.exp(-12 * dt)
+  const gap = Math.round(2.5 * scale), pad = unit, gapX = unit * 2
+
+  const labels: Label[] = []
+  for (const f of party.figures) {
     const grave = f.hidden ? party.graves.find(g => g.f === f && g.phase !== 'depart') : null
     if (f.hidden && !grave) continue
     // Tags ease after the head so a tumbling player doesn't shake theirs about
@@ -2318,41 +2336,99 @@ export function drawPartyLabels(ctx: CanvasRenderingContext2D, party: Party, px:
     f.tag.x += (hx - f.tag.x) * follow
     f.tag.y += (hy - f.tag.y) * follow
     const tag = f.name ? nameTag(f.name, unit) : null
+    const bubble = f.bubble && !f.hidden ? f.bubble : null
+    if (!tag && !bubble) continue
+    const sp = bubble ? speechSize(bubble.icon, unit) : null
+    const w = Math.max(tag?.width ?? 0, sp?.w ?? 0)
     const cx = (f.tag.x + offX) * scale
-    const bottom = (f.tag.y + offY) * scale - gap
-    const b = f.bubble && !f.hidden ? f.bubble : null
-    const x = Math.round(cx)
-    const base = Math.round(bottom) - (tag ? tag.height : 0)
-    const rects: { x: number; y: number; w: number; h: number }[] = []
-    if (tag) rects.push({ x: x - Math.floor(tag.width / 2), y: base, w: tag.width, h: tag.height })
-    if (b) {
-      const s = speechSize(b.icon, unit)
-      rects.push({ x: x - Math.floor(s.w / 2), y: base - unit - s.h, w: s.w, h: s.h })
+    labels.push({
+      f, tag, bubble, cx, bottom: (f.tag.y + offY) * scale - gap,
+      w, h: (tag?.height ?? 0) + (sp ? sp.h + unit : 0),
+      lim: w * 0.75 + unit * 4, x: cx + f.tag.dx, row: 0, lift: 0,
+    })
+  }
+  labels.sort((a, b) => a.cx - b.cx)
+
+  const top = (l: Label) => l.bottom - l.lift - l.h
+  const sameLine = (a: Label, b: Label) => top(a) < b.bottom - b.lift + pad && top(b) < a.bottom - a.lift + pad
+  // Labels that were up a row need a little more room to come back down, so they don't flick
+  const room = (a: Label, b: Label) => (a.w + b.w) / 2 + gapX + (a.f.tag.row || b.f.tag.row ? unit * 3 : 0)
+  const spread = (ls: Label[]) => {
+    for (let it = 0; it < 10; it++) {
+      for (const l of ls) l.x += (l.cx - l.x) * 0.3
+      for (let i = 0; i < ls.length; i++) {
+        for (let j = i + 1; j < ls.length; j++) {
+          const a = ls[i], b = ls[j]
+          if (!sameLine(a, b)) continue
+          const d = room(a, b) - (b.x - a.x)
+          if (d > 0) { a.x -= d / 2; b.x += d / 2 }
+        }
+      }
+      for (const l of ls) l.x = clamp(l.x, l.cx - l.lim, l.cx + l.lim)
     }
-    if (!rects.length) continue
-    // Dropping to a lower slot needs a little extra room, so a head bobbing by a pixel
-    // doesn't flick the tag up and down
-    const hits = (lift: number) => {
-      const m = lift < f.tag.slot ? pad * 2 : 0
-      return rects.some(q => placed.some(r =>
-        q.x < r.x + r.w + pad * 2 + m && q.x + q.w > r.x - pad * 2 - m && q.y - lift < r.y + r.h + pad + m && q.y - lift + q.h > r.y - pad - m))
+  }
+  const crowded = (ls: Label[]) => {
+    for (let i = 0; i < ls.length; i++) {
+      for (let j = i + 1; j < ls.length; j++) {
+        const a = ls[i], b = ls[j]
+        if (sameLine(a, b) && room(a, b) - (b.x - a.x) > 1) return [a, b]
+      }
     }
-    const step = (tag ? tag.height : 4 * unit) + pad
-    let lift = 0
-    while (lift < 80 * scale && hits(lift)) lift += step
-    f.tag.slot = lift
-    for (const q of rects) placed.push({ ...q, y: q.y - lift })
-    f.tag.lift += (lift - f.tag.lift) * settle
-    const top = base - Math.round(f.tag.lift)
-    if (tag) {
+    return null
+  }
+
+  // Everyone on the first row, as spread out as they can be without straying from their heads;
+  // where that still leaves an overlap, one of the pair goes up a row (whoever was up already,
+  // or else whoever joined later, so the choice doesn't flip as they move about)
+  const order = (l: Label) => party.figures.indexOf(l.f)
+  // A tag that has just gone up stays up for a moment, and one that has just come down
+  // is the last to go back up, so people running past each other don't set them bobbing
+  for (const l of labels) if (l.f.tag.row === 1 && l.f.tag.hold > 0) l.row = 1
+  let row0 = labels.filter(l => l.row === 0)
+  for (let n = 0; n < labels.length; n++) {
+    spread(row0)
+    const pair = crowded(row0)
+    if (!pair) break
+    const [a, b] = pair
+    const up =
+      a.f.tag.row !== b.f.tag.row ? (a.f.tag.row ? a : b)
+      : (a.f.tag.hold > 0) !== (b.f.tag.hold > 0) ? (a.f.tag.hold > 0 ? b : a)
+      : order(a) > order(b) ? a : b
+    up.row = 1
+    row0 = row0.filter(l => l !== up)
+  }
+  const row1 = labels.filter(l => l.row === 1)
+  if (row1.length) {
+    spread(row1)
+    for (const l of row1) {
+      // Just clear of whatever is below it
+      let lift = 0
+      for (const r of row0) {
+        if (Math.abs(l.x - r.x) < (l.w + r.w) / 2 + gapX && sameLine(l, r)) lift = Math.max(lift, l.bottom - (r.bottom - r.h - pad))
+      }
+      l.lift = lift
+    }
+  }
+
+  const speech: { icon: Icon; x: number; y: number; age: number; life: number }[] = []
+  for (const l of [...row0, ...row1]) {
+    const f = l.f
+    f.tag.hold = l.row !== f.tag.row ? 0.8 : Math.max(0, f.tag.hold - dt)
+    f.tag.row = l.row
+    f.tag.dx += (l.x - l.cx - f.tag.dx) * settle
+    f.tag.lift += (l.lift - f.tag.lift) * settle
+    const x = Math.round(l.cx + f.tag.dx)
+    let y = Math.round(l.bottom - f.tag.lift)
+    if (l.tag) {
+      y -= l.tag.height
       ctx.globalAlpha = f.mode === 'rising' ? 1 - f.rise * 0.6 : 1
-      ctx.drawImage(tag, rects[0].x, top)
+      ctx.drawImage(l.tag, x - Math.floor(l.tag.width / 2), y)
       ctx.globalAlpha = 1
     }
-    // Bubbles float just above the tag, pointing down at it
-    if (b) speech.push({ icon: b.icon, x, y: top - unit, age: b.age, life: b.life })
+    // Bubbles float just above the tag, pointing down at it, and go on top of every tag
+    if (l.bubble) speech.push({ icon: l.bubble.icon, x, y: y - unit, age: l.bubble.age, life: l.bubble.life })
   }
-  for (const s of speech) drawSpeech(ctx, s.icon, s.x, s.y, unit, s.age, s.life)
+  for (const b of speech) drawSpeech(ctx, b.icon, b.x, b.y, unit, b.age, b.life)
 }
 
 /** A crisp one-pixel line (Bresenham), since stroked paths come out anti-aliased */
