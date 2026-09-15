@@ -28,7 +28,7 @@ pub struct AppConfig {
     #[serde(default)]
     pub console_enabled: bool,
 
-    /// Prefer the high-performance GPU for Minecraft (Windows only).
+    /// Prefer the high-performance GPU for Minecraft (Windows only: macOS switches by itself).
     #[serde(default = "default_prefer_dgpu")]
     pub prefer_dgpu: bool,
 
@@ -97,7 +97,7 @@ struct Win32VideoController {
 }
 
 #[cfg(target_os = "windows")]
-fn get_gpus_windows() -> Result<Vec<GpuInfo>, String> {
+fn detect_gpus() -> Result<Vec<GpuInfo>, String> {
     let com_con = wmi::COMLibrary::new().map_err(|e| e.to_string())?;
     let wmi_con = wmi::WMIConnection::new(com_con.into()).map_err(|e| e.to_string())?;
     let results: Vec<Win32VideoController> = wmi_con.query().map_err(|e| e.to_string())?;
@@ -115,8 +115,47 @@ fn get_gpus_windows() -> Result<Vec<GpuInfo>, String> {
     Ok(gpus)
 }
 
-#[cfg(not(target_os = "windows"))]
-fn get_gpus_windows() -> Result<Vec<GpuInfo>, String> {
+/// The Mac's graphics as System Information lists them (Apple silicon's built-in GPU, or an
+/// Intel Mac's Intel graphics and AMD Radeon card)
+#[cfg(target_os = "macos")]
+fn detect_gpus() -> Result<Vec<GpuInfo>, String> {
+    let output = std::process::Command::new("/usr/sbin/system_profiler")
+        .args(["SPDisplaysDataType", "-json", "-detailLevel", "mini"])
+        .output()
+        .map_err(|e| e.to_string())?;
+    if !output.status.success() {
+        return Err(format!("system_profiler exited with {}", output.status));
+    }
+    parse_mac_displays(&output.stdout)
+}
+
+#[cfg(any(target_os = "macos", test))]
+fn parse_mac_displays(json: &[u8]) -> Result<Vec<GpuInfo>, String> {
+    let v: serde_json::Value = serde_json::from_slice(json).map_err(|e| e.to_string())?;
+    let mut gpus = Vec::new();
+    for item in v["SPDisplaysDataType"].as_array().into_iter().flatten() {
+        let name = item["sppci_model"].as_str().unwrap_or_default().trim().to_string();
+        if name.is_empty() {
+            continue;
+        }
+        // "sppci_vendor_Apple", "sppci_vendor_amd" or "Intel (0x8086)"
+        let raw = item["spdisplays_vendor"].as_str().unwrap_or_default();
+        let raw = raw.strip_prefix("sppci_vendor_").unwrap_or(raw);
+        let raw = raw.split(" (0x").next().unwrap_or(raw).trim();
+        let vendor = match raw.to_ascii_lowercase().as_str() {
+            "amd" | "ati" => "AMD".to_string(),
+            "nvidia" => "NVIDIA".to_string(),
+            "intel" => "Intel".to_string(),
+            "apple" => "Apple".to_string(),
+            _ => raw.to_string(),
+        };
+        gpus.push(GpuInfo { name, vendor });
+    }
+    Ok(gpus)
+}
+
+#[cfg(not(any(target_os = "windows", target_os = "macos")))]
+fn detect_gpus() -> Result<Vec<GpuInfo>, String> {
     Ok(Vec::new())
 }
 
@@ -228,8 +267,9 @@ pub fn memory_plan() -> MemoryPlan {
         let mut sys = System::new();
         sys.refresh_memory();
         let total_mb = (sys.total_memory() / 1024 / 1024) as u32;
-        // WMI wants a thread of its own (COM); unknown counts as integrated, the careful guess
-        let integrated = std::thread::spawn(get_gpus_windows)
+        // WMI wants a thread of its own (COM); unknown counts as integrated, the careful guess.
+        // Apple silicon's GPU shares the Mac's memory, so it counts as integrated too.
+        let integrated = std::thread::spawn(detect_gpus)
             .join()
             .ok()
             .and_then(Result::ok)
@@ -244,7 +284,7 @@ pub fn memory_plan() -> MemoryPlan {
 
 pub fn get_data_dir() -> Result<PathBuf, String> {
     dirs::data_dir()
-        .ok_or_else(|| "Cannot locate %APPDATA% directory".to_string())
+        .ok_or_else(|| "Cannot locate the application data folder".to_string())
         .map(|d| d.join("BSCraft"))
 }
 
@@ -310,16 +350,16 @@ pub async fn get_memory_plan() -> Result<MemoryPlan, String> {
     tokio::task::spawn_blocking(memory_plan).await.map_err(|e| e.to_string())
 }
 
-/// Returns a best-effort list of detected GPUs (Windows only for now).
-/// Runs in a blocking thread because WMI COM is thread-affine.
+/// Returns a best-effort list of detected GPUs (WMI on Windows, System Information on macOS).
+/// Runs in a blocking thread because WMI COM is thread-affine and system_profiler takes a moment.
 #[tauri::command]
 pub async fn get_gpus() -> Result<Vec<GpuInfo>, String> {
-    tokio::task::spawn_blocking(get_gpus_windows)
+    tokio::task::spawn_blocking(detect_gpus)
         .await
         .map_err(|e| e.to_string())?
 }
 
-/// Writes an error report to %AppData%\BSCraft\logs\ and returns the file path.
+/// Writes an error report to <data dir>/BSCraft/logs/ and returns the file path.
 /// Called from the frontend whenever a launch or install error occurs.
 #[tauri::command]
 pub async fn write_error_report(context: String, message: String) -> Result<String, String> {
@@ -392,6 +432,21 @@ mod tests {
         assert_eq!(plan_for(16_062, true, heavy).recommended_mb, 7 * GB);
         let p = plan_for(32_600, false, heavy);
         assert_eq!((p.min_mb, p.max_useful_mb), (7 * GB, 14 * GB));
+    }
+
+    #[test]
+    fn reads_mac_graphics_from_system_information() {
+        let apple_silicon = br#"{"SPDisplaysDataType":[{"_name":"kHW_AppleM1Item","sppci_model":"Apple M1","spdisplays_vendor":"sppci_vendor_Apple","sppci_cores":"8"}]}"#;
+        let gpus = super::parse_mac_displays(apple_silicon).unwrap();
+        assert_eq!((gpus[0].name.as_str(), gpus[0].vendor.as_str()), ("Apple M1", "Apple"));
+        assert!(!is_dedicated_gpu(&gpus[0].name));
+
+        let intel_mac = br#"{"SPDisplaysDataType":[{"sppci_model":"Intel UHD Graphics 630","spdisplays_vendor":"Intel (0x8086)"},{"sppci_model":"AMD Radeon Pro 5500M","spdisplays_vendor":"sppci_vendor_amd"},{"_name":"no model"}]}"#;
+        let gpus = super::parse_mac_displays(intel_mac).unwrap();
+        assert_eq!(gpus.len(), 2);
+        assert_eq!(gpus[0].vendor, "Intel");
+        assert_eq!(gpus[1].vendor, "AMD");
+        assert!(!is_dedicated_gpu(&gpus[0].name) && is_dedicated_gpu(&gpus[1].name));
     }
 
     #[test]

@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { SkinViewer } from 'skinview3d'
 import type { SkinModel } from '../lib/skin'
 import { plainElytra } from '../lib/defaultSkin'
+import { device } from '../lib/platform'
 import { Spinner } from './ui'
 
 type Lib = typeof import('skinview3d')
@@ -175,7 +176,7 @@ export function SkinViewer3D(props: Props) {
     >
       <canvas ref={canvasRef} aria-label="3D preview of your player. Drag to rotate, scroll to zoom." />
       {!ready && !failed && <div className="viewer3d-status"><Spinner size={18} /></div>}
-      {failed && <div className="viewer3d-status">3D preview isn't available on this PC.</div>}
+      {failed && <div className="viewer3d-status">3D preview isn't available on this {device}.</div>}
       {ready && hint && !touched && <div className="viewer3d-hint">Drag to rotate · scroll to zoom</div>}
     </div>
   )

@@ -1,7 +1,8 @@
 /* ============================================================
    globals.css — BSCraft Launcher
-   960×580 fixed, frameless. Nav rail + stage with a pixel-art
-   scene behind every page.
+   960×580 fixed, frameless (macOS: native window buttons over
+   the nav rail). Nav rail + stage with a pixel-art scene behind
+   every page.
    ============================================================ */
 
 /* ── Tokens ────────────────────────────────────────────────── */
@@ -32,8 +33,8 @@
   --danger:    #f87171;
   --info:      #93c5fd;
 
-  --font: 'Manrope', 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
-  --mono: 'JetBrains Mono', 'Cascadia Mono', Consolas, monospace;
+  --font: 'Manrope', 'Segoe UI Variable Text', 'Segoe UI', -apple-system, system-ui, sans-serif;
+  --mono: 'JetBrains Mono', 'Cascadia Mono', Consolas, 'SF Mono', Menlo, monospace;
 
   --ease:   cubic-bezier(0.2, 0.8, 0.2, 1);
   --spring: cubic-bezier(0.3, 1.4, 0.5, 1);
@@ -153,6 +154,10 @@ button:focus-visible, [role='switch']:focus-visible, a:focus-visible {
   display: grid;
   place-items: center;
 }
+
+/* macOS: the window's traffic-light buttons sit at the top of the rail
+   (trafficLightPosition in tauri.macos.conf.json), so the logo moves down under them */
+[data-platform='mac'] .rail-brand { height: 64px; margin-top: 34px; }
 
 .rail-logo {
   display: grid;
@@ -1292,6 +1297,7 @@ button:focus-visible, [role='switch']:focus-visible, a:focus-visible {
 .setting-title { display: flex; align-items: center; gap: 7px; font-size: 13.5px; font-weight: 700; }
 .setting-title svg { color: var(--text-3); }
 .setting-desc { margin-top: 2px; font-size: 12px; line-height: 1.4; color: var(--text-3); }
+.gpu-note { margin: 0 0 10px; }
 .setting-control { flex-shrink: 0; }
 
 .gpu-list { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
@@ -1319,6 +1325,7 @@ button:focus-visible, [role='switch']:focus-visible, a:focus-visible {
 .gpu-vendor.nvidia { background: rgba(118, 185, 0, 0.16); color: #a3e635; }
 .gpu-vendor.amd    { background: rgba(237, 28, 36, 0.16); color: #fca5a5; }
 .gpu-vendor.intel  { background: rgba(0, 113, 197, 0.22); color: #93c5fd; }
+.gpu-vendor.apple  { background: rgba(255, 255, 255, 0.1); color: #e5e7eb; }
 .gpu-vendor.other  { background: var(--fill-2); color: var(--text-2); }
 .gpu-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 

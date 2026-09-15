@@ -1,0 +1,28 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "BSCraft Launcher",
+        "width": 960,
+        "height": 580,
+        "resizable": false,
+        "maximizable": false,
+        "decorations": true,
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true,
+        "trafficLightPosition": { "x": 8, "y": 26 },
+        "acceptFirstMouse": true,
+        "visible": false
+      }
+    ]
+  },
+  "bundle": {
+    "category": "Game",
+    "macOS": {
+      "minimumSystemVersion": "11.0",
+      "signingIdentity": "-"
+    }
+  }
+}

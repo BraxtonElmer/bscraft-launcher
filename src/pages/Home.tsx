@@ -8,6 +8,7 @@ import {
   RefreshIcon, ServerIcon, StopIcon, TerminalIcon,
 } from '../components/Icons'
 import { formatBytes, formatRam, sanitizeUsername, usernameProblem } from '../lib/format'
+import { device } from '../lib/platform'
 import { usePublishedSkin } from '../hooks/useSkin'
 import type { AccountApi } from '../hooks/useAccount'
 import type { LauncherApi } from '../hooks/useLauncher'
@@ -226,8 +227,8 @@ function WrongPasswordPrompt({ username, onSave, onSkip, onClose }: {
           <div>
             <h2 id="pw-wrong-title" className="modal-title">That password won't get you in</h2>
             <p className="modal-sub">
-              BSCraft has a different password for <b>{username}</b> than the one saved on this PC, so the server
-              would turn you away once the game has loaded. Enter the password you used before (on the PC you
+              BSCraft has a different password for <b>{username}</b> than the one saved on this {device}, so the server
+              would turn you away once the game has loaded. Enter the password you used before (on the computer you
               first played on, it's under Profile › Server password), or ask an admin to reset your name.
             </p>
           </div>
@@ -322,7 +323,7 @@ function DockControls({ launcher, config, onNavigate, onPlay }: {
         <button
           className="dock-link"
           onClick={() => onNavigate('settings')}
-          title={config.ram_auto !== false ? 'Automatic: the most that helps on this PC. Change it in Settings' : 'Change memory in Settings'}
+          title={config.ram_auto !== false ? `Automatic: the most that helps on this ${device}. Change it in Settings` : 'Change memory in Settings'}
         >
           <MemoryIcon size={15} />
           {formatRam(config.ram_mb)}

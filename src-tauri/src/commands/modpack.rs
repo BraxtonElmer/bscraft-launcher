@@ -284,6 +284,9 @@ pub async fn apply_performance_mode(enabled: bool) -> Result<String, String> {
 /// - Downloads files that are missing or have a different SHA-256.
 /// - Removes files that are no longer in the manifest (if `remove_deleted` is true).
 /// - Emits `sync-progress` events for UI feedback.
+///
+/// Fails if any file couldn't be downloaded, without recording the new pack version, so
+/// the game isn't started with mods missing and the next Play tries again.
 #[tauri::command]
 pub async fn sync_modpack(app: tauri::AppHandle, remove_deleted: bool) -> Result<SyncResult, String> {
     let mc_dir = get_mc_dir()?;
@@ -304,7 +307,8 @@ pub async fn sync_modpack(app: tauri::AppHandle, remove_deleted: bool) -> Result
     let mut files_done: u32 = 0;
     let mut files_updated: u32 = 0;
     let mut files_added: u32 = 0;
-    let mut errors: Vec<String> = Vec::new();
+    // Files the pack needs that couldn't be downloaded
+    let mut failed: Vec<String> = Vec::new();
 
     for mf in &manifest.files {
         files_done += 1;
@@ -319,8 +323,9 @@ pub async fn sync_modpack(app: tauri::AppHandle, remove_deleted: bool) -> Result
                     files_updated += 1;
                     true
                 }
-                Err(e) => {
-                    errors.push(format!("Hash check failed for {}: {}", mf.path, e));
+                // Unreadable: download it again
+                Err(_) => {
+                    files_updated += 1;
                     true
                 }
             }
@@ -343,7 +348,7 @@ pub async fn sync_modpack(app: tauri::AppHandle, remove_deleted: bool) -> Result
 
         if needs_download {
             if let Err(e) = download_file_quiet(&client, &mf.url, &local_path).await {
-                errors.push(format!("Failed to download {}: {}", mf.path, e));
+                failed.push(format!("{} ({})", mf.path, e));
             }
         }
     }
@@ -352,10 +357,14 @@ pub async fn sync_modpack(app: tauri::AppHandle, remove_deleted: bool) -> Result
     for mf in &manifest.initial_files {
         let local_path = mc_dir.join(&mf.path);
         if let Err(e) = install_initial_file(&client, mf, &local_path).await {
-            errors.push(format!("Failed to install {}: {}", mf.path, e));
+            failed.push(format!("{} ({})", mf.path, e));
         } else if !local_path.exists() {
-            errors.push(format!("Failed to install {}", mf.path));
+            failed.push(mf.path.clone());
         }
+    }
+
+    if !failed.is_empty() {
+        return Err(download_failure_message(&failed, total as usize + manifest.initial_files.len()));
     }
 
     // Optional: remove files the pack no longer ships
@@ -378,7 +387,7 @@ pub async fn sync_modpack(app: tauri::AppHandle, remove_deleted: bool) -> Result
         files_updated,
         files_added,
         files_removed,
-        errors,
+        errors: Vec::new(),
     })
 }
 
@@ -589,6 +598,25 @@ pub async fn verify_all(app: tauri::AppHandle) -> Result<VerifyAllResult, String
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
+/// What the player is told when files couldn't be downloaded: how many, the first few, and what to do
+fn download_failure_message(failed: &[String], total: usize) -> String {
+    const SHOWN: usize = 3;
+    let mut msg = format!(
+        "Couldn't download {} of {} modpack files from the BSCraft server, so the game wasn't started.",
+        failed.len(),
+        total
+    );
+    for f in failed.iter().take(SHOWN) {
+        msg.push_str("\n• ");
+        msg.push_str(f);
+    }
+    if failed.len() > SHOWN {
+        msg.push_str(&format!("\n• and {} more", failed.len() - SHOWN));
+    }
+    msg.push_str("\n\nCheck your internet connection and press Play to try again. Files that did download are kept.");
+    msg
+}
+
 /// Computes the SHA-256 hash of a file and returns it as a lowercase hex string.
 pub fn sha256_file(path: &Path) -> Result<String, String> {
     let data = std::fs::read(path).map_err(|e| e.to_string())?;
@@ -692,7 +720,18 @@ fn collect_files(
 
 #[cfg(test)]
 mod tests {
-    use super::{is_os_clutter, safe_relative, ModpackManifest};
+    use super::{download_failure_message, is_os_clutter, safe_relative, ModpackManifest};
+
+    #[test]
+    fn download_failures_name_the_first_files_and_the_count() {
+        let failed: Vec<String> = (1..=5).map(|i| format!("mods/mod{i}.jar (HTTP 404 Not Found for https://x/mods/mod{i}.jar)")).collect();
+        let msg = download_failure_message(&failed, 2666);
+        assert!(msg.starts_with("Couldn't download 5 of 2666 modpack files"));
+        assert!(msg.contains("• mods/mod1.jar (HTTP 404") && msg.contains("• mods/mod3.jar"));
+        assert!(!msg.contains("mod4.jar") && msg.contains("• and 2 more"));
+        let one = download_failure_message(&failed[..1], 10);
+        assert!(!one.contains("more") && one.contains("press Play to try again"));
+    }
 
     #[test]
     fn reads_the_packs_memory_needs_when_given() {

@@ -2,10 +2,11 @@
 // commands/storage.rs — What BSCraft keeps on this PC, clearing
 // the caches, and uninstalling everything
 //
-// Everything lives in %APPDATA%\BSCraft (see README › Player data on
-// disk). Windows' uninstaller only removes the launcher itself, so
-// the launcher offers to take the game with it, keeping the player's
-// worlds and screenshots if they like.
+// Everything lives in %APPDATA%\BSCraft on Windows and in
+// ~/Library/Application Support/BSCraft on macOS (see README › Player
+// data on disk). Windows' uninstaller and dragging the app to the Trash
+// only remove the launcher itself, so the launcher offers to take the
+// game with it, keeping the player's worlds and screenshots if they like.
 // ============================================================
 
 use crate::commands::settings::get_data_dir;
@@ -126,7 +127,7 @@ pub async fn storage_usage() -> Result<StorageUsage, String> {
     tokio::task::spawn_blocking(usage).await.map_err(|e| e.to_string())?
 }
 
-/// Opens %APPDATA%\BSCraft in Explorer
+/// Opens the BSCraft folder in Explorer or Finder
 #[tauri::command]
 pub async fn open_data_folder() -> Result<(), String> {
     let data = get_data_dir()?;
@@ -166,13 +167,15 @@ pub async fn clear_caches(state: State<'_, AppState>) -> Result<u64, String> {
 pub struct UninstallResult {
     /// Where the player's worlds were moved, if they were kept
     pub kept_in: Option<String>,
-    /// Windows' uninstaller for the launcher is open; false when it couldn't be started
+    /// The launcher itself is on its way out and closes now: Windows' uninstaller is open, or
+    /// on macOS the app is in the Trash. False when that couldn't be done (a dev build, or a
+    /// Mac app that runs from the disk image or a folder it can't change)
     pub uninstaller_started: bool,
 }
 
 /// Removes the game and everything the launcher downloaded, moving the player's own
-/// folders to Documents\BSCraft worlds first if `keep_worlds`, then opens the launcher's
-/// uninstaller and closes the launcher so it can be removed too.
+/// folders to Documents/BSCraft worlds first if `keep_worlds`, then removes the launcher
+/// (Windows: opens its uninstaller; macOS: moves the app to the Trash) and closes.
 #[tauri::command]
 pub async fn uninstall_bscraft(app: tauri::AppHandle, state: State<'_, AppState>, keep_worlds: bool) -> Result<UninstallResult, String> {
     if game_running(&state) {
@@ -196,12 +199,7 @@ pub async fn uninstall_bscraft(app: tauri::AppHandle, state: State<'_, AppState>
     .await
     .map_err(|e| e.to_string())??;
 
-    // The uninstaller sits next to the launcher (installed builds only)
-    let uninstaller = std::env::current_exe().ok().and_then(|exe| exe.parent().map(|d| d.join("uninstall.exe")));
-    let uninstaller_started = match uninstaller {
-        Some(path) if path.exists() => std::process::Command::new(&path).spawn().is_ok(),
-        _ => false,
-    };
+    let uninstaller_started = remove_launcher(&app);
     if uninstaller_started {
         // Give the page a moment to say goodbye, then get out of the uninstaller's way
         let app = app.clone();
@@ -213,7 +211,65 @@ pub async fn uninstall_bscraft(app: tauri::AppHandle, state: State<'_, AppState>
     Ok(UninstallResult { kept_in, uninstaller_started })
 }
 
-/// Moves worlds, screenshots, schematics and map waypoints to <docs>\BSCraft worlds
+/// Windows: starts the uninstaller that sits next to the launcher (installed builds only)
+#[cfg(windows)]
+fn remove_launcher(_app: &tauri::AppHandle) -> bool {
+    let uninstaller = std::env::current_exe().ok().and_then(|exe| exe.parent().map(|d| d.join("uninstall.exe")));
+    match uninstaller {
+        Some(path) if path.exists() => std::process::Command::new(&path).spawn().is_ok(),
+        _ => false,
+    }
+}
+
+/// macOS: clears what the system keeps for the app (the web view's storage and caches), then
+/// moves BSCraft Launcher.app to the Trash. It keeps running from memory until it closes.
+#[cfg(target_os = "macos")]
+fn remove_launcher(app: &tauri::AppHandle) -> bool {
+    use tauri::Manager;
+
+    let Some(bundle) = std::env::current_exe().ok().as_deref().and_then(app_bundle_of) else { return false };
+    let id = app.config().identifier.clone();
+    let path = app.path();
+    let mut leftovers: Vec<PathBuf> =
+        [path.app_data_dir(), path.app_local_data_dir(), path.app_cache_dir()].into_iter().flatten().collect();
+    if let Some(home) = dirs::home_dir() {
+        let library = home.join("Library");
+        leftovers.push(library.join("WebKit").join(&id));
+        leftovers.push(library.join("Caches").join(&id));
+        leftovers.push(library.join("Saved Application State").join(format!("{}.savedState", id)));
+    }
+    for dir in leftovers {
+        std::fs::remove_dir_all(dir).ok();
+    }
+    move_to_trash(&bundle)
+}
+
+#[cfg(not(any(windows, target_os = "macos")))]
+fn remove_launcher(_app: &tauri::AppHandle) -> bool {
+    false
+}
+
+/// The .app bundle an executable runs from, if it's one that can be removed: not a dev build,
+/// not the disk image, and not a copy macOS runs from a read-only spot (App Translocation)
+#[cfg(any(target_os = "macos", test))]
+fn app_bundle_of(exe: &Path) -> Option<PathBuf> {
+    let bundle = exe.ancestors().find(|p| p.extension().is_some_and(|e| e == "app"))?;
+    let s = bundle.to_string_lossy();
+    if s.starts_with("/Volumes/") || s.contains("/AppTranslocation/") {
+        return None;
+    }
+    Some(bundle.to_path_buf())
+}
+
+#[cfg(target_os = "macos")]
+fn move_to_trash(path: &Path) -> bool {
+    use objc2_foundation::{NSFileManager, NSString, NSURL};
+    let url = NSURL::fileURLWithPath(&NSString::from_str(&path.to_string_lossy()));
+    let manager = NSFileManager::defaultManager();
+    manager.trashItemAtURL_resultingItemURL_error(&url, None).is_ok()
+}
+
+/// Moves worlds, screenshots, schematics and map waypoints to <docs>/BSCraft worlds
 fn keep_player_folders(mc: &Path, docs: &Path) -> Result<Option<String>, String> {
     let present: Vec<PathBuf> = std::fs::read_dir(mc)
         .map(|entries| {
@@ -310,6 +366,19 @@ mod tests {
             println!("{:>8}  {:>10.1} MB", g.key, g.bytes as f64 / 1048576.0);
         }
         println!("   total  {:>10.1} MB  in {}", u.total as f64 / 1048576.0, u.path);
+    }
+
+    #[test]
+    fn only_a_removable_app_bundle_is_trashed() {
+        use super::app_bundle_of;
+        use std::path::Path;
+        assert_eq!(
+            app_bundle_of(Path::new("/Applications/BSCraft Launcher.app/Contents/MacOS/bscraft-launcher")).unwrap(),
+            Path::new("/Applications/BSCraft Launcher.app")
+        );
+        assert!(app_bundle_of(Path::new("/Users/me/bscraft-launcher/src-tauri/target/debug/bscraft-launcher")).is_none());
+        assert!(app_bundle_of(Path::new("/Volumes/BSCraft Launcher/BSCraft Launcher.app/Contents/MacOS/bscraft-launcher")).is_none());
+        assert!(app_bundle_of(Path::new("/private/var/folders/x/T/AppTranslocation/ABC/d/BSCraft Launcher.app/Contents/MacOS/bscraft-launcher")).is_none());
     }
 
     #[test]

@@ -45,8 +45,10 @@ base64 = "0.22"
 # System info — RAM detection
 sysinfo = "0.31"
 
-# Archive extraction — JRE zip
+# Archive extraction — JRE zip (Windows) and tar.gz (macOS)
 zip = "2"
+tar = "0.4"
+flate2 = "1"
 
 # Semver — version comparison for update checks
 semver = "1"
@@ -54,11 +56,15 @@ semver = "1"
 # MD5 — offline UUID generation (Minecraft standard)
 md5 = "0.7"
 
-# Platform directories — %APPDATA% resolution
+# Platform directories — %APPDATA% / ~/Library/Application Support resolution
 dirs = "5"
 
 # Windows GPU detection and preference
-
 [target.'cfg(windows)'.dependencies]
 wmi = "0.13"
 winreg = "0.52"
+
+# macOS: centring the window, and moving the app to the Trash on uninstall
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSResponder", "NSWindow"] }
+objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSError", "NSFileManager", "NSString", "NSURL"] }

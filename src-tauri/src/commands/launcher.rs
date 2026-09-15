@@ -5,6 +5,7 @@
 use crate::commands::install::{get_mc_dir, hidden_command, java_for_pack};
 use crate::commands::settings::load_config_internal;
 use crate::constants::{GAME_SERVER_ADDRESS, GAME_SERVER_NAME, LAUNCHER_NAME, LAUNCHER_VERSION, OLD_GAME_SERVER_ADDRESSES};
+use crate::platform;
 use crate::state::AppState;
 use serde::Serialize;
 use std::collections::HashMap;
@@ -157,7 +158,7 @@ pub async fn launch_game(
     Ok(())
 }
 
-/// Forwards one output stream line by line. Mods print in the system code page
+/// Forwards one output stream line by line. On Windows mods print in the system code page
 /// (e.g. Ok Zoomer's "úwù"), so lines that aren't UTF-8 are read as Windows-1252/Latin-1
 /// instead of ending the stream.
 async fn pump_output<R: AsyncRead + Unpin>(app: tauri::AppHandle, stream: R) {
@@ -301,7 +302,7 @@ fn build_launch_command(
     let mut vars: HashMap<String, String> = HashMap::new();
     vars.insert("natives_directory".into(), path_str(&natives_dir));
     vars.insert("library_directory".into(), path_str(&mc_dir.join("libraries")));
-    vars.insert("classpath_separator".into(), ";".into()); // Windows
+    vars.insert("classpath_separator".into(), platform::CLASSPATH_SEPARATOR.into());
     vars.insert("launcher_name".into(), LAUNCHER_NAME.into());
     vars.insert("launcher_version".into(), LAUNCHER_VERSION.into());
     vars.insert("auth_player_name".into(), username.to_string());
@@ -347,6 +348,8 @@ fn build_launch_command(
     cmd.arg(format!("-Xms512m"));
     cmd.arg(format!("-Xmx{}m", ram_mb));
     cmd.args(GC_FLAGS);
+    #[cfg(target_os = "macos")]
+    cmd.args(dock_args(mc_dir, &asset_index));
 
     let forge_jvm_raw = collect_string_args(&forge_json["arguments"]["jvm"]);
     let vanilla_jvm_raw = vanilla_json
@@ -592,9 +595,28 @@ fn set_high_performance_gpu_preference(java_exe: &Path) -> Result<(), String> {
     Ok(())
 }
 
+/// macOS switches to the high-performance GPU for OpenGL games by itself
 #[cfg(not(target_os = "windows"))]
 fn set_high_performance_gpu_preference(_java_exe: &Path) -> Result<(), String> {
     Ok(())
+}
+
+/// Names the game "Minecraft" in the Dock and menu bar and gives it Minecraft's icon (from the
+/// game's own assets), instead of a generic "java" with a coffee cup.
+#[cfg(target_os = "macos")]
+fn dock_args(mc_dir: &Path, asset_index: &str) -> Vec<String> {
+    let mut args = vec!["-Xdock:name=Minecraft".to_string()];
+    let index = mc_dir.join("assets").join("indexes").join(format!("{}.json", asset_index));
+    let icon = std::fs::read_to_string(index)
+        .ok()
+        .and_then(|raw| serde_json::from_str::<serde_json::Value>(&raw).ok())
+        .and_then(|v| v["objects"]["icons/minecraft.icns"]["hash"].as_str().map(str::to_string))
+        .filter(|hash| hash.len() > 2)
+        .map(|hash| mc_dir.join("assets").join("objects").join(&hash[..2]).join(&hash));
+    if let Some(icon) = icon.filter(|p| p.exists()) {
+        args.push(format!("-Xdock:icon={}", path_str(&icon)));
+    }
+    args
 }
 
 /// Reads and parses a Minecraft version JSON file.
@@ -630,6 +652,10 @@ fn build_classpath(
         .unwrap_or(&[]);
 
     for lib in vanilla_libs.iter().chain(forge_libs.iter()) {
+        // Another OS's natives never belong on the classpath, even if their files are there
+        if !platform::rules_allow(&lib["rules"]) {
+            continue;
+        }
         if let Some(path) = lib["downloads"]["artifact"]["path"].as_str() {
             let full = mc_dir.join("libraries").join(path);
             if full.exists() {
@@ -657,7 +683,7 @@ fn build_classpath(
         }
     }
 
-    Ok(entries.join(";")) // Windows separator
+    Ok(entries.join(platform::CLASSPATH_SEPARATOR))
 }
 
 /// Converts a Maven coordinate string to a relative file path.
@@ -686,7 +712,7 @@ fn maven_to_path(coord: &str) -> String {
 }
 
 /// Collects string arguments from a version JSON `arguments.jvm` or `arguments.game` array.
-/// Handles both plain strings and conditional rule objects (applies Windows filter).
+/// Handles both plain strings and conditional rule objects (kept when their rules match this OS).
 fn collect_string_args(args: &serde_json::Value) -> Vec<String> {
     let arr = match args.as_array() {
         Some(a) => a,
@@ -698,8 +724,8 @@ fn collect_string_args(args: &serde_json::Value) -> Vec<String> {
         if let Some(s) = item.as_str() {
             result.push(s.to_string());
         } else if item.is_object() {
-            // Conditional argument — check if it applies on Windows
-            if arg_applies_to_windows(item) {
+            // Conditional argument, e.g. -XstartOnFirstThread only on macOS
+            if platform::rules_allow(&item["rules"]) {
                 match &item["value"] {
                     serde_json::Value::String(s) => result.push(s.clone()),
                     serde_json::Value::Array(arr) => {
@@ -716,28 +742,6 @@ fn collect_string_args(args: &serde_json::Value) -> Vec<String> {
     }
 
     result
-}
-
-fn arg_applies_to_windows(arg: &serde_json::Value) -> bool {
-    let rules = match arg["rules"].as_array() {
-        Some(r) => r,
-        None => return true,
-    };
-
-    let mut allowed = false;
-    for rule in rules {
-        let action = rule["action"].as_str().unwrap_or("allow");
-        let os = &rule["os"];
-
-        if os.is_null() {
-            allowed = action == "allow";
-        } else if let Some(name) = os["name"].as_str() {
-            if name == "windows" {
-                allowed = action == "allow";
-            }
-        }
-    }
-    allowed
 }
 
 /// Replaces `${var}` placeholders in a string from the variables map.

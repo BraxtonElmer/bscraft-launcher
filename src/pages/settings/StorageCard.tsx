@@ -4,6 +4,7 @@ import { invoke } from '@tauri-apps/api/core'
 import { Spinner, Toggle } from '../../components/ui'
 import { AlertIcon, CheckIcon, ExternalIcon, EraserIcon, TrashIcon, XCircleIcon } from '../../components/Icons'
 import { formatBytes } from '../../lib/format'
+import { device, isMac } from '../../lib/platform'
 import type { StorageUsage, UninstallResult } from '../../types'
 
 const GROUPS: Record<StorageUsage['groups'][number]['key'], { label: string; desc: string }> = {
@@ -20,7 +21,7 @@ interface Props {
   gameRunning: boolean
 }
 
-/** What BSCraft keeps on this PC, clearing the caches, and uninstalling it all */
+/** What BSCraft keeps on this computer, clearing the caches, and uninstalling it all */
 export function StorageCard({ head, gameRunning }: Props) {
   const [usage, setUsage] = useState<StorageUsage | null>(null)
   const [clearing, setClearing] = useState(false)
@@ -114,7 +115,9 @@ export function StorageCard({ head, gameRunning }: Props) {
 }
 
 function shortPath(p: string): string {
-  return p.replace(/^.*[\\/]AppData[\\/]Roaming[\\/]/i, '%APPDATA%\\')
+  return isMac
+    ? p.replace(/^\/Users\/[^/]+\//, '~/')
+    : p.replace(/^.*[\\/]AppData[\\/]Roaming[\\/]/i, '%APPDATA%\\')
 }
 
 function UninstallModal({ total, worlds, onClose }: { total: number; worlds: number; onClose: () => void }) {
@@ -152,12 +155,16 @@ function UninstallModal({ total, worlds, onClose }: { total: number; worlds: num
           <div className="modal-head">
             <div className="modal-icon brand"><CheckIcon size={20} /></div>
             <div>
-              <h2 id="uninstall-title" className="modal-title">BSCraft is removed from this PC</h2>
+              <h2 id="uninstall-title" className="modal-title">BSCraft is removed from this {device}</h2>
               <p className="modal-sub">
                 {done.kept_in && <>Your worlds and screenshots are in <b>{done.kept_in}</b>. </>}
-                {done.uninstaller_started
-                  ? 'Finish in the Windows uninstaller that just opened; the launcher closes now.'
-                  : 'Remove the launcher itself from Windows Settings › Apps.'}
+                {isMac
+                  ? done.uninstaller_started
+                    ? 'The launcher is in the Trash and closes now.'
+                    : 'To remove the launcher itself, drag BSCraft Launcher from Applications to the Trash.'
+                  : done.uninstaller_started
+                    ? 'Finish in the Windows uninstaller that just opened; the launcher closes now.'
+                    : 'Remove the launcher itself from Windows Settings › Apps.'}
               </p>
             </div>
           </div>
@@ -177,7 +184,7 @@ function UninstallModal({ total, worlds, onClose }: { total: number; worlds: num
               <div className="uninstall-keep">
                 <div>
                   <div className="setting-title">Keep my worlds and screenshots</div>
-                  <div className="setting-desc">{formatBytes(worlds)}, moved to Documents\BSCraft worlds</div>
+                  <div className="setting-desc">{formatBytes(worlds)}, moved to {isMac ? 'Documents/BSCraft worlds' : 'Documents\\BSCraft worlds'}</div>
                 </div>
                 <Toggle id="toggle-keep-worlds" label="Keep my worlds and screenshots" checked={keep} onChange={setKeep} />
               </div>
