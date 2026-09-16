@@ -5,6 +5,7 @@
 
 mod commands;
 mod constants;
+mod fit;
 mod platform;
 mod servers_dat;
 mod state;
@@ -91,12 +92,18 @@ pub fn run() {
         .plugin(tauri_plugin_process::init())
         // ── Shared state ─────────────────────────────────────
         .manage(state::AppState::new())
-        // ── macOS window placement ───────────────────────────
-        // Centred here rather than with `center` in the config, which leaves the window a
-        // pixel taller than 580 on macOS; it starts hidden so it doesn't jump into place.
+        // ── Window size and placement ────────────────────────
+        // Sized to fit the screen (fit.rs). On macOS it's centred here rather than with
+        // `center` in the config, which leaves the window a pixel taller than 580 there;
+        // it starts hidden so it doesn't jump into place.
         .setup(|app| {
+            #[cfg(not(target_os = "macos"))]
+            if let Some(window) = app.get_webview_window("main") {
+                fit::fit_to_screen(&window, true);
+            }
             #[cfg(target_os = "macos")]
             if let Some(window) = app.get_webview_window("main") {
+                fit::fit_to_screen(&window, false);
                 if let Ok(ns_window) = window.ns_window() {
                     // SAFETY: setup runs on the main thread, and the pointer is this live window's NSWindow
                     let ns_window = unsafe { &*(ns_window as *const objc2_app_kit::NSWindow) };
@@ -104,14 +111,18 @@ pub fn run() {
                 }
                 window.show().ok();
             }
-            #[cfg(not(target_os = "macos"))]
-            let _ = app;
             Ok(())
         })
         // ── Window close guard ───────────────────────────────
         // If Minecraft is running, intercept the close request and ask
         // the user to confirm rather than silently killing the game.
         .on_window_event(|window, event| {
+            // Moved to a monitor with other scaling: fit that screen
+            if let tauri::WindowEvent::ScaleFactorChanged { .. } = event {
+                if let Some(webview) = window.get_webview_window(window.label()) {
+                    fit::fit_to_screen(&webview, false);
+                }
+            }
             if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                 let state = window.state::<state::AppState>();
                 let is_running = state.game_process.lock().unwrap().is_some();
@@ -169,6 +180,8 @@ pub fn run() {
             commands::launcher::get_game_status,
             commands::launcher::get_log_lines,
             commands::launcher::exit_app,
+            // Window size and zoom
+            fit::fit_ui,
         ])
         .run(tauri::generate_context!())
         .expect("error while running BSCraft Launcher");

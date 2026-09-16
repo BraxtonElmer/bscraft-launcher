@@ -261,6 +261,7 @@ export function createMocks() {
     },
     get_log_lines: () => [],
     exit_app: () => { console.log('exit_app') },
+    fit_ui: () => {},
   }
 
   const mock = {
