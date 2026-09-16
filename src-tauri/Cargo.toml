@@ -1,6 +1,6 @@
 [package]
 name = "bscraft-launcher"
-version = "1.1.5"
+version = "1.1.7"
 description = "BSCraft Launcher"
 authors = ["BSCraft"]
 edition = "2021"
