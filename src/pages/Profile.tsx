@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Spinner } from '../components/ui'
-import { AlertIcon, CheckIcon, XCircleIcon } from '../components/Icons'
+import { AlertIcon, CheckIcon, ShirtIcon, XCircleIcon } from '../components/Icons'
 import { usernameProblem } from '../lib/format'
 import type { TextureKind } from '../lib/skin'
 import type { AccountApi } from '../hooks/useAccount'
@@ -126,7 +126,7 @@ export function ProfilePage({ username, account, gameRunning, onRename }: Props)
             gameRunning={gameRunning}
             onRename={onRename}
           />
-          {named && <WardrobeCard wardrobe={wardrobe} tab={tab} onTab={changeTab} />}
+          {named ? <WardrobeCard wardrobe={wardrobe} tab={tab} onTab={changeTab} /> : <NameFirstCard />}
           <SkinPartsCard
             prefs={skinPrefs.prefs}
             loaded={skinPrefs.loaded}
@@ -160,5 +160,27 @@ export function ProfilePage({ username, account, gameRunning, onRename }: Props)
         </div>
       </div>
     </div>
+  )
+}
+
+/**
+ * The wardrobe belongs to a name: skins are saved per player name on the server, so there's
+ * nothing to save until one is picked. Shown in the wardrobe's place until then.
+ */
+function NameFirstCard() {
+  return (
+    <section className="card name-first">
+      <div className="card-head">
+        <div className="card-icon pink"><ShirtIcon size={18} /></div>
+        <div>
+          <h2 className="card-title">Wardrobe</h2>
+          <p className="card-desc">Your skin, cape and elytra. Everyone on the server sees them.</p>
+        </div>
+      </div>
+      <div className="hint warn">
+        <AlertIcon size={14} />
+        <span><b>Pick your name first.</b> Your look is saved to your name, so choose one above and the wardrobe opens here.</span>
+      </div>
+    </section>
   )
 }

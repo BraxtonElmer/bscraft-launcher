@@ -40,6 +40,11 @@ export function HomePage({ launcher, config, operation, startedAt, onNavigate, o
   const mcVersion = config.installed_mc_version ?? manifest?.minecraft_version
 
   const play = async () => {
+    // The modpack has to match the server, so an update comes first, like a launcher update
+    if (modpackUpdate && !launcherUpdate && !operation) {
+      launcher.updateModpackNow()
+      return
+    }
     const readyToLaunch = !launcherUpdate && status !== 'offline' && status !== 'error' && !usernameProblem(launcher.username.trim())
     if (readyToLaunch && account.passwordSet === false && !passwordPromptSkipped) {
       setAskPassword('new')
@@ -479,7 +484,7 @@ function PlayButton({ launcher, operation, mcVersion, autoJoin, onPlay, onStartI
   launcher: LauncherApi; operation: ActiveOperation | null; mcVersion?: string
   autoJoin: boolean; onPlay: () => void; onStartIn: (autoJoin: boolean) => void
 }) {
-  const { status, installed, launcherUpdate, running, manifest, perfBusy, busy } = launcher
+  const { status, installed, launcherUpdate, modpackUpdate, running, manifest, perfBusy, busy } = launcher
 
   let label = 'PLAY'
   let sub = mcVersion ? `Minecraft ${mcVersion}` : ''
@@ -501,6 +506,8 @@ function PlayButton({ launcher, operation, mcVersion, autoJoin, onPlay, onStartI
     label = 'WORKING'; sub = 'Please wait…'; tone = 'busy'; spinner = true
   } else if (launcherUpdate) {
     label = 'UPDATE'; sub = `Launcher v${launcherUpdate.latest_version}`; tone = 'warn'
+  } else if (modpackUpdate) {
+    label = 'UPDATE'; sub = `Modpack v${modpackUpdate.modpack_version}`; tone = 'warn'
   } else if (status === 'offline' || status === 'error') {
     label = 'RETRY'; sub = status === 'offline' ? 'Server unreachable' : 'Check again'; tone = 'brand'
   } else if (!installed) {
